@@ -1,0 +1,15 @@
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+
+# cartelle virtualenv
+.venv/
+.env/
+
+# file specifici di Poetry
+poetry.lock
