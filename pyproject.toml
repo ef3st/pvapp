@@ -1,0 +1,22 @@
+[project]
+name = "solartracker"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Lorenz2001",email = "pepa.lorenzo.01@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pvlib (>=0.13.0,<0.14.0)",
+    "pandas (>=2.3.0,<3.0.0)",
+    "matplotlib (>=3.10.3,<4.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "solartracker", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
