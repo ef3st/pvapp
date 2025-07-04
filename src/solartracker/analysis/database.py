@@ -1,11 +1,9 @@
-import seaborn as sns
-import matplotlib.pyplot as plt
 import pandas as pd
 from pvlib.modelchain import ModelChainResult
 from IPython.display import display
 from utils.logger import get_logger
 
-sns.set_theme(style="darkgrid")  # other: "whitegrid", "white", "dark", "ticks"
+
 
 class Database():
     def __init__(self):
@@ -18,27 +16,34 @@ class Database():
         new_results["Implant_name"] = implant_name
         new_results["period"] = period
         new_results["mount"] = mount
-        self.database = pd.concat([self.database,new_results])
+        new_results.index.name = 'timestamp' 
+        new_results = new_results.reset_index() 
+        self.database:pd.DataFrame = pd.concat([self.database,new_results])
         
     def gather_modelchain_results(self,results:ModelChainResult):
         """
         Collect key ModelChain results into a single DataFrame.
-        """
-        
-        
+        """      
         dfs = []
         for attr_name, value in vars(results).items():
             if isinstance(value, pd.DataFrame):
-                self.logger.debug(f"{attr_name} added")
-                self.logger.debug(f"A Dataframe {type(value)}: {attr_name}")
-                dfs.append(value.head())
+                # self.logger.debug(f"{attr_name} added")
+                # self.logger.debug(f"A Dataframe {type(value)}: {attr_name}")
+                df = value.copy()
+                if attr_name == 'ac':
+                    df = df.add_prefix("ac_")
+                if attr_name == 'dc':
+                    df = df.add_prefix("dc_")
+                
+                dfs.append(df)
             elif isinstance(value, pd.Series):
-                self.logger.debug(f"  B  SERIES {type(value)}: {attr_name}")
+                # self.logger.debug(f"  B  SERIES {type(value)}: {attr_name}")
                 dfs.append(value.to_frame(name=attr_name))
-            else:
-                self.logger.debug(f"      C SINGLE {type(value)}: {attr_name} =  {value}")
+            # else:
+            #     self.logger.debug(f"      C SINGLE {type(value)}: {attr_name} =  {value}")
         return pd.concat(dfs,axis=1)
         
     
     def show(self):
         display(self.database)
+        
