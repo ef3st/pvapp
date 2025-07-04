@@ -56,13 +56,11 @@ jobs:
         run: |
           poetry install --no-interaction
 
-      - name: Run Pytest
+      - name: Run Pytest with coverage
         run: |
           poetry run pytest --cov=src --cov-report=xml
 
-
-  coverage:
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}  # Solo se repo privata
