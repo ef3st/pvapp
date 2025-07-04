@@ -16,11 +16,11 @@ class Implant():
       self.owner = owner
       self.description = description
       
-      self.implant_setted = False # False until PVSystem is not defined
+      self.system = None
       self.logger = get_logger('solartracker')
       
    def setimplant(self, module = None, inverter = None, mount_type:str = 'FixedMount', params:List = []):
-      if self.implant_setted:
+      if self.system:
          self.logger.warning(f"{self.name}: an implant has been already setted. NO CREATION OF THE IMPLANT WITH {module} and {inverter}")
          return
       
@@ -53,3 +53,6 @@ class Implant():
          inverter_parameters = inverter,
       )
       
+   def delete_inplant(self):
+      self.system = None
+      self.logger.info(f"{self.name}: Implant deleted")      

@@ -1,0 +1,44 @@
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+from pvlib.modelchain import ModelChainResult
+from IPython.display import display
+from utils.logger import get_logger
+
+sns.set_theme(style="darkgrid")  # other: "whitegrid", "white", "dark", "ticks"
+
+class Database():
+    def __init__(self):
+        self.database:pd.DataFrame = pd.DataFrame()
+        self.logger = get_logger('solartracker')
+        
+    def add_modelchainresult(self,implant_id:int, implant_name:str, results:ModelChainResult, period:str, mount:str) -> None:
+        new_results = self.gather_modelchain_results(results)
+        new_results["Implant_id"] = implant_id
+        new_results["Implant_name"] = implant_name
+        new_results["period"] = period
+        new_results["mount"] = mount
+        self.database = pd.concat([self.database,new_results])
+        
+    def gather_modelchain_results(self,results:ModelChainResult):
+        """
+        Collect key ModelChain results into a single DataFrame.
+        """
+        
+        
+        dfs = []
+        for attr_name, value in vars(results).items():
+            if isinstance(value, pd.DataFrame):
+                self.logger.debug(f"{attr_name} added")
+                self.logger.debug(f"A Dataframe {type(value)}: {attr_name}")
+                dfs.append(value.head())
+            elif isinstance(value, pd.Series):
+                self.logger.debug(f"  B  SERIES {type(value)}: {attr_name}")
+                dfs.append(value.to_frame(name=attr_name))
+            else:
+                self.logger.debug(f"      C SINGLE {type(value)}: {attr_name} =  {value}")
+        return pd.concat(dfs,axis=1)
+        
+    
+    def show(self):
+        display(self.database)
