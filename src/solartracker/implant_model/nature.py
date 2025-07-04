@@ -1,5 +1,6 @@
 from pvlib.location import Location
 import pandas as pd
+import numpy as np
 import pvlib
 from typing import Dict
 from utils.logger import get_logger
@@ -22,25 +23,40 @@ class Nature:
         
         self.aviable_energy = self._aviableenergy()
         
-    def _aviableenergy(self):
+    def _aviableenergy(self) -> Dict[str, float]:
         """
-        This method compute the GHI, DNI, DHI values returning a dict with the respective values.
-        At this moment it is used a very simple simulation. 
-        - GHI (Global Horizontal Irradiance): If sun is over the horizon, on the ground we have 1000 W/m^2, 0 otherwise
-        - DNI (Direct Normal Irradiance): assumed as 80% of GHI
-        - DHI:(Diffuse Horizontal Irradiance) remaining diffuse irradiation -> dhi = ghi - dni
+        Compute GHI, DNI, DHI values using a semi-empirical model based on solar elevation.
+        - GHI (Global Horizontal Irradiance): modeled as 1000 * sin(elevation), max 1000
+        - DNI (Direct Normal Irradiance): depends on elevation, air mass effect (simplified)
+        - DHI (Diffuse Horizontal Irradiance): GHI - DNI * cos(zenith)
         """
-        ghi = 1000 * (self.solpos['apparent_elevation'] > 0)  # simple estimate
-        dni = ghi * 0.8
-        dhi = ghi - dni
         
-        
-        av_energy:Dict[str,float] = {
-            "GHI": ghi, 
-            "DNI": dni, 
-            "DHI": dhi  
+    
+        # Elevazione solare apparente in radianti
+        elev = np.radians(self.solpos['apparent_elevation'].clip(lower=0))
+    
+        # GHI aumentata gradualmente con l'elevazione del sole
+        ghi = 1000 * np.sin(elev)
+        ghi = ghi.clip(lower=0)
+    
+        # Stima semplificata del fattore atmosferico
+        airmass = pvlib.atmosphere.get_relative_airmass(self.solpos['zenith'].clip(upper=89.9))
+        transmittance = np.exp(-0.14 * (airmass - 1))  # decresce con l'airmass
+        transmittance = transmittance.clip(upper=1)
+    
+        # DNI = GHI / cos(zenith), corretta per l’atmosfera
+        dni = ghi / np.cos(np.radians(self.solpos['zenith'].clip(upper=89.9))) * transmittance
+        dni = dni.clip(lower=0, upper=1000)
+    
+        # DHI = GHI - DNI * cos(zenith)
+        dhi = ghi - dni * np.cos(np.radians(self.solpos['zenith']))
+        dhi = dhi.clip(lower=0)
+    
+        return {
+            "GHI": ghi,
+            "DNI": dni,
+            "DHI": dhi
         }
-        return av_energy
     def getPOA(self, surface_tilt, surface_azimuth):
         """
         This function calculates the total solar irradiance on the module plane (Plane of Array Photovoltaic, POA), 

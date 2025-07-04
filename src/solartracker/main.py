@@ -20,14 +20,14 @@ def main():
     module = retrieve_sam('CECMod')['Canadian_Solar_Inc__CS5P_220M']
     inverter = {'pdc0': 240}
     implant.setimplant(module=module, 
-                       inverter=inverter)
+                       inverter=inverter, mount_type='SingleAxisTrackerMount')
     logger.info(f"Implant {implant.name} built with: \n - module: {module} \n - inverter: {inverter}")
     modelchain = BuildModelChain(system=implant.system,site=site.site)
     
     modelchain.run_model(nature.weather_simulation(temp_air=25, wind_speed=1))
     ac_power = modelchain.results.ac
     show_results(ac_power)
-
+    
     
 if __name__ == "__main__":
     main()
