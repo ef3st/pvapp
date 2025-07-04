@@ -10,7 +10,7 @@
 
 ---
 
-## 🚀 To starty
+## 🚀 To start
 
 ```bash
 # Intall with poetry
@@ -21,3 +21,19 @@ poetry run ruff check src/
 
 # Testing + coverage
 poetry run pytest --cov=src --cov-report=term
+```
+---
+
+ ## 💡 Implant simulation
+
+1. Define Site Location
+2. Create Time Series
+3. Retrieve or Define Weather Data
+4. Define the PV System:
+    a. Module
+    b. Inverter
+    c. Mount (Fixed or Tracking)
+    d. Temperature model
+5. Instantiate ModelChain
+6. Run Simulation
+7. Analyze / Visualize Results

@@ -1,4 +1,4 @@
-
+.pytest_cache/
 __pycache__/
 *.pyc
 *.pyo
@@ -7,9 +7,44 @@ __pycache__/
 *.sqlite3
 *.log
 
-# cartelle virtualenv
+# virtualenv
 .venv/
 .env/
 
-# file specifici di Poetry
+# poetry specific files
 poetry.lock
+
+
+# temporary files
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Notebook output
+.ipynb_checkpoints/
+
+# Config locali IDE
+.vscode/
+.idea/
+
+
+data/
+output/
+results/
+
+# Pytest
+/tests
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# secret files
+.env
+*.key
+*.pem
+
+# File Jupyter o similars
+*.ipynb

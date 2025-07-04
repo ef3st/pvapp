@@ -8,7 +8,7 @@ test:
 
 # Run the main script
 run:
-	poetry run python src/main.py
+	poetry run python src/solartracker/main.py
 
 # Run ruff -> check for errors
 ruff:
@@ -28,3 +28,16 @@ docs:
 
 # Command to format + test
 check: format test ruff mypy
+
+
+# Run Jupyter Notebook with Poetry
+notebook:
+	poetry run jupyter notebook
+
+# Register the environment as a Jupyter kernel (one-time)
+register-kernel:
+	poetry run python -m ipykernel install --user --name=solartracker --display-name "Python (solartracker)"
+
+# Run Jupyter Lab (optional, if you use it)
+lab:
+	poetry run jupyter lab
