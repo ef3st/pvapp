@@ -2,6 +2,7 @@ from pvlib.pvsystem import PVSystem
 from typing import Optional
 from .site import Site
 import pvlib
+from utils.logger import get_logger
 
 
 class Implant():
@@ -17,11 +18,11 @@ class Implant():
       self.description = description
       
       self.implant_setted = False # False until PVSystem is not defined
-      
+      self.logger = get_logger('solartracker')
       
    def setimplant(self, module, inverter):
       if self.implant_setted:
-         print(f"Warning: an implant has been already setted for {self.name}")
+         self.logger.warning(f"{self.name}: an implant has been already setted. NO CREATION OF THE IMPLANT WITH {module} and {inverter}")
          return
       self.system = PVSystem(
          module_parameters= module,
@@ -30,3 +31,4 @@ class Implant():
          surface_azimuth=180,
          temperature_model_parameters = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
       )
+      

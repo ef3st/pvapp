@@ -1,6 +1,6 @@
 from pvlib.location import Location 
 from typing import Tuple, Optional
-
+from utils.logger import get_logger
 
 
 class Site:
@@ -11,4 +11,4 @@ class Site:
                              tz = tz,
                              name = name
                              )
-        
+        self.logger = get_logger('solartracker')

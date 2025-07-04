@@ -2,6 +2,7 @@ from pvlib.location import Location
 import pandas as pd
 import pvlib
 from typing import Dict
+from utils.logger import get_logger
 
 
 class Nature:
@@ -9,6 +10,7 @@ class Nature:
         self.site = site
         self.times = times
         self._compute()
+        self.logger = get_logger('solartracker')
     
     
     def _compute(self):

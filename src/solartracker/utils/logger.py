@@ -25,11 +25,10 @@ Version: 0.1.0
 
 import logging
 import logging.handlers
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union, Dict, Any
+from typing import Optional
 from multiprocessing import Queue
 from logging.handlers import QueueHandler, QueueListener
 
