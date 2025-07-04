@@ -1,9 +1,8 @@
-from pvlib.pvsystem import PVSystem
-from typing import Optional
+from typing import Optional, List
 from .site import Site
 import pvlib
+from pvlib.pvsystem import PVSystem, Array, FixedMount, SingleAxisTrackerMount
 from utils.logger import get_logger
-
 
 class Implant():
    implants_counter = 0
@@ -20,15 +19,37 @@ class Implant():
       self.implant_setted = False # False until PVSystem is not defined
       self.logger = get_logger('solartracker')
       
-   def setimplant(self, module, inverter):
+   def setimplant(self, module = None, inverter = None, mount_type:str = 'FixedMount', params:List = []):
       if self.implant_setted:
          self.logger.warning(f"{self.name}: an implant has been already setted. NO CREATION OF THE IMPLANT WITH {module} and {inverter}")
          return
+      
+      mount = None
+      if mount_type == 'FixedMount':
+         mount = FixedMount(
+                      surface_tilt=30,         # module inclination
+                      surface_azimuth=180      # (180 = South)
+                  )
+      elif mount_type == 'SingleAxisTrackerMount':
+         mount = SingleAxisTrackerMount(
+                      axis_tilt=0,             # asse orizzontale (es. parallelo al terreno)
+                      axis_azimuth=180,        # direzione dell'asse (180 = asse Nord-Sud)
+                      max_angle=45,            # massimo angolo di rotazione (es. ±45°)
+                      backtrack=True,          # abilitare backtracking (evita ombreggiamento)
+                      gcr=0.35                 # ground coverage ratio (densità pannelli)
+                  )
+      else:
+         self.logger.error(f"mount type {mount_type} does NOT exist")
+         
+      array = Array(
+          mount=mount,
+          module_parameters=module,
+          temperature_model_parameters=pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
+      )
+      
       self.system = PVSystem(
+         arrays=array,
          module_parameters= module,
-         inverter_parameters= inverter,
-         surface_tilt=30,
-         surface_azimuth=180,
-         temperature_model_parameters = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
+         inverter_parameters = inverter,
       )
       
