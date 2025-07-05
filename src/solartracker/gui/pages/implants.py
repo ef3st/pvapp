@@ -12,7 +12,7 @@ def load_all_implants(folder: Path = Path("data/")) -> pd.DataFrame:
     for subfolder in sorted(folder.iterdir()):
         if not subfolder.is_dir():
             continue
-        
+
         site_path = subfolder / "site.json"
         implant_path = subfolder / "implant.json"
 
@@ -26,18 +26,18 @@ def load_all_implants(folder: Path = Path("data/")) -> pd.DataFrame:
                 implant = json.load(f)
 
             row = {
-                    "site_name": site["name"],
-                    "city": site["city"],
-                    "address": site["address"],
-                    "implant_name": implant["name"],
-                    "module": implant["module"]["name"],
-                    "inverter": implant["inverter"]["name"],
-                    "mount_type": implant["mount"]["type"],
-                    "coordinates": {
-                        "lat": site["coordinates"]["lat"],
-                        "lon": site["coordinates"]["lon"]
-                    }
-                }
+                "site_name": site["name"],
+                "city": site["city"],
+                "address": site["address"],
+                "implant_name": implant["name"],
+                "module": implant["module"]["name"],
+                "inverter": implant["inverter"]["name"],
+                "mount_type": implant["mount"]["type"],
+                "coordinates": {
+                    "lat": site["coordinates"]["lat"],
+                    "lon": site["coordinates"]["lon"],
+                },
+            }
             rows.append(row)
 
         except Exception as e:
@@ -46,9 +46,9 @@ def load_all_implants(folder: Path = Path("data/")) -> pd.DataFrame:
 
     return pd.DataFrame(rows)
 
+
 def render():
     st.title("💡 IMPLANTS")
-    
 
     # Change page to add implant
     if "adding_implant" not in st.session_state:
@@ -58,17 +58,12 @@ def render():
         add_implant.render()
 
     else:
-        
+
         df = load_all_implants()
-        st.dataframe(df[["site_name","implant_name","module","inverter","mount_type"]])
-        
-        
-        
-        
-        
-        
-        
-        
+        st.dataframe(
+            df[["site_name", "implant_name", "module", "inverter", "mount_type"]]
+        )
+
         # config_path = Path("data/implants_config.json")
 
         # # Verifica esistenza file
@@ -109,7 +104,7 @@ def render():
         show_implants_map(df)
 
 
-def show_implants_map(df:pd.DataFrame):
+def show_implants_map(df: pd.DataFrame):
     rows = []
 
     for imp in df.to_dict(orient="records"):
@@ -119,13 +114,15 @@ def show_implants_map(df:pd.DataFrame):
             site_name = imp["site_name"]
             lat = imp["coordinates"]["lat"]
             lon = imp["coordinates"]["lon"]
-            rows.append({
-                "site_name": site_name,
-                "address": address,
-                "city": city,
-                "lat": lat,
-                "lon": lon
-            })
+            rows.append(
+                {
+                    "site_name": site_name,
+                    "address": address,
+                    "city": city,
+                    "lat": lat,
+                    "lon": lon,
+                }
+            )
         except KeyError:
             continue
 
