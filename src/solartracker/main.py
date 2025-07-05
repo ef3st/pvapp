@@ -16,8 +16,9 @@ def set_logger():
 
 
 def main():
+    logger = set_logger()
     streamlit()
-    return 
+    return
     logger = set_logger()
     site = Site("NE", coordinates=(45.4642, 45.4642), altitude=0, tz="Europe/Rome")
     implant = Implant(name="PV_Implant_Single_Axis", location=site)

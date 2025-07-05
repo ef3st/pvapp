@@ -1,6 +1,7 @@
 import streamlit as st
 from pathlib import Path
 
+
 def render():
     st.title("🏠 Home")
 

@@ -4,10 +4,12 @@ from pathlib import Path
 
 config_path = Path("data/implants_config.json")
 
+
 def init_session():
     if "implant_step" not in st.session_state:
         st.session_state.implant_step = 0
         st.session_state.new_implant = {}
+
 
 def save_implant():
     if config_path.exists():
@@ -26,6 +28,7 @@ def save_implant():
     st.success("✅ Nuovo impianto salvato.")
     st.session_state.implant_step = 0
     st.session_state.new_implant = {}
+
 
 def render():
     st.title("➕ Add New Implant")
@@ -64,11 +67,10 @@ def render():
             st.session_state.implant_step = 3
 
     elif step == 3:
-        mount_type = st.selectbox("⚙️ Tipo tracker", [
-            "FixedMount",
-            "SingleAxisTrackerMount",
-            "DualAxisTrackerMount"
-        ])
+        mount_type = st.selectbox(
+            "⚙️ Tipo tracker",
+            ["FixedMount", "SingleAxisTrackerMount", "DualAxisTrackerMount"],
+        )
         inverter_power = st.number_input("🔌 Potenza inverter (kW)", min_value=0)
 
         if st.button("Avanti"):

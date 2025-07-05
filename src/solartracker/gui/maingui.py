@@ -3,22 +3,26 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from analysis.analyser import Analyser
 import seaborn as sns
-from .layout import render_layout
-from .pages import home,implant_performance,implants,implants_comparison
+from .pages import home, implant_performance, implants, implants_comparison
 from streamlit_option_menu import option_menu
+
 
 def streamlit():
     st.set_page_config(page_title="Solar Tracker", layout="wide")
     # st.sidebar.title("🌞 Solar Tracker")
-    
-    
+
     with st.sidebar:
-        selected = option_menu("🌞 Solar Tracker",["Home", "Implants", "Implants comparison","Implant performance"], 
-            icons=["house", "tools", "bar-chart", "graph-up"],menu_icon="cast", default_index=1)
+        selected = option_menu(
+            "🌞 Solar Tracker",
+            ["Home", "Implants", "Implants comparison", "Implant performance"],
+            icons=["house", "tools", "bar-chart", "graph-up"],
+            menu_icon="cast",
+            default_index=1,
+        )
         selected
-    
+
     # menu = st.sidebar.radio("Menu", ["Home", "Implants", "Implants comparison","Implant performance"])
-    
+
     if selected == "Home":
         home.render()
     elif selected == "Implants":
@@ -27,7 +31,7 @@ def streamlit():
         implants_comparison.render()
     elif selected == "Implant performance":
         implant_performance.render()
-        
+
     # render_layout()
 
 
