@@ -1,6 +1,7 @@
 from pvlib.pvsystem import AbstractMount
 from dataclasses import dataclass
-from typing import Union,Optional
+from typing import Union, Optional
+
 
 @dataclass
 class CustomMount(AbstractMount):
@@ -71,11 +72,12 @@ class CustomMount(AbstractMount):
        The height above ground of the center of the module [m]. Used for
        the Fuentes cell temperature model.
     """
+
     axis_tilt: float = 0.0
     axis_azimuth: float = 0.0
     max_angle: Union[float, tuple] = 90.0
     backtrack: bool = True
-    gcr: float = 2.0/7.0
+    gcr: float = 2.0 / 7.0
     cross_axis_tilt: float = 0.0
     racking_model: Optional[str] = None
     module_height: Optional[float] = None
@@ -83,10 +85,15 @@ class CustomMount(AbstractMount):
     def get_orientation(self, solar_zenith, solar_azimuth):
         # note -- docstring is automatically inherited from AbstractMount
         from tracking import singleaxis  # avoid circular import issue
+
         tracking_data = singleaxis(
-            solar_zenith, solar_azimuth,
-            self.axis_tilt, self.axis_azimuth,
-            self.max_angle, self.backtrack,
-            self.gcr, self.cross_axis_tilt
+            solar_zenith,
+            solar_azimuth,
+            self.axis_tilt,
+            self.axis_azimuth,
+            self.max_angle,
+            self.backtrack,
+            self.gcr,
+            self.cross_axis_tilt,
         )
         return tracking_data

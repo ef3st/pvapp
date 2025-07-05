@@ -41,3 +41,7 @@ register-kernel:
 # Run Jupyter Lab (optional, if you use it)
 lab:
 	poetry run jupyter lab
+
+streamlit:
+	poetry run streamlit run src/solartracker/main.py
+

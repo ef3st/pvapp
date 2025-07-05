@@ -4,63 +4,81 @@ import pvlib
 from pvlib.pvsystem import PVSystem, Array, FixedMount, SingleAxisTrackerMount
 from utils.logger import get_logger
 from mount.custommount import CustomMount
-class Implant():
-   implants_counter = 0
-   
-   def __init__(self, name:str = None, location:Site = None, owner:Optional[str] = None, description:Optional[str] = None):
-      self.id = Implant.implants_counter
-      Implant.implants_counter += 1
-      
-      self.name = name
-      self.location = location
-      self.owner = owner
-      self.description = description
-      
-      self.system = None
-      self.logger = get_logger('solartracker')
-      
-   def setimplant(self, module = None, inverter = None, mount_type:str = 'FixedMount', params:List = []):
-      if self.system:
-         self.logger.warning(f"{self.name}: an implant has been already setted. NO CREATION OF THE IMPLANT WITH {module} and {inverter}")
-         return
-      
-      mount = None
-      if mount_type == 'FixedMount':
-         mount = FixedMount(
-                      surface_tilt=30,         # module inclination
-                      surface_azimuth=180      # (180 = South)
-                  )
-      elif mount_type == 'SingleAxisTrackerMount':
-         mount = SingleAxisTrackerMount(
-                      axis_tilt=0,             # asse orizzontale (es. parallelo al terreno)
-                      axis_azimuth=180,        # direzione dell'asse (180 = asse Nord-Sud)
-                      max_angle=45,            # massimo angolo di rotazione (es. ±45°)
-                      backtrack=True,          # abilitare backtracking (evita ombreggiamento)
-                      gcr=0.35                 # ground coverage ratio (densità pannelli)
-                  )
-      elif mount_type == 'Custom':
-         mount = CustomMount(
-                      axis_tilt=0,             # asse orizzontale (es. parallelo al terreno)
-                      axis_azimuth=180,        # direzione dell'asse (180 = asse Nord-Sud)
-                      max_angle=45,            # massimo angolo di rotazione (es. ±45°)
-                      backtrack=True,          # abilitare backtracking (evita ombreggiamento)
-                      gcr=0.35                 # ground coverage ratio (densità pannelli)
-                  )
-      else:
-         self.logger.error(f"mount type {mount_type} does NOT exist")
-         
-      array = Array(
-          mount=mount,
-          module_parameters=module,
-          temperature_model_parameters=pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
-      )
-      
-      self.system = PVSystem(
-         arrays=array,
-         module_parameters= module,
-         inverter_parameters = inverter,
-      )
-      
-   def delete_inplant(self):
-      self.system = None
-      self.logger.info(f"{self.name}: Implant deleted")      
+
+
+class Implant:
+    implants_counter = 0
+
+    def __init__(
+        self,
+        name: str = None,
+        location: Site = None,
+        owner: Optional[str] = None,
+        description: Optional[str] = None,
+    ):
+        self.id = Implant.implants_counter
+        Implant.implants_counter += 1
+
+        self.name = name
+        self.location = location
+        self.owner = owner
+        self.description = description
+
+        self.system = None
+        self.logger = get_logger("solartracker")
+
+    def setimplant(
+        self,
+        module=None,
+        inverter=None,
+        mount_type: str = "FixedMount",
+        params: List = [],
+    ):
+        if self.system:
+            self.logger.warning(
+                f"{self.name}: an implant has been already setted. NO CREATION OF THE IMPLANT WITH {module} and {inverter}"
+            )
+            return
+
+        mount = None
+        if mount_type == "FixedMount":
+            mount = FixedMount(
+                surface_tilt=30,  # module inclination
+                surface_azimuth=180,  # (180 = South)
+            )
+        elif mount_type == "SingleAxisTrackerMount":
+            mount = SingleAxisTrackerMount(
+                axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
+                axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
+                max_angle=45,  # massimo angolo di rotazione (es. ±45°)
+                backtrack=True,  # abilitare backtracking (evita ombreggiamento)
+                gcr=0.35,  # ground coverage ratio (densità pannelli)
+            )
+        elif mount_type == "Custom":
+            mount = CustomMount(
+                axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
+                axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
+                max_angle=45,  # massimo angolo di rotazione (es. ±45°)
+                backtrack=True,  # abilitare backtracking (evita ombreggiamento)
+                gcr=0.35,  # ground coverage ratio (densità pannelli)
+            )
+        else:
+            self.logger.error(f"mount type {mount_type} does NOT exist")
+
+        array = Array(
+            mount=mount,
+            module_parameters=module,
+            temperature_model_parameters=pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS[
+                "sapm"
+            ]["open_rack_glass_glass"],
+        )
+
+        self.system = PVSystem(
+            arrays=array,
+            module_parameters=module,
+            inverter_parameters=inverter,
+        )
+
+    def delete_inplant(self):
+        self.system = None
+        self.logger.info(f"{self.name}: Implant deleted")
