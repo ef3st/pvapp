@@ -88,5 +88,3 @@ class ImplantAnalyser:
 
     def numeric_dataframe(self):
         return self.data
-
-  
