@@ -51,6 +51,6 @@ class Database:
 
     def show(self):
         display(self.database)
-    
+
     def save(self, path):
         self.database.to_csv(f"{path}/simulation.csv")

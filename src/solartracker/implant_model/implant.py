@@ -15,7 +15,7 @@ class Implant:
         location: Site = None,
         owner: Optional[str] = None,
         description: Optional[str] = None,
-        id: int = None
+        id: int = None,
     ):
         if not id:
             self.id = Implant.implants_counter

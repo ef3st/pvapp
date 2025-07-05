@@ -6,7 +6,6 @@ from implant_model.modelchain import BuildModelChain
 from pvlib.pvsystem import retrieve_sam
 from utils.logger import setup_logger, get_logger
 from analysis.database import Database
-from analysis.analyser import Analyser
 from gui.maingui import streamlit
 
 
