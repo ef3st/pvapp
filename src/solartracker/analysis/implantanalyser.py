@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-class Analyser:
+class ImplantAnalyser:
     def __init__(self, db: Database):
         self.db: pd.DataFrame = db.database
         sns.set_theme(style="dark")  # other: "whitegrid", "white", "darkgrid", "ticks"

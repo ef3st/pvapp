@@ -5,7 +5,8 @@ from analysis.analyser import Analyser
 import seaborn as sns
 from .pages import home, implant_performance, implants, implants_comparison
 from streamlit_option_menu import option_menu
-
+import sys
+sys.dont_write_bytecode = True
 
 def streamlit():
     st.set_page_config(page_title="Solar Tracker", layout="wide")
