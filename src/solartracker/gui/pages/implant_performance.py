@@ -7,6 +7,7 @@ from simulator.simulator import Simulate
 from analysis.implantanalyser import ImplantAnalyser
 import plotly.express as px
 
+
 def load_all_implants(folder: Path = Path("data/")) -> pd.DataFrame:
     data = []
     for subfolder in sorted(folder.iterdir()):
@@ -25,7 +26,7 @@ def load_all_implants(folder: Path = Path("data/")) -> pd.DataFrame:
                         }
                     )
                 except Exception as e:
-                    print(f"Error reading {subfolder.name}: {e}")
+                    st.error(f"Error reading {subfolder.name}: {e}")
     return pd.DataFrame(data)
 
 
@@ -185,27 +186,37 @@ def render():
     analyser = ImplantAnalyser(subfolder)
     sum_mean_plot(analyser.periodic_report())
     plot_time_series(analyser.numeric_dataframe())
-    
-        
 
 
 def sum_mean_plot(df_plot):
     st.markdown("### Periodic stats")
-    
-    col_graph,col_settings = st.columns([8,1])    
+
+    col_graph, col_settings = st.columns([8, 1])
     with col_settings:
         variable_options = df_plot["variable"].unique().tolist()
         index = variable_options.index("dc_p_mp")
-        variable_selected = st.selectbox("Choose variable:", variable_options,index=index)
-        col1,col2 = st.columns(2)
+        variable_selected = st.selectbox(
+            "Choose variable:", variable_options, index=index
+        )
+        col1, col2 = st.columns(2)
         with col1:
-            if st.button("Sum", type="primary" if st.session_state.get("stat") == "sum" else "secondary"):
+            if st.button(
+                "Sum",
+                type=(
+                    "primary" if st.session_state.get("stat") == "sum" else "secondary"
+                ),
+            ):
                 st.session_state["stat"] = "sum"
-        
+
         with col2:
-            if st.button("Mean", type="primary" if st.session_state.get("stat") == "mean" else "secondary"):
+            if st.button(
+                "Mean",
+                type=(
+                    "primary" if st.session_state.get("stat") == "mean" else "secondary"
+                ),
+            ):
                 st.session_state["stat"] = "mean"
-    
+
     # Fallback iniziale se non ancora impostato
     if "stat" not in st.session_state:
         st.session_state["stat"] = "sum"
@@ -214,8 +225,7 @@ def sum_mean_plot(df_plot):
 
     # Filtro dati
     filtered_df = df_plot[
-        (df_plot["variable"] == variable_selected) &
-        (df_plot["stat"] == stat_selected)
+        (df_plot["variable"] == variable_selected) & (df_plot["stat"] == stat_selected)
     ]
 
     # Costruisci il grafico
@@ -226,13 +236,12 @@ def sum_mean_plot(df_plot):
         color="season",
         title=f"{stat_selected.upper()} - {variable_selected}",
         labels={"value": stat_selected},
-        height=500
+        height=500,
     )
-    
-    
+
     with col_graph:
         st.plotly_chart(fig, use_container_width=True)
-    
+
     # variable, col1, col2 = st.columns([6,1, 1])
     # stat_selected = "sum"  # default
 
@@ -240,7 +249,7 @@ def sum_mean_plot(df_plot):
     #     # Estrai lista delle variabili disponibili
     #     variable_options = df_plot["variable"].unique().tolist()
     #     index = variable_options.index("dc_p_mp")
-        
+
     #     variable_selected = st.selectbox("Choose variable:", variable_options,index=index)
 
     # # Pulsanti tipo toggle per scegliere tra "sum" e "mean"
@@ -281,17 +290,18 @@ def sum_mean_plot(df_plot):
 
     # # Mostra selezione attiva (debug/facoltativo)
     # st.caption(f"Statistica attuale: {stat_selected.upper()}")
-    
 
 
 def plot_time_series(data: pd.DataFrame):
     st.markdown("### Temporal behaviour of variables (x = time, y = choosen variable)")
 
-    numeric_cols = data.select_dtypes(include='number').columns.tolist()
+    numeric_cols = data.select_dtypes(include="number").columns.tolist()
     default_var = "dc_p_mp"
-    default_index = numeric_cols.index(default_var) if default_var in numeric_cols else 0
+    default_index = (
+        numeric_cols.index(default_var) if default_var in numeric_cols else 0
+    )
 
-    col1, col2, col3 = st.columns([2, 1,1])
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
         variable = st.selectbox("Variable:", options=numeric_cols, index=default_index)
 
@@ -313,24 +323,28 @@ def plot_time_series(data: pd.DataFrame):
             min_value=min_date,
             max_value=max_date,
             value=(min_date, max_date),
-            format="DD/MM/YYYY"
+            format="DD/MM/YYYY",
         )
-        mask = (df["timestamp"].dt.date >= start_day) & (df["timestamp"].dt.date <= end_day)
+        mask = (df["timestamp"].dt.date >= start_day) & (
+            df["timestamp"].dt.date <= end_day
+        )
         df_filtered = df[mask]
 
     else:  # Giorno singolo
         with col3:
-            day = st.date_input("🗓️ Choose a date:", min_value=min_date, max_value=max_date, value=max_date)
+            day = st.date_input(
+                "🗓️ Choose a date:",
+                min_value=min_date,
+                max_value=max_date,
+                value=max_date,
+            )
         start_hour, end_hour = st.slider(
-            "Hors:",
-            min_value=0,
-            max_value=23,
-            value=(0, 23)
+            "Hors:", min_value=0, max_value=23, value=(0, 23)
         )
         mask = (
-            (df["timestamp"].dt.date == day) &
-            (df["timestamp"].dt.hour >= start_hour) &
-            (df["timestamp"].dt.hour <= end_hour)
+            (df["timestamp"].dt.date == day)
+            & (df["timestamp"].dt.hour >= start_hour)
+            & (df["timestamp"].dt.hour <= end_hour)
         )
         df_filtered = df[mask]
 
@@ -340,14 +354,9 @@ def plot_time_series(data: pd.DataFrame):
         x="timestamp",
         y=variable,
         title=f"{variable} along time",
-        markers=True
+        markers=True,
     )
 
-    fig.update_layout(
-        xaxis_title="Timestamp",
-        yaxis_title=variable,
-        height=500
-    )
+    fig.update_layout(xaxis_title="Timestamp", yaxis_title=variable, height=500)
 
     st.plotly_chart(fig, use_container_width=True)
-    
