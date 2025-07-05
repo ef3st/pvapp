@@ -29,11 +29,3 @@ class Analyser:
         sns.boxplot(x="period",y="p_mp",hue="Implant_name",data=df)
         sns.despine(offset=10, trim=True)
         plt.show()
-# def powerproduction_overtime(db:Database) -> None:
-
-#     df = db.database[db.database["dc_p_mp"].notna()][["timestamp","dc_p_mp","period"]]
-    
-#     sns.lineplot(data=df, x="timestamp",y="dc_p_mp",hue="period",markers="o")
-#     plt.show()
-    
-# def daily_production(db:Database):

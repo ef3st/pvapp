@@ -3,7 +3,6 @@ import pandas as pd
 from implant_model.nature import Nature
 from implant_model.implant import Implant
 from implant_model.modelchain import BuildModelChain
-from utils.implant_results_visualizer import show_results
 from pvlib.pvsystem import retrieve_sam 
 from utils.logger import setup_logger, get_logger
 from analysis.database import Database
@@ -41,7 +40,7 @@ def main():
                               end=metheorological_periods[period][1], freq='1h', tz=site.site.tz)
         nature = Nature(site.site, times)
         modelchain.run_model(nature.weather_simulation(temp_air=25, wind_speed=1))
-        database.add_modelchainresult(implant.id,implant.name,modelchain.results,period,mount='SingleAxisTrackerMount')
+        database.add_modelchainresult(implant.id,implant.name,modelchain.results,period,mount='Custom')
     
     
     site = Site("NE", coordinates=(45.4642,45.4642), altitude=0, tz='Europe/Rome')
