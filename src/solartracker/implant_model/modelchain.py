@@ -3,7 +3,7 @@ from pvlib.location import Location
 from pvlib.pvsystem import PVSystem
 
 
-def BuildModelChain(system: PVSystem, site: Location):
+def BuildModelChain(system: PVSystem, site: Location,dc_model:str="cec",ac_model:str="pvwatts"):
     """Returns a model chain with the system and the site
 
     Args:

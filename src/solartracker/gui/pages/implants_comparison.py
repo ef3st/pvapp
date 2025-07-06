@@ -72,7 +72,7 @@ def select_implants(df: pd.DataFrame):
 
 
 def render():
-    st.title("IMPLANTS COMPARISON")
+    st.title("🎭 IMPLANTS COMPARISON")
 
     df_implants = load_all_implants()
     df_selected = select_implants(df_implants)

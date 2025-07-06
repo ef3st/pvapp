@@ -84,6 +84,12 @@ class Nature:
         )
 
     def weather_simulation(self, temp_air, wind_speed) -> pd.DataFrame:
+       
+        # Seasonal temp_variation
+        temp_air = 20 + 10 * np.sin(2 * np.pi * (self.times.dayofyear - 80) / 365)
+
+        # Random wind
+        wind_speed = 1 + np.random.rand(len(self.times))  
         return pd.DataFrame(
             {
                 "ghi": self.aviable_energy["GHI"],

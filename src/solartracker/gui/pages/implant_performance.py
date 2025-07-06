@@ -134,7 +134,7 @@ def edit_implant(subfolder: Path) -> dict:
 
 
 def render():
-    st.title("📌 PV Implant Configuration")
+    st.title("📌 PV Implant Configuration and Performance")
     implants_df = load_all_implants()
 
     if implants_df.empty:

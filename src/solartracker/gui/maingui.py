@@ -2,8 +2,14 @@ import streamlit as st
 from .pages import home, implant_performance, implants, implants_comparison
 from streamlit_option_menu import option_menu
 import sys
-
+from simulator.simulator import Simulate
+from pathlib import Path
 sys.dont_write_bytecode = True
+
+def simulate_all(folder: Path = Path("data/")):
+    for subfolder in sorted(folder.iterdir()):
+        if subfolder.is_dir():
+            Simulate(subfolder)
 
 
 def streamlit():
@@ -12,13 +18,17 @@ def streamlit():
 
     with st.sidebar:
         selected = option_menu(
-            "🌞 Solar Tracker",
+            "☀️ Menu \n Solar Tracker ",
             ["Home", "Implants", "Implants comparison", "Implant performance"],
             icons=["house", "tools", "bar-chart", "graph-up"],
             menu_icon="cast",
             default_index=1,
         )
         selected
+        st.markdown("---")
+        if st.button("🔥 Simulate All"):
+            simulate_all()
+        
 
     # menu = st.sidebar.radio("Menu", ["Home", "Implants", "Implants comparison","Implant performance"])
 
