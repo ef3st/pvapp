@@ -212,9 +212,12 @@ def render():
     st.markdown("---")
     # Output chart
     st.subheader("🔋 " + T("subtitle.performance"))
-    analyser = ImplantAnalyser(subfolder)
-    sum_mean_plot(analyser.periodic_report())
-    plot_time_series(analyser.numeric_dataframe())
+    if (subfolder / "simulation.csv").exists():
+        analyser = ImplantAnalyser(subfolder)
+        sum_mean_plot(analyser.periodic_report())
+        plot_time_series(analyser.numeric_dataframe())
+    else:
+        st.warning("⚠️ Simulation not perfermed")
 
 
 def sum_mean_plot(df_plot):

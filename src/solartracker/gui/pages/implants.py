@@ -28,6 +28,7 @@ class ImplantsPage(Page):
         """Load implant and site data from JSON files."""
         rows = []
 
+        titles = T("df_title")  # list of column labels
         for subfolder in sorted(folder.iterdir()):
             if not subfolder.is_dir():
                 continue
@@ -44,7 +45,6 @@ class ImplantsPage(Page):
                 with implant_path.open() as f:
                     implant = json.load(f)
 
-                titles = T("df_title")  # list of column labels
 
                 row = {
                     titles[0]: site["name"],
@@ -64,7 +64,21 @@ class ImplantsPage(Page):
             except Exception as e:
                 st.warning(f"Errore nella cartella {subfolder.name}: {e}")
                 continue
-
+    
+        if not rows:
+            rows.append({
+                    titles[0]: "",
+                    titles[1]: "",
+                    titles[2]: "",
+                    titles[3]: "",
+                    titles[4]: "",
+                    titles[5]: "",
+                    titles[6]: "",
+                    titles[7]: {
+                        titles[8]: 0,
+                        titles[9]: 0,
+                    },
+                })
         return pd.DataFrame(rows)
 
     def render(self):
@@ -75,15 +89,11 @@ class ImplantsPage(Page):
 
         if st.session_state.adding_implant:
             main, lateral = st.columns([8, 2])
+            with lateral:
+                add_implant.render()
             with main:
                 df = self._load_implants()
 
-                if df.empty:
-                    st.info("ℹ️ Nessun impianto disponibile.")
-                    return
-                col1, col2, space = st.columns([5, 2, 15])
-                if col1.button("➖ " + T("buttons.remove_implant")):
-                    pass
 
                 # Show table with selected columns
                 titles = T("df_title")
@@ -91,16 +101,13 @@ class ImplantsPage(Page):
                 st.dataframe(df[columns_to_show], use_container_width=True)
 
                 self._render_map(df)
-            with lateral:
-                add_implant.render()
-                # st.session_state.adding_implant = False
+                if df.empty:
+                    st.info("ℹ️ Nessun impianto disponibile.")
+                    return
             return
         else:
             df = self._load_implants()
 
-            if df.empty:
-                st.info("ℹ️ Nessun impianto disponibile.")
-                return
             col1, col2, space = st.columns([2, 2, 15])
             if col1.button("➕ " + T("buttons.add_implant")):
                 st.session_state.adding_implant = True
@@ -110,6 +117,9 @@ class ImplantsPage(Page):
                     "Non abbiate fretta, ci stiamo lavorando: per cancellare un impianto, cancellate la cartella relativa in data/ (⚠️NON CANCELLATE /data⚠️ - solo la cartella dell'impianto da eliminare)"
                 )
 
+            if df.empty:
+                st.info("ℹ️ Nessun impianto disponibile.")
+                return
             # Show table with selected columns
             titles = T("df_title")
             columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6]]
