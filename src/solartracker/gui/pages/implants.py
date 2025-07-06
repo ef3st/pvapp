@@ -45,7 +45,6 @@ class ImplantsPage(Page):
                 with implant_path.open() as f:
                     implant = json.load(f)
 
-
                 row = {
                     titles[0]: site["name"],
                     titles[1]: site["city"],
@@ -64,9 +63,10 @@ class ImplantsPage(Page):
             except Exception as e:
                 st.warning(f"Errore nella cartella {subfolder.name}: {e}")
                 continue
-    
+
         if not rows:
-            rows.append({
+            rows.append(
+                {
                     titles[0]: "",
                     titles[1]: "",
                     titles[2]: "",
@@ -78,7 +78,8 @@ class ImplantsPage(Page):
                         titles[8]: 0,
                         titles[9]: 0,
                     },
-                })
+                }
+            )
         return pd.DataFrame(rows)
 
     def render(self):
@@ -93,7 +94,6 @@ class ImplantsPage(Page):
                 add_implant.render()
             with main:
                 df = self._load_implants()
-
 
                 # Show table with selected columns
                 titles = T("df_title")

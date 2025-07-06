@@ -33,16 +33,18 @@ def load_sites_df(base_path=Path("data/")) -> pd.DataFrame:
                 except Exception as e:
                     print(f"Errore nel file {folder}/site.json: {e}")
     if not rows:
-        rows.append ({
-                        "id": "",
-                        "name": "",
-                        "address": "",
-                        "city": "",
-                        "lat": 0,
-                        "lon": 0,
-                        "altitude": 0,
-                        "tz": "",
-                    })
+        rows.append(
+            {
+                "id": "",
+                "name": "",
+                "address": "",
+                "city": "",
+                "lat": 0,
+                "lon": 0,
+                "altitude": 0,
+                "tz": "",
+            }
+        )
     df = pd.DataFrame(rows).set_index("id").sort_index()
     return df
 
@@ -157,12 +159,12 @@ def step_site():
     else:
         default_address = df.loc[df["name"] == name, "address"].unique().tolist()
         if not default_address != 0:
-            default_address = default_address[0] 
+            default_address = default_address[0]
         else:
             default_address = ""
         default_city = df.loc[df["name"] == name, "city"].unique().tolist()
         if not default_city != 0:
-            default_city = default_city[0] 
+            default_city = default_city[0]
         else:
             default_city = "(RA)"
         default_district = districts.index(default_city[-3:-1])

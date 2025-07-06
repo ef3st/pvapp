@@ -35,7 +35,7 @@ def Simulate(subfolder: Path):
         ]
 
     inverter = None
-    if data_implant["inverter"]["origin"] in ["Custom","pvwatts"]:
+    if data_implant["inverter"]["origin"] in ["Custom", "pvwatts"]:
         inverter = data_implant["inverter"]["model"]
     else:
         inverter = retrieve_sam(data_implant["inverter"]["origin"].lower())[
