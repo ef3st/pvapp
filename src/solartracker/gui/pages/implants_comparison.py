@@ -6,6 +6,7 @@ from analysis.implantanalyser import ImplantAnalyser
 import plotly.express as px
 from .page import Page
 
+
 def translate(key: str) -> str | list:
     keys = key.split(".")
     result = st.session_state.get("T", {})
@@ -19,6 +20,7 @@ def translate(key: str) -> str | list:
 
 def T(key: str) -> str | list:
     return translate(f"implants_comparison.{key}")
+
 
 class ImplantsComparisonPage(Page):
     def __init__(self):
@@ -39,18 +41,20 @@ class ImplantsComparisonPage(Page):
                     try:
                         site = json.load(site_file.open())
                         implant = json.load(implant_file.open())
-                        data.append({
-                            "site_name": site.get("name", "Unknown"),
-                            "implant_name": implant.get("name", "Unnamed"),
-                            "subfolder": subfolder,
-                            "id": subfolder.name,
-                        })
+                        data.append(
+                            {
+                                "site_name": site.get("name", "Unknown"),
+                                "implant_name": implant.get("name", "Unnamed"),
+                                "subfolder": subfolder,
+                                "id": subfolder.name,
+                            }
+                        )
                     except Exception as e:
                         st.error(f"Error reading {subfolder.name}: {e}")
         return pd.DataFrame(data)
 
     def select_implants(self):
-        st.subheader("\U0001F4DA " + T("subtitle.select_implants"))
+        st.subheader("\U0001f4da " + T("subtitle.select_implants"))
         df = self.df_implants
         df["label"] = df["site_name"] + " - " + df["implant_name"]
 
@@ -75,16 +79,18 @@ class ImplantsComparisonPage(Page):
             st.session_state.implant_selection[imp_id] = st.checkbox(
                 label,
                 value=st.session_state.implant_selection.get(imp_id, False),
-                key=f"checkbox_{imp_id}"
+                key=f"checkbox_{imp_id}",
             )
 
         selected_ids = [
-            imp_id for imp_id, selected in st.session_state.implant_selection.items() if selected
+            imp_id
+            for imp_id, selected in st.session_state.implant_selection.items()
+            if selected
         ]
         self.df_selected = df[df["id"].isin(selected_ids)]
 
     def render_plot(self):
-        st.subheader("\U0001F4CA " + T("subtitle.plots"))
+        st.subheader("\U0001f4ca " + T("subtitle.plots"))
         col_graph, col_settings = st.columns([8, 2])
 
         if "stat" not in st.session_state:
@@ -92,31 +98,47 @@ class ImplantsComparisonPage(Page):
 
         with col_settings:
             variable_options = self.df_total["variable"].unique().tolist()
-            index = variable_options.index("dc_p_mp") if "dc_p_mp" in variable_options else 0
-            self.variable_selected = st.selectbox(T("buttons.choose_var"), variable_options, index=index)
+            index = (
+                variable_options.index("dc_p_mp")
+                if "dc_p_mp" in variable_options
+                else 0
+            )
+            self.variable_selected = st.selectbox(
+                T("buttons.choose_var"), variable_options, index=index
+            )
 
             season_options = self.df_total["season"].unique().tolist()
             default = season_options
             if not self.selected_seasons == []:
                 default = self.selected_seasons
-            self.selected_seasons = st.multiselect(T("buttons.periods"), season_options, default=default)
+            self.selected_seasons = st.multiselect(
+                T("buttons.periods"), season_options, default=default
+            )
 
             col1, col2 = st.columns(2)
             with col1:
-                if st.button(T("buttons.sum"), type=("primary" if st.session_state.stat == "sum" else "secondary")):
+                if st.button(
+                    T("buttons.sum"),
+                    type=("primary" if st.session_state.stat == "sum" else "secondary"),
+                ):
                     st.session_state.stat = "sum"
                     st.rerun()
             with col2:
-                if st.button(T("buttons.mean"), type=("primary" if st.session_state.stat == "mean" else "secondary")):
+                if st.button(
+                    T("buttons.mean"),
+                    type=(
+                        "primary" if st.session_state.stat == "mean" else "secondary"
+                    ),
+                ):
                     st.session_state.stat = "mean"
                     st.rerun()
 
         self.stat_selected = st.session_state.stat
 
         df_filtered = self.df_total[
-            (self.df_total["variable"] == self.variable_selected) &
-            (self.df_total["stat"] == self.stat_selected) &
-            (self.df_total["season"].isin(self.selected_seasons))
+            (self.df_total["variable"] == self.variable_selected)
+            & (self.df_total["stat"] == self.stat_selected)
+            & (self.df_total["season"].isin(self.selected_seasons))
         ]
 
         with col_graph:
@@ -130,14 +152,14 @@ class ImplantsComparisonPage(Page):
                 labels={
                     "value": self.stat_selected,
                     "implant": T("plots.periodic.legend"),
-                    "season": T("plots.periodic.x")
+                    "season": T("plots.periodic.x"),
                 },
                 height=500,
             )
             st.plotly_chart(fig, use_container_width=True)
 
     def render(self):
-        st.title("\U0001F3AD " + T("title"))
+        st.title("\U0001f3ad " + T("title"))
         self.df_implants = self.load_all_implants()
         self.select_implants()
 

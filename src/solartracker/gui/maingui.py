@@ -17,16 +17,19 @@ def simulate_all(folder: Path = Path("data/")):
         if subfolder.is_dir():
             Simulate(subfolder)
 
+
 def load_translation(lang):
     with open(f"src/solartracker/gui/i18n/{lang}.json", "r", encoding="utf-8") as f:
         return json.load(f)
-    
+
+
 def aviable_language(folder: Path = Path("src/solartracker/gui/i18n/")) -> List:
     langs = []
     for file in sorted(folder.iterdir()):
         if file.is_file():
             langs.append(file.stem)
     return langs
+
 
 def translate(key: str) -> str | list:
     keys = key.split(".")
@@ -38,13 +41,15 @@ def translate(key: str) -> str | list:
             return key  # fallback se manca qualcosa
     return result
 
-def T(key:str):
+
+def T(key: str):
     return translate(f"main.{key}")
 
+
 def streamlit():
-    pages ={
+    pages = {
         "implants": ImplantsPage(),
-        "implants_comparison": ImplantsComparisonPage()
+        "implants_comparison": ImplantsComparisonPage(),
     }
     if "T" not in st.session_state:
         st.session_state.T = load_translation("it")
@@ -57,7 +62,12 @@ def streamlit():
         st.markdown("## 🌅 PV Implants Analyser")
         st.markdown("---")
         index = aviable_language().index(st.session_state.current_lang)
-        lang = st.selectbox(f"🌍 {T('buttons.language')}", aviable_language(), key="language",index=index)
+        lang = st.selectbox(
+            f"🌍 {T('buttons.language')}",
+            aviable_language(),
+            key="language",
+            index=index,
+        )
 
     # Caricamento traduzioni solo se cambiate
     if st.session_state.get("current_lang") != lang:
@@ -87,7 +97,3 @@ def streamlit():
         pages["implants_comparison"].render()
     elif selected == T("menu")[3]:  # "Implant performance"
         implant_performance.render()
-
-
-
-

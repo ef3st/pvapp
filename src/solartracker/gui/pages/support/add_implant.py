@@ -36,93 +36,78 @@ def load_sites_df(base_path=Path("data/")) -> pd.DataFrame:
     df = pd.DataFrame(rows).set_index("id").sort_index()
     return df
 
+
 def init_session():
     if "implant_step" not in st.session_state:
         st.session_state.implant_step = 0
-        st.session_state.new_implant = {
-            "site": {},
-            "implant": {}
-        }
+        st.session_state.new_implant = {"site": {}, "implant": {}}
 
 
-def save_implant(path = Path("data/")):
+def save_implant(path=Path("data/")):
     st.session_state.adding_implant = False
     site = st.session_state.new_implant["site"]
     implant = st.session_state.new_implant["implant"]
-    
+
     existing_ids = [
-                int(f.name)
-                for f in path.iterdir()
-                if f.is_dir() and f.name.isdigit()
-            ]
+        int(f.name) for f in path.iterdir() if f.is_dir() and f.name.isdigit()
+    ]
     next_id = max(existing_ids) + 1 if existing_ids else 0
     folder = path / str(next_id)
-    
-    folder.mkdir(parents=False, exist_ok=False) 
+
+    folder.mkdir(parents=False, exist_ok=False)
 
     file_path = folder / "site.json"
     with file_path.open("w", encoding="utf-8") as f:
         json.dump(site, f, indent=4)
-    
+
     file_path = folder / "implant.json"
     with file_path.open("w", encoding="utf-8") as f:
         json.dump(implant, f, indent=4)
 
     st.session_state.implant_step = 0
-    st.session_state.new_implant = {
-            "site": {},
-            "implant": {}
-        }
+    st.session_state.new_implant = {"site": {}, "implant": {}}
     st.session_state.adding_implant = False
     st.success(f"✅ Nuovo impianto salvato in {folder}.")
     st.rerun()
+
 
 def exit_button():
     if st.button("❌ Annulla", key="exit"):
         st.session_state.implant_step = 0
-        st.session_state.new_implant = {
-            "site": {},
-            "implant": {}
-        }
+        st.session_state.new_implant = {"site": {}, "implant": {}}
         st.session_state.adding_implant = False
         st.rerun()
 
-def save_and_simulate(path = Path("data/")):
+
+def save_and_simulate(path=Path("data/")):
     st.session_state.adding_implant = False
     site = st.session_state.new_implant["site"]
     implant = st.session_state.new_implant["implant"]
-    
+
     existing_ids = [
-                int(f.name)
-                for f in path.iterdir()
-                if f.is_dir() and f.name.isdigit()
-            ]
+        int(f.name) for f in path.iterdir() if f.is_dir() and f.name.isdigit()
+    ]
     next_id = max(existing_ids) + 1 if existing_ids else 0
     folder = path / str(next_id)
-    
-    folder.mkdir(parents=False, exist_ok=False) 
+
+    folder.mkdir(parents=False, exist_ok=False)
 
     file_path = folder / "site.json"
     with file_path.open("w", encoding="utf-8") as f:
         json.dump(site, f, indent=4)
-    
+
     file_path = folder / "implant.json"
     with file_path.open("w", encoding="utf-8") as f:
         json.dump(implant, f, indent=4)
 
     st.session_state.implant_step = 0
-    st.session_state.new_implant = {
-            "site": {},
-            "implant": {}
-        }
+    st.session_state.new_implant = {"site": {}, "implant": {}}
     st.session_state.adding_implant = False
     st.success(f"✅ Nuovo impianto salvato in {folder}.")
     Simulate(folder)
-    
+
     st.rerun()
 
-    
-        
 
 def get_coordinates(address: str):
     geolocator = Nominatim(user_agent="solartracker-app")
@@ -132,30 +117,30 @@ def get_coordinates(address: str):
     return None, None
 
 
-
 def init_session():
     if "implant_step" not in st.session_state:
         st.session_state.implant_step = 0
     if "new_implant" not in st.session_state:
         st.session_state.new_implant = {"site": {}, "implant": {}}
 
+
 # --- Step Functions ---
 def step_site():
-        
+
     df = load_sites_df()
-    
+
     with open("src/solartracker/gui/pages/support/districts.json") as f:
         districts_json = json.load(f)
     districts = list(districts_json.keys())
 
     new_implant = st.session_state.new_implant
-    sites =[""] + df["name"].unique().tolist() + ["Altro"]
-    
+    sites = [""] + df["name"].unique().tolist() + ["Altro"]
+
     name = st.selectbox("📝 Site Name", sites)
-    
+
     if name == "Altro":
         name = st.text_input("🚧 New name")
-    if name in ["","Altro"]:
+    if name in ["", "Altro"]:
         default_address = ""
         default_city = ""
         default_district = districts.index("RA")
@@ -166,7 +151,7 @@ def step_site():
     address = st.text_input("🪧 Address", value=default_address)
     city_col, district_col = st.columns([3, 1])
     city = city_col.text_input("🏙️ City", value=default_city[:-5])
-    district = district_col.selectbox("District", districts,index=default_district)
+    district = district_col.selectbox("District", districts, index=default_district)
     error = False
     st.markdown("---")
     col1, col2 = st.columns([1, 2])
@@ -175,17 +160,16 @@ def step_site():
     with col2:
         if st.button("⏩ Next", key="site_next"):
             if name and address and city:
-                new_implant["site"].update({
-                    "name": name,
-                    "address": address,
-                    "city": f"{city} ({district})"
-                })
+                new_implant["site"].update(
+                    {"name": name, "address": address, "city": f"{city} ({district})"}
+                )
                 st.session_state.implant_step += 1
                 st.rerun()
             else:
                 error = True
     if error:
         st.error("Complete all fields")
+
 
 def step_location():
     new_implant = st.session_state.new_implant
@@ -201,7 +185,13 @@ def step_location():
 
     df = pd.DataFrame([{"lat": lat, "lon": lon}])
     view = pdk.ViewState(latitude=lat, longitude=lon, zoom=12)
-    layer = pdk.Layer("ScatterplotLayer", data=df, get_position='[lon, lat]', get_color='[255,0,0,160]', get_radius=200)
+    layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=df,
+        get_position="[lon, lat]",
+        get_color="[255,0,0,160]",
+        get_radius=200,
+    )
     st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view))
 
     st.markdown("---")
@@ -215,15 +205,18 @@ def step_location():
     with col3:
         if st.button("⏩ Next", key="loc_next"):
             if lat and lon and altitude >= 0 and tz:
-                new_implant["site"].update({
-                    "coordinates": {"lat": lat, "lon": lon},
-                    "altitude": altitude,
-                    "tz": tz
-                })
+                new_implant["site"].update(
+                    {
+                        "coordinates": {"lat": lat, "lon": lon},
+                        "altitude": altitude,
+                        "tz": tz,
+                    }
+                )
                 st.session_state.implant_step += 1
                 st.rerun()
             else:
                 st.error("Complete all fields")
+
 
 def step_module():
     new_implant = st.session_state.new_implant
@@ -241,14 +234,23 @@ def step_module():
         gamma = st.number_input("γ_pdc (%/C)")
         model = {"pdc0": pdc, "gamma": gamma}
 
-    navigation_buttons(2, "module_next", new_implant, "implant", {
-        "module": {
-            "origin": origin,
-            "name": name,
-            "model": model,
-            "dc_model": {"CECMod": "cec", "SandiaMod": "sapm"}.get(origin, "pvwatts")
-        }
-    })
+    navigation_buttons(
+        2,
+        "module_next",
+        new_implant,
+        "implant",
+        {
+            "module": {
+                "origin": origin,
+                "name": name,
+                "model": model,
+                "dc_model": {"CECMod": "cec", "SandiaMod": "sapm"}.get(
+                    origin, "pvwatts"
+                ),
+            }
+        },
+    )
+
 
 def step_inverter():
     new_implant = st.session_state.new_implant
@@ -266,23 +268,37 @@ def step_inverter():
         pdc = st.number_input("pdc0 (W)")
         model = {"pdc0": pdc}
 
-    navigation_buttons(3, "inv_next", new_implant, "implant", {
-        "inverter": {
-            "origin": origin,
-            "name": name,
-            "model": model,
-            "ac_model": "cec" if origin == "cecinverter" else "pvwatts"
-        }
-    })
+    navigation_buttons(
+        3,
+        "inv_next",
+        new_implant,
+        "implant",
+        {
+            "inverter": {
+                "origin": origin,
+                "name": name,
+                "model": model,
+                "ac_model": "cec" if origin == "cecinverter" else "pvwatts",
+            }
+        },
+    )
+
 
 def step_mount():
     new_implant = st.session_state.new_implant
     st.markdown("⚠️ **Mount**")
-    mount = st.selectbox("Select Mount Type", ["SingleAxisTrackerMount", "FixedMount", "Custom"])
+    mount = st.selectbox(
+        "Select Mount Type", ["SingleAxisTrackerMount", "FixedMount", "Custom"]
+    )
 
-    navigation_buttons(4, "mount_next", new_implant, "implant", {
-        "mount": {"type": mount, "params": {}}
-    })
+    navigation_buttons(
+        4,
+        "mount_next",
+        new_implant,
+        "implant",
+        {"mount": {"type": mount, "params": {}}},
+    )
+
 
 def navigation_buttons(step_back, next_key, target_dict, section_key, update_dict):
     col1, col2, col3 = st.columns(3)

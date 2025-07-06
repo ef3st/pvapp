@@ -7,6 +7,7 @@ from simulator.simulator import Simulate
 from analysis.implantanalyser import ImplantAnalyser
 import plotly.express as px
 
+
 def translate(key: str) -> str | list:
     keys = key.split(".")
     result = st.session_state.get("T", {})
@@ -20,8 +21,6 @@ def translate(key: str) -> str | list:
 
 def T(key: str) -> str | list:
     return translate(f"implants_performance.{key}")
-
-
 
 
 def load_all_implants(folder: Path = Path("data/")) -> pd.DataFrame:
@@ -57,15 +56,15 @@ def edit_site(subfolder: Path) -> dict:
     st.markdown(f"🗺️ ***{T("buttons.site.coordinates")}***")
     col1, col2 = st.columns(2)
     site["coordinates"]["lat"] = col1.number_input(
-        T("buttons.site.lat"), value=site["coordinates"]["lat"],
-        format="%.4f"
+        T("buttons.site.lat"), value=site["coordinates"]["lat"], format="%.4f"
     )
     site["coordinates"]["lon"] = col2.number_input(
-        T("buttons.site.lon"), value=site["coordinates"]["lon"],
-        format="%.4f"
+        T("buttons.site.lon"), value=site["coordinates"]["lon"], format="%.4f"
     )
 
-    site["altitude"] = st.number_input(f"🗻 {T("buttons.site.altitude")} (m)", value=site["altitude"])
+    site["altitude"] = st.number_input(
+        f"🗻 {T("buttons.site.altitude")} (m)", value=site["altitude"]
+    )
     site["tz"] = st.text_input(f"🕐 {T("buttons.site.timezone")}", site["tz"])
 
     return site
@@ -98,7 +97,9 @@ def edit_implant(subfolder: Path) -> dict:
             st.code(modules[implant["module"]["name"]], language="json")
 
     else:
-        implant["module"]["name"] = col2.text_input(T("buttons.implant.module.name"), implant["module"]["name"])
+        implant["module"]["name"] = col2.text_input(
+            T("buttons.implant.module.name"), implant["module"]["name"]
+        )
         sub1, sub2 = st.columns(2)
         implant["module"]["model"]["pdc0"] = sub1.number_input(
             "pdc0 (W)", value=implant["module"]["model"]["pdc0"]
@@ -125,7 +126,7 @@ def edit_implant(subfolder: Path) -> dict:
         inv_names = list(inverters.columns)
         inv_name_index = inv_names.index(implant["inverter"]["name"])
         implant["inverter"]["name"] = col2.selectbox(
-             T("buttons.implant.inverter.model"), inv_names, index=inv_name_index
+            T("buttons.implant.inverter.model"), inv_names, index=inv_name_index
         )
 
         if st.checkbox(T("buttons.implant.inverter.details")):
@@ -146,7 +147,9 @@ def edit_implant(subfolder: Path) -> dict:
     st.markdown(f"⚠️ ***{T("buttons.implant.mount.title")}***")
     mount_opts = ["SingleAxisTrackerMount", "FixedMount", "Custom"]
     mount_index = mount_opts.index(implant["mount"]["type"])
-    implant["mount"]["type"] = st.selectbox(T("buttons.implant.mount.type"), mount_opts, index=mount_index)
+    implant["mount"]["type"] = st.selectbox(
+        T("buttons.implant.mount.type"), mount_opts, index=mount_index
+    )
 
     return implant
 
@@ -161,17 +164,20 @@ def render():
 
     # Select implant
     col1, col2 = st.columns(2)
-    selected_site = col1.selectbox(f"🌍 {T("subtitle.site")}", sorted(implants_df["site_name"].unique()))
+    selected_site = col1.selectbox(
+        f"🌍 {T("subtitle.site")}", sorted(implants_df["site_name"].unique())
+    )
     filtered = implants_df[implants_df["site_name"] == selected_site]
-    selected_implant = col2.selectbox(f"⚙️ {T("subtitle.implant")}", filtered["implant_name"])
+    selected_implant = col2.selectbox(
+        f"⚙️ {T("subtitle.implant")}", filtered["implant_name"]
+    )
 
     selected_row = filtered[filtered["implant_name"] == selected_implant].iloc[0]
     subfolder = selected_row["subfolder"]
     st.markdown("---")
 
-
     # Edit and display site and implant
-    st.subheader("🛠️ "+T("subtitle.implant_config"))
+    st.subheader("🛠️ " + T("subtitle.implant_config"))
     col_left, col_sep, col_right = st.columns([2, 0.1, 3])
 
     with col_left:
@@ -192,16 +198,15 @@ def render():
         st.subheader(f"🧰 {T("subtitle.implant")}")
         implant = edit_implant(subfolder)
 
-    
     if col1.button(f"💾 {T("buttons.save")}"):
         json.dump(site, (subfolder / "site.json").open("w"), indent=4)
         json.dump(implant, (subfolder / "implant.json").open("w"), indent=4)
         st.success("Changes saved.")
         st.rerun()
-   
+
     st.markdown("---")
     # Output chart
-    st.subheader("🔋 "+ T("subtitle.performance"))
+    st.subheader("🔋 " + T("subtitle.performance"))
     analyser = ImplantAnalyser(subfolder)
     sum_mean_plot(analyser.periodic_report())
     plot_time_series(analyser.numeric_dataframe())
@@ -275,11 +280,20 @@ def plot_time_series(data: pd.DataFrame):
 
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        variable = st.selectbox(f"⚙️ {T("buttons.choose_variable")}", options=numeric_cols, index=default_index)
+        variable = st.selectbox(
+            f"⚙️ {T("buttons.choose_variable")}",
+            options=numeric_cols,
+            index=default_index,
+        )
 
     # Pulsante ON/OFF per "giorno singolo"
     with col2:
-        mode = st.radio(f"{T("buttons.option.label")}", T("buttons.option.options"), index=0, horizontal=True)
+        mode = st.radio(
+            f"{T("buttons.option.label")}",
+            T("buttons.option.options"),
+            index=0,
+            horizontal=True,
+        )
 
     df = data.copy()
     df = df[[variable]].dropna()

@@ -72,19 +72,18 @@ class ImplantsPage(Page):
 
         if "adding_implant" not in st.session_state:
             st.session_state.adding_implant = False
-        
+
         if st.session_state.adding_implant:
-            main,lateral = st.columns([8,2])
+            main, lateral = st.columns([8, 2])
             with main:
                 df = self._load_implants()
 
                 if df.empty:
                     st.info("ℹ️ Nessun impianto disponibile.")
                     return
-                col1,col2, space = st.columns([5,2,15])
-                if col1.button("➖ "+T("buttons.remove_implant")):
+                col1, col2, space = st.columns([5, 2, 15])
+                if col1.button("➖ " + T("buttons.remove_implant")):
                     pass
-
 
                 # Show table with selected columns
                 titles = T("df_title")
@@ -102,13 +101,14 @@ class ImplantsPage(Page):
             if df.empty:
                 st.info("ℹ️ Nessun impianto disponibile.")
                 return
-            col1,col2, space = st.columns([2,2,15])
-            if col1.button("➕ "+T("buttons.add_implant")):
+            col1, col2, space = st.columns([2, 2, 15])
+            if col1.button("➕ " + T("buttons.add_implant")):
                 st.session_state.adding_implant = True
                 st.rerun()
-            if col2.button("➖ "+T("buttons.remove_implant")):
-                st.warning("Non abbiate fretta, ci stiamo lavorando: per cancellare un impianto, cancellate la cartella relativa in data/ (⚠️NON CANCELLATE /data⚠️ - solo la cartella dell'impianto da eliminare)")
-
+            if col2.button("➖ " + T("buttons.remove_implant")):
+                st.warning(
+                    "Non abbiate fretta, ci stiamo lavorando: per cancellare un impianto, cancellate la cartella relativa in data/ (⚠️NON CANCELLATE /data⚠️ - solo la cartella dell'impianto da eliminare)"
+                )
 
             # Show table with selected columns
             titles = T("df_title")
@@ -116,19 +116,11 @@ class ImplantsPage(Page):
             st.dataframe(df[columns_to_show], use_container_width=True)
 
             self._render_map(df)
-            
-        
+
         # if st.session_state.adding_implant:
         #     add_implant.render()
         #     return
         # else:
-            
-        
-
-        
-        
-        
-        
 
     def _render_map(self, df: pd.DataFrame):
         """Visualize implant locations on a map."""
@@ -137,13 +129,15 @@ class ImplantsPage(Page):
 
         for row in df.to_dict(orient="records"):
             try:
-                rows.append({
-                    "site_name": row[titles[0]],
-                    "address": row[titles[2]],
-                    "city": row[titles[1]],
-                    "lat": row[titles[7]][titles[8]],
-                    "lon": row[titles[7]][titles[9]]
-                })
+                rows.append(
+                    {
+                        "site_name": row[titles[0]],
+                        "address": row[titles[2]],
+                        "city": row[titles[1]],
+                        "lat": row[titles[7]][titles[8]],
+                        "lon": row[titles[7]][titles[9]],
+                    }
+                )
             except KeyError:
                 continue
 
@@ -175,7 +169,7 @@ class ImplantsPage(Page):
             latitude=df_map["lat"].mean(),
             longitude=df_map["lon"].mean(),
             zoom=6,
-            pitch=0
+            pitch=0,
         )
 
         deck = pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip)
