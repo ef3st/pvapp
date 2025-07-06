@@ -1,0 +1,107 @@
+{
+    "main": {
+      "menu": ["Home", "Impianti", "Confronta Impianti", "Performance Impianto"],
+      "buttons": {
+        "simulate": "Simula tutto",
+        "language": "Lingua"
+      }
+    },
+    "implants":{
+        "title": "Impianti",
+        "df_title":["Sito","Indirizzo","Città","Impianto","Modulo","Inverter","Movimento","Coordinate","lat","lon"],
+        "map":{
+            "title": "Mappa"
+        },
+        "buttons": {
+            "add_implant": "Aggiungi impianto",
+            "remove_implant": "Rimuovi impianto"
+        },
+        "info": {
+            "implants_not_found": "Nessun impianto trovato"
+        }
+    },
+
+    "implants_comparison":{
+        "title": "Confronto Impianti",
+        "subtitle":{
+            "select_implants": "Seleziona gli Impianti da confrontare",
+            "plots": "Grafici"
+        },
+        "buttons":{
+            "select_all": "Seleziona tutti",
+            "deselect_all":"De-seleziona tutti",
+            "sum": "somma",
+            "mean": "media",
+            "choose_var": "Seleziona la variabile da mostrare",
+            "periods": "Scegli il periodo"
+        },
+        "plots":{
+            "periodic": {
+                "legend": "Impianti",
+                "x": "Periodo"
+            }
+        }
+
+    },
+    "implants_performance":
+    {
+        "title": "Analisi impianto PV",
+        "subtitle": {
+            "implant_config": "Configurazione impianto",
+            "site": "Sito",
+            "implant": "Impianto",
+            "performance": "Performance",
+            "periodic": "Valori medi e sommari per periodo",
+            "time_distribution": "Valori in funzione del tempo"
+
+        },
+        "buttons":{
+            "site":{
+                "name": "Nome sito",
+                "address": "Indirizzo",
+                "city": "Città",
+                "coordinates": "Coordinate",
+                "lat": "Latitudine",
+                "lon":"Longitudine",
+                "altitude": "Altitudine",
+                "timezone": "Fuso Orario"
+            },
+            "implant":{
+                "name": "Nome impianto",
+                "module": {
+                    "title": "Modulo",
+                    "origin": "Fonte",
+                    "model": "Modello",
+                    "details": "Mostra dettagli del modulo",
+                    "name": "Name"
+                },
+                "inverter": {
+                    "title": "Inverter",
+                    "origin": "Fonte",
+                    "model": "Modello",
+                    "details": "Mostra dettagli del modulo",
+                    "name": "Name"
+                },
+                "mount":{
+                    "title": "Movimento impianto",
+                    "type": "Tipologia movimento"
+                }
+            },
+            "save": "Salva modifiche",
+            "simulate": "Simula",
+            "choose_variable": "Scegli variabile",
+            "sum": "Somma",
+            "mean": "Media",
+            "option":  {
+                "label": "Intervallo",
+                "options": ["Annuale","Giornaliero"]
+            },
+            "choose_date": "Scegli una data",
+            "interval": "Scegli intervallo"
+
+        }
+
+    }
+
+
+}

@@ -2,159 +2,181 @@ import streamlit as st
 import pandas as pd
 import json
 from pathlib import Path
-from .support import add_implant
 import pydeck as pdk
 
-
-def load_all_implants(folder: Path = Path("data/")) -> pd.DataFrame:
-    rows = []
-
-    for subfolder in sorted(folder.iterdir()):
-        if not subfolder.is_dir():
-            continue
-
-        site_path = subfolder / "site.json"
-        implant_path = subfolder / "implant.json"
-
-        if not site_path.exists() or not implant_path.exists():
-            continue  # ignora cartelle incomplete
-
-        try:
-            with site_path.open() as f:
-                site = json.load(f)
-            with implant_path.open() as f:
-                implant = json.load(f)
-
-            row = {
-                "site_name": site["name"],
-                "city": site["city"],
-                "address": site["address"],
-                "implant_name": implant["name"],
-                "module": implant["module"]["name"],
-                "inverter": implant["inverter"]["name"],
-                "mount_type": implant["mount"]["type"],
-                "coordinates": {
-                    "lat": site["coordinates"]["lat"],
-                    "lon": site["coordinates"]["lon"],
-                },
-            }
-            rows.append(row)
-
-        except Exception as e:
-            print(f"Errore nella cartella {subfolder.name}: {e}")
-            continue
-
-    return pd.DataFrame(rows)
+from .support import add_implant
+from .page import Page
 
 
-def render():
-    st.title("💡 IMPLANTS")
+def translate(key: str) -> str | list:
+    keys = key.split(".")
+    result = st.session_state.get("T", {})
+    for k in keys:
+        if isinstance(result, dict) and k in result:
+            result = result[k]
+        else:
+            return key  # fallback se manca qualcosa
+    return result
 
-    # Change page to add implant
-    if "adding_implant" not in st.session_state:
-        st.session_state.adding_implant = False
 
-    if st.session_state.adding_implant:
-        add_implant.render()
+def T(key: str) -> str | list:
+    return translate(f"implants.{key}")
 
-    else:
 
-        df = load_all_implants()
-        st.dataframe(
-            df[["site_name", "implant_name", "module", "inverter", "mount_type"]]
+class ImplantsPage(Page):
+    def _load_implants(self, folder: Path = Path("data/")) -> pd.DataFrame:
+        """Load implant and site data from JSON files."""
+        rows = []
+
+        for subfolder in sorted(folder.iterdir()):
+            if not subfolder.is_dir():
+                continue
+
+            site_path = subfolder / "site.json"
+            implant_path = subfolder / "implant.json"
+
+            if not site_path.exists() or not implant_path.exists():
+                continue
+
+            try:
+                with site_path.open() as f:
+                    site = json.load(f)
+                with implant_path.open() as f:
+                    implant = json.load(f)
+
+                titles = T("df_title")  # list of column labels
+
+                row = {
+                    titles[0]: site["name"],
+                    titles[1]: site["city"],
+                    titles[2]: site["address"],
+                    titles[3]: implant["name"],
+                    titles[4]: implant["module"].get("name", ""),
+                    titles[5]: implant["inverter"].get("name", ""),
+                    titles[6]: implant["mount"].get("type", ""),
+                    titles[7]: {
+                        titles[8]: site["coordinates"].get("lat"),
+                        titles[9]: site["coordinates"].get("lon"),
+                    },
+                }
+                rows.append(row)
+
+            except Exception as e:
+                st.warning(f"Errore nella cartella {subfolder.name}: {e}")
+                continue
+
+        return pd.DataFrame(rows)
+
+    def render(self):
+        st.title("💡 " + T("title"))
+
+        if "adding_implant" not in st.session_state:
+            st.session_state.adding_implant = False
+        
+        if st.session_state.adding_implant:
+            main,lateral = st.columns([8,2])
+            with main:
+                df = self._load_implants()
+
+                if df.empty:
+                    st.info("ℹ️ Nessun impianto disponibile.")
+                    return
+                col1,col2, space = st.columns([5,2,15])
+                if col1.button("➖ "+T("buttons.remove_implant")):
+                    pass
+
+
+                # Show table with selected columns
+                titles = T("df_title")
+                columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6]]
+                st.dataframe(df[columns_to_show], use_container_width=True)
+
+                self._render_map(df)
+            with lateral:
+                add_implant.render()
+                # st.session_state.adding_implant = False
+            return
+        else:
+            df = self._load_implants()
+
+            if df.empty:
+                st.info("ℹ️ Nessun impianto disponibile.")
+                return
+            col1,col2, space = st.columns([2,2,15])
+            if col1.button("➕ "+T("buttons.add_implant")):
+                st.session_state.adding_implant = True
+                st.rerun()
+            if col2.button("➖ "+T("buttons.remove_implant")):
+                st.warning("Non abbiate fretta, ci stiamo lavorando: per cancellare un impianto, cancellate la cartella relativa in data/ (⚠️NON CANCELLATE /data⚠️ - solo la cartella dell'impianto da eliminare)")
+
+
+            # Show table with selected columns
+            titles = T("df_title")
+            columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6]]
+            st.dataframe(df[columns_to_show], use_container_width=True)
+
+            self._render_map(df)
+            
+        
+        # if st.session_state.adding_implant:
+        #     add_implant.render()
+        #     return
+        # else:
+            
+        
+
+        
+        
+        
+        
+
+    def _render_map(self, df: pd.DataFrame):
+        """Visualize implant locations on a map."""
+        titles = T("df_title")
+        rows = []
+
+        for row in df.to_dict(orient="records"):
+            try:
+                rows.append({
+                    "site_name": row[titles[0]],
+                    "address": row[titles[2]],
+                    "city": row[titles[1]],
+                    "lat": row[titles[7]][titles[8]],
+                    "lon": row[titles[7]][titles[9]]
+                })
+            except KeyError:
+                continue
+
+        if not rows:
+            st.info("ℹ️ Nessun impianto valido per la mappa.")
+            return
+
+        df_map = pd.DataFrame(rows)
+        st.subheader("📌 " + T("map.title"))
+
+        layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=df_map,
+            get_position="[lon, lat]",
+            get_color="[255, 0, 0, 160]",
+            get_radius=100,
+            radius_scale=1,
+            radius_min_pixels=5,
+            radius_max_pixels=25,
+            pickable=True,
         )
 
-        # config_path = Path("data/implants_config.json")
+        tooltip = {
+            "html": "<b>{site_name}</b><br/>Ad: {address}<br/>City: {city}",
+            "style": {"backgroundColor": "white", "color": "black"},
+        }
 
-        # # Verifica esistenza file
-        # if not config_path.exists():
-        #     st.error("❌ File implants_config.json non trovato.")
-        #     return
+        view_state = pdk.ViewState(
+            latitude=df_map["lat"].mean(),
+            longitude=df_map["lon"].mean(),
+            zoom=6,
+            pitch=0
+        )
 
-        # try:
-        #     with config_path.open("r") as f:
-        #         implants_config = json.load(f)
-        # except json.JSONDecodeError as e:
-        #     st.error(f"❌ Errore nel file JSON: {e}")
-        #     return
-
-        # Normalizza e seleziona colonne chiave
-        # df = pd.json_normalize(implants_config.values(), sep=".")[
-        #     [
-        #         "site.name",
-        #         "site.owner",
-        #         "site.address",
-        #         "implant.name",
-        #         "implant.module.name",
-        #         "implant.inverter.name",
-        #         "implant.mount_type",
-        #     ]
-        # ]
-
-        # Mostra tabella
-        # st.dataframe(df, use_container_width=True)
-
-        # Pulsanti
-        # col1, col2 = st.columns(2)
-        # if col1.button("➕ Add Implant"):
-        #     st.session_state.adding_implant = True
-        # if col2.button("❌ Delete Implant"):
-        #     st.warning("Funzione rimozione non ancora implementata.")
-
-        show_implants_map(df)
-
-
-def show_implants_map(df: pd.DataFrame):
-    rows = []
-
-    for imp in df.to_dict(orient="records"):
-        try:
-            address = imp["address"]
-            city = imp["city"]
-            site_name = imp["site_name"]
-            lat = imp["coordinates"]["lat"]
-            lon = imp["coordinates"]["lon"]
-            rows.append(
-                {
-                    "site_name": site_name,
-                    "address": address,
-                    "city": city,
-                    "lat": lat,
-                    "lon": lon,
-                }
-            )
-        except KeyError:
-            continue
-
-    if not rows:
-        st.info("ℹ️ No valid implant found")
-        return
-
-    df = pd.DataFrame(rows)
-
-    st.subheader("📌 Map")
-
-    layer = pdk.Layer(
-        "ScatterplotLayer",
-        data=df,
-        get_position="[lon, lat]",
-        get_color="[255, 0, 0, 160]",
-        get_radius=100,  # raggio base (in metri)
-        radius_scale=1,  # scala dinamica rispetto allo zoom
-        radius_min_pixels=5,  # dimensione minima sullo schermo (pixel)
-        radius_max_pixels=25,  # dimensione massima sullo schermo (pixel)
-        pickable=True,
-    )
-
-    tooltip = {
-        "html": "<b>{site_name}</b><br/>Ad: {address}<br/>City: {city}",
-        "style": {"backgroundColor": "white", "color": "black"},
-    }
-
-    view_state = pdk.ViewState(
-        latitude=df["lat"].mean(), longitude=df["lon"].mean(), zoom=6, pitch=0
-    )
-
-    deck = pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip)
-
-    st.pydeck_chart(deck)
+        deck = pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip)
+        st.pydeck_chart(deck)

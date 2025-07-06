@@ -1,0 +1,100 @@
+{
+    "main": {
+      "menu": ["Home", "Implants", "Compare Implants", "Implant Performance"],
+      "buttons": {
+        "simulate": "Simulate All",
+        "language": "Language"
+      }
+    },
+    "implants": {
+      "title": "Implants",
+      "df_title": ["Site", "Address", "City", "Implant", "Module", "Inverter", "Mount", "Coordinates", "lat", "lon"],
+      "map": {
+        "title": "Map"
+      },
+      "buttons": {
+        "add_implant": "Add Implant",
+        "remove_implant": "Remove Implant"
+      },
+      "info": {
+        "implants_not_found": "No plants found"
+      }
+    },
+    "implants_comparison": {
+      "title": "Compare Implants",
+      "subtitle": {
+        "select_implants": "Select plants to compare",
+        "plots": "Charts"
+      },
+      "buttons": {
+        "select_all": "Select all",
+        "deselect_all": "Deselect all",
+        "sum": "sum",
+        "mean": "mean",
+        "choose_var": "Select variable to display",
+        "periods": "Choose period"
+      },
+      "plots": {
+        "periodic": {
+          "legend": "Implants",
+          "x": "Period"
+        }
+      }
+    },
+    "implants_performance": {
+      "title": "PV Implant Analysis",
+      "subtitle": {
+        "imImplant_config": "Implant configuration",
+        "site": "Site",
+        "imImplant": "Implant",
+        "performance": "Performance",
+        "periodic": "Average and summary values by period",
+        "time_distribution": "Values over time"
+      },
+      "buttons": {
+        "site": {
+          "name": "Site name",
+          "address": "Address",
+          "city": "City",
+          "coordinates": "Coordinates",
+          "lat": "Latitude",
+          "lon": "Longitude",
+          "altitude": "Altitude",
+          "timezone": "Time zone"
+        },
+        "implant": {
+          "name": "Implant name",
+          "module": {
+            "title": "Module",
+            "origin": "Source",
+            "model": "Model",
+            "details": "Show module details",
+            "name": "Name"
+          },
+          "inverter": {
+            "title": "Inverter",
+            "origin": "Source",
+            "model": "Model",
+            "details": "Show inverter details",
+            "name": "Name"
+          },
+          "mount": {
+            "title": "Tracking mount",
+            "type": "Tracking type"
+          }
+        },
+        "save": "Save changes",
+        "simulate": "Simulate",
+        "choose_variable": "Choose variable",
+        "sum": "Sum",
+        "mean": "Mean",
+        "option": {
+          "label": "Interval",
+          "options": ["Yearly", "Daily"]
+        },
+        "choose_date": "Choose a date",
+        "interval": "Choose interval"
+      }
+    }
+  }
+  
