@@ -288,7 +288,7 @@ def step_mount():
     new_implant = st.session_state.new_implant
     st.markdown("⚠️ **Mount**")
     mount = st.selectbox(
-        "Select Mount Type", ["SingleAxisTrackerMount", "FixedMount", "Custom"]
+        "Select Mount Type", ["SingleAxisTrackerMount", "FixedMount", "ValidatedMount","DevelopementMount"]
     )
 
     navigation_buttons(

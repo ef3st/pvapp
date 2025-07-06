@@ -3,7 +3,8 @@ from .site import Site
 import pvlib
 from pvlib.pvsystem import PVSystem, Array, FixedMount, SingleAxisTrackerMount
 from utils.logger import get_logger
-from mount.custommount import CustomMount
+from mount.developement import custommount as dev
+from mount.validated import custommount as valid
 
 
 class Implant:
@@ -58,8 +59,16 @@ class Implant:
                 backtrack=True,  # abilitare backtracking (evita ombreggiamento)
                 gcr=0.35,  # ground coverage ratio (densità pannelli)
             )
-        elif mount_type == "Custom":
-            mount = CustomMount(
+        elif mount_type == "ValidatedMount":
+            mount = valid.CustomMount(
+                axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
+                axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
+                max_angle=45,  # massimo angolo di rotazione (es. ±45°)
+                backtrack=True,  # abilitare backtracking (evita ombreggiamento)
+                gcr=0.35,  # ground coverage ratio (densità pannelli)
+            )
+        elif mount_type == "DevelopementMount":
+            mount = dev.CustomMount(
                 axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
                 axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
                 max_angle=45,  # massimo angolo di rotazione (es. ±45°)

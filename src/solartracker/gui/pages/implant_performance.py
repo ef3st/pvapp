@@ -145,7 +145,7 @@ def edit_implant(subfolder: Path) -> dict:
 
     # Mount configuration
     st.markdown(f"⚠️ ***{T("buttons.implant.mount.title")}***")
-    mount_opts = ["SingleAxisTrackerMount", "FixedMount", "Custom"]
+    mount_opts = ["SingleAxisTrackerMount", "FixedMount", "ValidatedMount","DevelopementMount"]
     mount_index = mount_opts.index(implant["mount"]["type"])
     implant["mount"]["type"] = st.selectbox(
         T("buttons.implant.mount.type"), mount_opts, index=mount_index
