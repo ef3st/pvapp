@@ -4,7 +4,9 @@ from streamlit_option_menu import option_menu
 import sys
 from simulator.simulator import Simulate
 from pathlib import Path
+
 sys.dont_write_bytecode = True
+
 
 def simulate_all(folder: Path = Path("data/")):
     for subfolder in sorted(folder.iterdir()):
@@ -28,7 +30,6 @@ def streamlit():
         st.markdown("---")
         if st.button("🔥 Simulate All"):
             simulate_all()
-        
 
     # menu = st.sidebar.radio("Menu", ["Home", "Implants", "Implants comparison","Implant performance"])
 

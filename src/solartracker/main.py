@@ -15,9 +15,8 @@ def set_logger():
 
 
 def main():
-    #logger = set_logger()
+    # logger = set_logger()
     streamlit()
-    
 
 
 if __name__ == "__main__":
