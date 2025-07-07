@@ -108,6 +108,7 @@ def edit_implant(subfolder: Path) -> dict:
 
     implant["name"] = st.text_input(T("buttons.implant.name"), implant["name"])
 
+    st.markdown("---")
     # Module configuration
     st.markdown(f"⚡ ***{T("buttons.implant.module.title")}***")
     col1, col2 = st.columns(2)
@@ -120,7 +121,9 @@ def edit_implant(subfolder: Path) -> dict:
     if implant["module"]["origin"] in ["CECMod", "SandiaMod"]:
         modules = retrieve_sam(implant["module"]["origin"])
         module_names = list(modules.columns)
-        module_index = module_names.index(implant["module"]["name"])
+        module_index = 0
+        if implant["module"]["name"] in module_names:
+            module_index = module_names.index(implant["module"]["name"])
         implant["module"]["name"] = col2.selectbox(
             T("buttons.implant.module.model"), module_names, index=module_index
         )
@@ -144,6 +147,7 @@ def edit_implant(subfolder: Path) -> dict:
         implant["module"]["origin"], "pvwatts"
     )
 
+    st.markdown("---")
     # Inverter configuration
     st.markdown(f"🔌 ***{T("buttons.implant.inverter.title")}***")
     col1, col2 = st.columns(2)
@@ -156,7 +160,9 @@ def edit_implant(subfolder: Path) -> dict:
     if implant["inverter"]["origin"] == "cecinverter":
         inverters = retrieve_sam("cecinverter")
         inv_names = list(inverters.columns)
-        inv_name_index = inv_names.index(implant["inverter"]["name"])
+        inv_name_index = 0
+        if implant["inverter"]["name"] in inv_names:
+            inv_name_index = inv_names.index(implant["inverter"]["name"])
         implant["inverter"]["name"] = col2.selectbox(
             T("buttons.implant.inverter.model"), inv_names, index=inv_name_index
         )
@@ -174,19 +180,7 @@ def edit_implant(subfolder: Path) -> dict:
     implant["inverter"]["ac_model"] = (
         "cec" if implant["inverter"]["origin"] == "cecinverter" else "pvwatts"
     )
-
-    # Mount configuration
-    # st.markdown(f"⚠️ ***{T("buttons.implant.mount.title")}***")
-    # mount_opts = [
-    #     "SingleAxisTrackerMount",
-    #     "FixedMount",
-    #     "ValidatedMount",
-    #     "DevelopementMount",
-    # ]
-    # mount_index = mount_opts.index(implant["mount"]["type"])
-    # implant["mount"]["type"] = st.selectbox(
-    #     T("buttons.implant.mount.type"), mount_opts, index=mount_index
-    # )
+    st.markdown("---")
     mount_setting(implant["mount"])
     return implant
 
@@ -240,12 +234,7 @@ def mount_setting(implant_mount):
                 "Avoid shadings (backtrack)", value=implant_mount["params"]["backtrack"]
             )
             implant_mount["params"]["backtrack"] = backtrack
-            # Ora puoi mostrare i widget
-
-        # else:
-        #     implant_mount["type"] = st.selectbox(
-        #         T("buttons.implant.mount.type"), mount_opts, index=mount_index
-        #         )
+           
 
     with col2:
         pv3d(tilt, azimuth)
@@ -459,29 +448,34 @@ def render():
     st.subheader("🛠️ " + T("subtitle.implant_config"))
     col_left, col_sep, col_right = st.columns([2, 0.1, 3])
 
+    
+    with col_right:
+        st.subheader(f"🧰 {T("subtitle.implant")}")
+        implant = edit_implant(subfolder)
+    
     with col_left:
         st.subheader(f"🏢 {T("subtitle.site")}")
         site = edit_site(subfolder)
-        spacer, col1, col2 = st.columns([5, 2, 2])
+        _, col1, col2 = st.columns([5, 2, 2])
+        
+        st.markdown("---")
+        _,a,b = st.columns([4.3,2,1.5])
+        if a.button(f"💾 {T("buttons.save")}"):
+            json.dump(site, (subfolder / "site.json").open("w"), indent=4)
+            json.dump(implant, (subfolder / "implant.json").open("w"), indent=4)
+            st.success("Changes saved.")
+            st.rerun()
+        
 
-        if col2.button(f"🔥 {T("buttons.simulate")}"):
+        if b.button(f"🔥 {T("buttons.simulate")}"):
             Simulate(subfolder)
-
     with col_sep:
         st.markdown(
             "<div style='height:100%;border-left:1px solid #ccc;'></div>",
             unsafe_allow_html=True,
         )
 
-    with col_right:
-        st.subheader(f"🧰 {T("subtitle.implant")}")
-        implant = edit_implant(subfolder)
 
-    if col1.button(f"💾 {T("buttons.save")}"):
-        json.dump(site, (subfolder / "site.json").open("w"), indent=4)
-        json.dump(implant, (subfolder / "implant.json").open("w"), indent=4)
-        st.success("Changes saved.")
-        st.rerun()
 
     st.markdown("---")
     # Output chart

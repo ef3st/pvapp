@@ -33,7 +33,13 @@
             "sum": "somma",
             "mean": "media",
             "choose_var": "Seleziona la variabile da mostrare",
-            "periods": "Scegli il periodo"
+            "periods": "Scegli il periodo",
+            "option":  {
+                "label": "Intervallo",
+                "options": ["Annuale","Giornaliero"]
+            },
+            "choose_date": "Scegli una data",
+            "interval": "Scegli intervallo"
         },
         "plots":{
             "periodic": {
@@ -79,7 +85,7 @@
                     "title": "Inverter",
                     "origin": "Fonte",
                     "model": "Modello",
-                    "details": "Mostra dettagli del modulo",
+                    "details": "Mostra dettagli dell'inverter",
                     "name": "Name"
                 },
                 "mount":{
