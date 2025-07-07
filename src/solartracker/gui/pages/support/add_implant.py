@@ -151,12 +151,12 @@ def step_site():
         default_district = districts.index("RA")
     else:
         default_address = df.loc[df["name"] == name, "address"].unique().tolist()
-        if len(default_address)>0:
+        if len(default_address) > 0:
             default_address = default_address[0]
         else:
             default_address = ""
         default_city = df.loc[df["name"] == name, "city"].unique().tolist()
-        if len(default_city)>0:
+        if len(default_city) > 0:
             default_city = default_city[0]
         else:
             default_city = "(RA)"

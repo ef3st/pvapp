@@ -35,12 +35,12 @@ class ImplantsPage(Page):
 
             site_path = subfolder / "site.json"
             implant_path = subfolder / "implant.json"
-            simulation_path = subfolder /"simulation.csv"
+            simulation_path = subfolder / "simulation.csv"
             if not site_path.exists() or not implant_path.exists():
                 continue
             simulated = False
             if simulation_path.exists():
-                simulated = True    
+                simulated = True
             try:
                 with site_path.open() as f:
                     site = json.load(f)
@@ -59,7 +59,7 @@ class ImplantsPage(Page):
                         titles[8]: site["coordinates"].get("lat"),
                         titles[9]: site["coordinates"].get("lon"),
                     },
-                    titles[10]: "✅" if simulated else "❌"
+                    titles[10]: "✅" if simulated else "❌",
                 }
                 rows.append(row)
 
@@ -101,7 +101,7 @@ class ImplantsPage(Page):
 
                 # Show table with selected columns
                 titles = T("df_title")
-                columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6,10]]
+                columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]]
                 st.dataframe(df[columns_to_show], use_container_width=True)
 
                 self._render_map(df)
@@ -126,7 +126,7 @@ class ImplantsPage(Page):
                 return
             # Show table with selected columns
             titles = T("df_title")
-            columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6,10]]
+            columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]]
             st.dataframe(df[columns_to_show], use_container_width=True)
 
             self._render_map(df)

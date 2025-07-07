@@ -74,11 +74,11 @@ class ImplantsComparisonPage(Page):
                     st.session_state.implant_selection[imp_id] = False
 
         i = 0
-        l = df.shape[0]/2
+        l = df.shape[0] / 2
         for _, row in df.iterrows():
             imp_id = row["id"]
             label = row["label"]
-            if i<l:
+            if i < l:
                 with col1:
                     st.session_state.implant_selection[imp_id] = st.checkbox(
                         label,
@@ -92,7 +92,7 @@ class ImplantsComparisonPage(Page):
                         value=st.session_state.implant_selection.get(imp_id, False),
                         key=f"checkbox_{imp_id}",
                     )
-            i+=1
+            i += 1
 
         selected_ids = [
             imp_id
