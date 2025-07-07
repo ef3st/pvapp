@@ -37,7 +37,7 @@ class Implant:
         module=None,
         inverter=None,
         mount_type: str = "FixedMount",
-        params: List = [],
+        params: dict = [],
     ):
         if self.system:
             self.logger.warning(
@@ -47,33 +47,33 @@ class Implant:
 
         mount = None
         if mount_type == "FixedMount":
-            mount = FixedMount(
-                surface_tilt=30,  # module inclination
-                surface_azimuth=180,  # (180 = South)
+            mount = FixedMount( **params
+                # surface_tilt=30,  # module inclination
+                # surface_azimuth=90,  # (180 = South)
             )
         elif mount_type == "SingleAxisTrackerMount":
-            mount = SingleAxisTrackerMount(
-                axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
-                axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
-                max_angle=45,  # massimo angolo di rotazione (es. ±45°)
-                backtrack=True,  # abilitare backtracking (evita ombreggiamento)
-                gcr=0.35,  # ground coverage ratio (densità pannelli)
+            mount = SingleAxisTrackerMount( **params
+                # axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
+                # axis_azimuth=270,  # direzione dell'asse (180 = asse Nord-Sud)
+                # max_angle=45,  # massimo angolo di rotazione (es. ±45°)
+                # backtrack=True,  # abilitare backtracking (evita ombreggiamento)
+                # gcr=0.35,  # ground coverage ratio (densità pannelli)
             )
         elif mount_type == "ValidatedMount":
-            mount = valid.CustomMount(
-                axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
-                axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
-                max_angle=45,  # massimo angolo di rotazione (es. ±45°)
-                backtrack=True,  # abilitare backtracking (evita ombreggiamento)
-                gcr=0.35,  # ground coverage ratio (densità pannelli)
+            mount = valid.CustomMount( **params
+                # axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
+                # axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
+                # max_angle=45,  # massimo angolo di rotazione (es. ±45°)
+                # backtrack=False,  # abilitare backtracking (evita ombreggiamento)
+                # gcr=0.35,  # ground coverage ratio (densità pannelli)
             )
         elif mount_type == "DevelopementMount":
-            mount = dev.CustomMount(
-                axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
-                axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
-                max_angle=45,  # massimo angolo di rotazione (es. ±45°)
-                backtrack=True,  # abilitare backtracking (evita ombreggiamento)
-                gcr=0.35,  # ground coverage ratio (densità pannelli)
+            mount = dev.CustomMount( **params
+                # axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
+                # axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
+                # max_angle=45,  # massimo angolo di rotazione (es. ±45°)
+                # backtrack=True,  # abilitare backtracking (evita ombreggiamento)
+                # gcr=0.35,  # ground coverage ratio (densità pannelli)
             )
         else:
             self.logger.error(f"mount type {mount_type} does NOT exist")

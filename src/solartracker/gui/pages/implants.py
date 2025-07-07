@@ -93,7 +93,8 @@ class ImplantsPage(Page):
             st.session_state.adding_implant = False
 
         if st.session_state.adding_implant:
-            main, lateral = st.columns([8, 2])
+            main, lateral = st.columns([7, 2])
+                     
             with lateral:
                 add_implant.render()
             with main:

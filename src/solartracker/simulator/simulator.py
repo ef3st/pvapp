@@ -42,8 +42,9 @@ def Simulate(subfolder: Path):
         ]
 
     mount_type = data_implant["mount"]["type"]
+    mount_params = data_implant["mount"]["params"]
 
-    implant.setimplant(module=module, inverter=inverter, mount_type=mount_type)
+    implant.setimplant(module=module, inverter=inverter, mount_type=mount_type, params=mount_params)
 
     modelchain = BuildModelChain(system=implant.system, site=site.site)
     database: Database = Database()
