@@ -234,7 +234,6 @@ def mount_setting(implant_mount):
                 "Avoid shadings (backtrack)", value=implant_mount["params"]["backtrack"]
             )
             implant_mount["params"]["backtrack"] = backtrack
-           
 
     with col2:
         pv3d(tilt, azimuth)
@@ -448,24 +447,22 @@ def render():
     st.subheader("🛠️ " + T("subtitle.implant_config"))
     col_left, col_sep, col_right = st.columns([2, 0.1, 3])
 
-    
     with col_right:
         st.subheader(f"🧰 {T("subtitle.implant")}")
         implant = edit_implant(subfolder)
-    
+
     with col_left:
         st.subheader(f"🏢 {T("subtitle.site")}")
         site = edit_site(subfolder)
         _, col1, col2 = st.columns([5, 2, 2])
-        
+
         st.markdown("---")
-        _,a,b = st.columns([4.3,2,1.5])
+        _, a, b = st.columns([4.3, 2, 1.5])
         if a.button(f"💾 {T("buttons.save")}"):
             json.dump(site, (subfolder / "site.json").open("w"), indent=4)
             json.dump(implant, (subfolder / "implant.json").open("w"), indent=4)
             st.success("Changes saved.")
             st.rerun()
-        
 
         if b.button(f"🔥 {T("buttons.simulate")}"):
             Simulate(subfolder)
@@ -474,8 +471,6 @@ def render():
             "<div style='height:100%;border-left:1px solid #ccc;'></div>",
             unsafe_allow_html=True,
         )
-
-
 
     st.markdown("---")
     # Output chart

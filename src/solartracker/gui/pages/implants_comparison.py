@@ -62,7 +62,7 @@ class ImplantsComparisonPage(Page):
             st.session_state.implant_selection = {
                 row["id"]: True for _, row in df.iterrows()
             }
-        a,b,_ = st.columns([1,1,7])
+        a, b, _ = st.columns([1, 1, 7])
         with a:
             if st.button(T("buttons.select_all")):
                 for imp_id in df["id"]:
@@ -72,7 +72,7 @@ class ImplantsComparisonPage(Page):
                 for imp_id in df["id"]:
                     st.session_state.implant_selection[imp_id] = False
 
-        col1, col2,col3 = st.columns(3)
+        col1, col2, col3 = st.columns(3)
         i = -1
         l = df.shape[0] / 3
         for _, row in df.iterrows():
@@ -86,7 +86,7 @@ class ImplantsComparisonPage(Page):
                         value=st.session_state.implant_selection.get(imp_id, False),
                         key=f"checkbox_{imp_id}",
                     )
-            elif i < 2*l:
+            elif i < 2 * l:
                 with col2:
                     st.session_state.implant_selection[imp_id] = st.checkbox(
                         label,
@@ -205,14 +205,15 @@ class ImplantsComparisonPage(Page):
         dfs = pd.concat(dfs)
         self.render_dayly_plot(dfs)
 
-
     def render_dayly_plot(self, data):
         st.markdown(f"### {T('subtitle.time_distribution')}")
 
         # Colonne numeriche disponibili per il plot
         numeric_cols = data.select_dtypes(include="number").columns.tolist()
         default_var = "dc_p_mp"
-        default_index = numeric_cols.index(default_var) if default_var in numeric_cols else 0
+        default_index = (
+            numeric_cols.index(default_var) if default_var in numeric_cols else 0
+        )
 
         col1, col2, col3 = st.columns([2, 1, 1])
         with col1:
@@ -225,7 +226,7 @@ class ImplantsComparisonPage(Page):
         with col2:
             mode = st.radio(
                 f"{T('buttons.option.label')}",
-                T('buttons.option.options'),
+                T("buttons.option.options"),
                 index=1,
                 horizontal=True,
             )
@@ -245,7 +246,9 @@ class ImplantsComparisonPage(Page):
                 value=(min_date, max_date),
                 format="DD/MM/YYYY",
             )
-            mask = (df["timestamp"].dt.date >= start_day) & (df["timestamp"].dt.date <= end_day)
+            mask = (df["timestamp"].dt.date >= start_day) & (
+                df["timestamp"].dt.date <= end_day
+            )
         else:  # Giorno singolo
             with col3:
                 day = st.date_input(
@@ -254,7 +257,9 @@ class ImplantsComparisonPage(Page):
                     max_value=max_date,
                     value=max_date,
                 )
-            start_hour, end_hour = st.slider("⏰ Ore:", min_value=0, max_value=23, value=(0, 23))
+            start_hour, end_hour = st.slider(
+                "⏰ Ore:", min_value=0, max_value=23, value=(0, 23)
+            )
             mask = (
                 (df["timestamp"].dt.date == day)
                 & (df["timestamp"].dt.hour >= start_hour)
