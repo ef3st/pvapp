@@ -8,7 +8,7 @@
     },
     "implants": {
       "title": "Implants",
-      "df_title": ["Site", "Address", "City", "Implant", "Module", "Inverter", "Mount", "Coordinates", "lat", "lon"],
+      "df_title": ["Site", "Address", "City", "Implant", "Module", "Inverter", "Mount", "Coordinates", "lat", "lon","Simulation"],
       "map": {
         "title": "Map"
       },

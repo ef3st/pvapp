@@ -1,5 +1,5 @@
 import streamlit as st
-from .pages import home, implant_performance, implants, implants_comparison
+from .pages import home, implant_performance
 from streamlit_option_menu import option_menu
 import sys
 from simulator.simulator import Simulate

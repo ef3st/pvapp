@@ -84,7 +84,7 @@ class CustomMount(AbstractMount):
 
     def get_orientation(self, solar_zenith, solar_azimuth):
         # note -- docstring is automatically inherited from AbstractMount
-        from tracking import singleaxis  # avoid circular import issue
+        from .tracking import singleaxis  # avoid circular import issue
 
         tracking_data = singleaxis(
             solar_zenith,

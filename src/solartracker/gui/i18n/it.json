@@ -8,7 +8,7 @@
     },
     "implants":{
         "title": "Impianti",
-        "df_title":["Sito","Indirizzo","Città","Impianto","Modulo","Inverter","Movimento","Coordinate","lat","lon"],
+        "df_title":["Sito","Indirizzo","Città","Impianto","Modulo","Inverter","Movimento","Coordinate","lat","lon","Simulazione"],
         "map":{
             "title": "Mappa"
         },

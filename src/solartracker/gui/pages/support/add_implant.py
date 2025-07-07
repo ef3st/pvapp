@@ -5,7 +5,6 @@ import pydeck as pdk
 from geopy.geocoders import Nominatim
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
-from pvlib.pvsystem import retrieve_sam
 from simulator.simulator import Simulate
 
 
@@ -47,12 +46,6 @@ def load_sites_df(base_path=Path("data/")) -> pd.DataFrame:
         )
     df = pd.DataFrame(rows).set_index("id").sort_index()
     return df
-
-
-def init_session():
-    if "implant_step" not in st.session_state:
-        st.session_state.implant_step = 0
-        st.session_state.new_implant = {"site": {}, "implant": {}}
 
 
 def save_implant(path=Path("data/")):
@@ -158,12 +151,12 @@ def step_site():
         default_district = districts.index("RA")
     else:
         default_address = df.loc[df["name"] == name, "address"].unique().tolist()
-        if not default_address != 0:
+        if len(default_address)>0:
             default_address = default_address[0]
         else:
             default_address = ""
         default_city = df.loc[df["name"] == name, "city"].unique().tolist()
-        if not default_city != 0:
+        if len(default_city)>0:
             default_city = default_city[0]
         else:
             default_city = "(RA)"
