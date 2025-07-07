@@ -57,9 +57,14 @@ def edit_site(subfolder: Path) -> dict:
     site["address"] = st.text_input(T("buttons.site.address"), site["address"])
     site["city"] = st.text_input(T("buttons.site.city"), site["city"])
 
-    
-    df = pd.DataFrame([{"lat": site["coordinates"]["lat"], "lon": site["coordinates"]["lon"]}])
-    view = pdk.ViewState(latitude=site["coordinates"]["lat"], longitude=site["coordinates"]["lon"], zoom=12)
+    df = pd.DataFrame(
+        [{"lat": site["coordinates"]["lat"], "lon": site["coordinates"]["lon"]}]
+    )
+    view = pdk.ViewState(
+        latitude=site["coordinates"]["lat"],
+        longitude=site["coordinates"]["lon"],
+        zoom=12,
+    )
 
     layer = pdk.Layer(
         "ScatterplotLayer",
@@ -67,9 +72,9 @@ def edit_site(subfolder: Path) -> dict:
         get_position="[lon, lat]",
         get_color="[255, 0, 0, 160]",
         get_radius=50,
-        radius_scale=2,            # Aumenta/diminuisce con lo zoom
-        radius_min_pixels=3,       # Dimensione minima visibile
-        radius_max_pixels=30,      # Dimensione massima visibile
+        radius_scale=2,  # Aumenta/diminuisce con lo zoom
+        radius_min_pixels=3,  # Dimensione minima visibile
+        radius_max_pixels=30,  # Dimensione massima visibile
     )
 
     deck = pdk.Deck(
@@ -80,9 +85,7 @@ def edit_site(subfolder: Path) -> dict:
 
     # Mappa più piccola (es. 300px altezza)
     st.pydeck_chart(deck, use_container_width=False, height=300)
-    
-    
-    
+
     col1, col2 = st.columns(2)
     site["coordinates"]["lat"] = col1.number_input(
         T("buttons.site.lat"), value=site["coordinates"]["lat"], format="%.4f"
@@ -197,57 +200,65 @@ def mount_setting(implant_mount):
         "DevelopementMount",
     ]
     mount_index = mount_opts.index(implant_mount["type"])
-    col1,col2 = st.columns([2,1])
+    col1, col2 = st.columns([2, 1])
     with col1:
         if implant_mount["type"] == "FixedMount":
             implant_mount["type"] = st.selectbox(
                 T("buttons.implant.mount.type"), mount_opts, index=mount_index
-                )
-            l,r = st.columns(2)
-            tilt = l.number_input("Tilt",value=implant_mount["params"]["surface_tilt"])
+            )
+            l, r = st.columns(2)
+            tilt = l.number_input("Tilt", value=implant_mount["params"]["surface_tilt"])
             implant_mount["params"]["surface_tilt"] = tilt
-            azimuth = r.number_input("Azimuth",value=implant_mount["params"]["surface_azimuth"])
+            azimuth = r.number_input(
+                "Azimuth", value=implant_mount["params"]["surface_azimuth"]
+            )
             implant_mount["params"]["surface_azimuth"] = azimuth
         else:
-            # implant_mount["type"] == "SingleAxisTrackerMount": 
-            l,c,r,rr = st.columns(4)
-            tilt = l.number_input("Tilt",value=implant_mount["params"]["axis_tilt"])
+            # implant_mount["type"] == "SingleAxisTrackerMount":
+            l, c, r, rr = st.columns(4)
+            tilt = l.number_input("Tilt", value=implant_mount["params"]["axis_tilt"])
             implant_mount["params"]["axis_tilt"] = tilt
-            azimuth = c.number_input("Azimuth",value=implant_mount["params"]["axis_azimuth"])
+            azimuth = c.number_input(
+                "Azimuth", value=implant_mount["params"]["axis_azimuth"]
+            )
             implant_mount["params"]["axis_azimuth"] = azimuth
-            max_angle = r.number_input("Max Angle inclination",value=implant_mount["params"]["max_angle"])
+            max_angle = r.number_input(
+                "Max Angle inclination", value=implant_mount["params"]["max_angle"]
+            )
             implant_mount["params"]["max_angle"] = max_angle
-            cross_axis_tilt =  rr.number_input("Surface angle", value=implant_mount["params"]["cross_axis_tilt"]) 
+            cross_axis_tilt = rr.number_input(
+                "Surface angle", value=implant_mount["params"]["cross_axis_tilt"]
+            )
             implant_mount["params"]["cross_axis_tilt"] = cross_axis_tilt
-            q,_,w,_,_ = st.columns([5,2,5,2,1])
-            
-            gcr = q.number_input("Ground Coverage Ratio", value=implant_mount["params"]["gcr"])
+            q, _, w, _, _ = st.columns([5, 2, 5, 2, 1])
+
+            gcr = q.number_input(
+                "Ground Coverage Ratio", value=implant_mount["params"]["gcr"]
+            )
             implant_mount["params"]["gcr"] = gcr
-            backtrack = st.checkbox("Avoid shadings (backtrack)",value=implant_mount["params"]["backtrack"])
+            backtrack = st.checkbox(
+                "Avoid shadings (backtrack)", value=implant_mount["params"]["backtrack"]
+            )
             implant_mount["params"]["backtrack"] = backtrack
             # Ora puoi mostrare i widget
-
 
         # else:
         #     implant_mount["type"] = st.selectbox(
         #         T("buttons.implant.mount.type"), mount_opts, index=mount_index
         #         )
-            
+
     with col2:
-        pv3d(tilt,azimuth)
-        
+        pv3d(tilt, azimuth)
+
+
 def pv3d(tilt, azimuth):
     fig = go.Figure()
 
     # Add a tilted panel
-   # --- Vertici del pannello inclinato ---
+    # --- Vertici del pannello inclinato ---
     panel_x, panel_y, panel_z = get_panel_vertices(
-    tilt_deg=tilt,
-    azimuth_deg=azimuth,  # Sud
-    width=2,
-    height=1,
-    center=(0, 0, 0.5)
-)
+        tilt_deg=tilt, azimuth_deg=azimuth, width=2, height=1, center=(0, 0, 0.5)  # Sud
+    )
 
     # --- Facce per il pannello (2 triangoli per lato) ---
     faces = [0, 1, 2, 0, 2, 3]
@@ -255,17 +266,19 @@ def pv3d(tilt, azimuth):
     fig = go.Figure()
 
     # === Pannello inclinato (lato sopra) ===
-    fig.add_trace(go.Mesh3d(
-        x=panel_x,
-        y=panel_y,
-        z=panel_z,
-        i=faces[0::3],
-        j=faces[1::3],
-        k=faces[2::3],
-        color='skyblue',
-        opacity=1,
-        name='PV'
-    ))
+    fig.add_trace(
+        go.Mesh3d(
+            x=panel_x,
+            y=panel_y,
+            z=panel_z,
+            i=faces[0::3],
+            j=faces[1::3],
+            k=faces[2::3],
+            color="skyblue",
+            opacity=1,
+            name="PV",
+        )
+    )
 
     # === Pavimento ===
     floor_x = [-2, 2, 2, -2]
@@ -275,55 +288,110 @@ def pv3d(tilt, azimuth):
     # Facce per il pavimento (2 triangoli)
     floor_faces = [0, 1, 2, 0, 2, 3]
 
-    fig.add_trace(go.Mesh3d(
-        x=floor_x,
-        y=floor_y,
-        z=floor_z,
-        i=floor_faces[0::3],
-        j=floor_faces[1::3],
-        k=floor_faces[2::3],
-        color='lightgreen',
-        opacity=0.7,
-        name='Surface'
-    ))
-   # === Assi cardinali come coni ===
-    fig.add_trace(go.Cone(x=[0], y=[0], z=[0], u=[1], v=[0], w=[0], sizemode="absolute", sizeref=0.5, name="East", showscale=False))
-    fig.add_trace(go.Cone(x=[0], y=[0], z=[0], u=[-1], v=[0], w=[0], sizemode="absolute", sizeref=0.5, name="West", showscale=False))
-    fig.add_trace(go.Cone(x=[0], y=[0], z=[0], u=[0], v=[1], w=[0], sizemode="absolute", sizeref=0.5, name="North", showscale=False))
-    fig.add_trace(go.Cone(x=[0], y=[0], z=[0], u=[0], v=[-1], w=[0], sizemode="absolute", sizeref=0.5, name="South", showscale=False))
+    fig.add_trace(
+        go.Mesh3d(
+            x=floor_x,
+            y=floor_y,
+            z=floor_z,
+            i=floor_faces[0::3],
+            j=floor_faces[1::3],
+            k=floor_faces[2::3],
+            color="lightgreen",
+            opacity=0.7,
+            name="Surface",
+        )
+    )
+    # === Assi cardinali come coni ===
+    fig.add_trace(
+        go.Cone(
+            x=[0],
+            y=[0],
+            z=[0],
+            u=[1],
+            v=[0],
+            w=[0],
+            sizemode="absolute",
+            sizeref=0.5,
+            name="East",
+            showscale=False,
+        )
+    )
+    fig.add_trace(
+        go.Cone(
+            x=[0],
+            y=[0],
+            z=[0],
+            u=[-1],
+            v=[0],
+            w=[0],
+            sizemode="absolute",
+            sizeref=0.5,
+            name="West",
+            showscale=False,
+        )
+    )
+    fig.add_trace(
+        go.Cone(
+            x=[0],
+            y=[0],
+            z=[0],
+            u=[0],
+            v=[1],
+            w=[0],
+            sizemode="absolute",
+            sizeref=0.5,
+            name="North",
+            showscale=False,
+        )
+    )
+    fig.add_trace(
+        go.Cone(
+            x=[0],
+            y=[0],
+            z=[0],
+            u=[0],
+            v=[-1],
+            w=[0],
+            sizemode="absolute",
+            sizeref=0.5,
+            name="South",
+            showscale=False,
+        )
+    )
 
     # === Etichette "N", "S", "E", "O" sul pavimento ===
     labels = go.Scatter3d(
-        x=[0, 0, 1.5, -1.5],       # Est-Ovest sui +X/-X
-        y=[0.8, -0.8, 0, 0],       # Nord-Sud sui +Y/-Y
-        z=[0, 0, 0, 0],            # Pavimento (z=0)
-        mode='text',
+        x=[0, 0, 1.5, -1.5],  # Est-Ovest sui +X/-X
+        y=[0.8, -0.8, 0, 0],  # Nord-Sud sui +Y/-Y
+        z=[0, 0, 0, 0],  # Pavimento (z=0)
+        mode="text",
         text=["S", "N", "E", "O"],
         textposition="top center",
-        textfont=dict(size=20, color='red'),
-        showlegend=False
+        textfont=dict(size=20, color="red"),
+        showlegend=False,
     )
     fig.add_trace(labels)
 
     # === Layout ===
     fig.update_layout(
-    scene=dict(
-        xaxis=dict(visible=False),  # Nasconde l'asse X
-        yaxis=dict(visible=False),  # Nasconde l'asse Y
-        zaxis=dict(visible=False),  # Nasconde l'asse Z
-        xaxis_showgrid=False,
-        yaxis_showgrid=False,
-        zaxis_showgrid=False
-    ),
-    scene_camera=dict(
-        eye=dict(x=0.8, y=0.8, z=0.5)  # Valori più alti = zoom out, più bassi = zoom in
+        scene=dict(
+            xaxis=dict(visible=False),  # Nasconde l'asse X
+            yaxis=dict(visible=False),  # Nasconde l'asse Y
+            zaxis=dict(visible=False),  # Nasconde l'asse Z
+            xaxis_showgrid=False,
+            yaxis_showgrid=False,
+            zaxis_showgrid=False,
+        ),
+        scene_camera=dict(
+            eye=dict(
+                x=0.8, y=0.8, z=0.5
+            )  # Valori più alti = zoom out, più bassi = zoom in
+        ),
     )
-)
-
 
     st.plotly_chart(fig)
 
-    
+
 def get_panel_vertices(tilt_deg, azimuth_deg, width=2.0, height=1.0, center=(0, 0, 0)):
     # Convert to radians
     tilt = math.radians(tilt_deg)
@@ -333,27 +401,29 @@ def get_panel_vertices(tilt_deg, azimuth_deg, width=2.0, height=1.0, center=(0, 
     w, h = width / 2, height / 2
 
     # Define panel in local coordinates (flat, centered)
-    points = np.array([
-        [-w, -h, 0],
-        [ w, -h, 0],
-        [ w,  h, 0],
-        [-w,  h, 0],
-    ])
+    points = np.array(
+        [
+            [-w, -h, 0],
+            [w, -h, 0],
+            [w, h, 0],
+            [-w, h, 0],
+        ]
+    )
 
     # Rotate around X (tilt)
-    tilt_matrix = np.array([
-        [1, 0, 0],
-        [0, np.cos(tilt), -np.sin(tilt)],
-        [0, np.sin(tilt),  np.cos(tilt)]
-    ])
+    tilt_matrix = np.array(
+        [[1, 0, 0], [0, np.cos(tilt), -np.sin(tilt)], [0, np.sin(tilt), np.cos(tilt)]]
+    )
     points = points @ tilt_matrix.T
 
     # Rotate around Z (azimuth)
-    azimuth_matrix = np.array([
-        [np.cos(azimuth), -np.sin(azimuth), 0],
-        [np.sin(azimuth),  np.cos(azimuth), 0],
-        [0, 0, 1]
-    ])
+    azimuth_matrix = np.array(
+        [
+            [np.cos(azimuth), -np.sin(azimuth), 0],
+            [np.sin(azimuth), np.cos(azimuth), 0],
+            [0, 0, 1],
+        ]
+    )
     points = points @ azimuth_matrix.T
 
     # Translate to center
@@ -361,7 +431,6 @@ def get_panel_vertices(tilt_deg, azimuth_deg, width=2.0, height=1.0, center=(0, 
 
     x, y, z = points[:, 0], points[:, 1], points[:, 2]
     return x.tolist(), y.tolist(), z.tolist()
-
 
 
 def render():

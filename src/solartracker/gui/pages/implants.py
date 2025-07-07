@@ -94,7 +94,7 @@ class ImplantsPage(Page):
 
         if st.session_state.adding_implant:
             main, lateral = st.columns([7, 2])
-                     
+
             with lateral:
                 add_implant.render()
             with main:

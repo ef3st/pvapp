@@ -47,12 +47,14 @@ class Implant:
 
         mount = None
         if mount_type == "FixedMount":
-            mount = FixedMount( **params
+            mount = FixedMount(
+                **params
                 # surface_tilt=30,  # module inclination
                 # surface_azimuth=90,  # (180 = South)
             )
         elif mount_type == "SingleAxisTrackerMount":
-            mount = SingleAxisTrackerMount( **params
+            mount = SingleAxisTrackerMount(
+                **params
                 # axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
                 # axis_azimuth=270,  # direzione dell'asse (180 = asse Nord-Sud)
                 # max_angle=45,  # massimo angolo di rotazione (es. ±45°)
@@ -60,7 +62,8 @@ class Implant:
                 # gcr=0.35,  # ground coverage ratio (densità pannelli)
             )
         elif mount_type == "ValidatedMount":
-            mount = valid.CustomMount( **params
+            mount = valid.CustomMount(
+                **params
                 # axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
                 # axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
                 # max_angle=45,  # massimo angolo di rotazione (es. ±45°)
@@ -68,7 +71,8 @@ class Implant:
                 # gcr=0.35,  # ground coverage ratio (densità pannelli)
             )
         elif mount_type == "DevelopementMount":
-            mount = dev.CustomMount( **params
+            mount = dev.CustomMount(
+                **params
                 # axis_tilt=0,  # asse orizzontale (es. parallelo al terreno)
                 # axis_azimuth=180,  # direzione dell'asse (180 = asse Nord-Sud)
                 # max_angle=45,  # massimo angolo di rotazione (es. ±45°)

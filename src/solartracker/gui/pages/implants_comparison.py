@@ -92,7 +92,7 @@ class ImplantsComparisonPage(Page):
                         value=st.session_state.implant_selection.get(imp_id, False),
                         key=f"checkbox_{imp_id}",
                     )
-                    
+
             i += 1
 
         selected_ids = [

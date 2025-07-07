@@ -8,6 +8,7 @@ from pvlib.pvsystem import retrieve_sam
 from simulator.simulator import Simulate
 from ..implant_performance import pv3d
 
+
 def load_sites_df(base_path=Path("data/")) -> pd.DataFrame:
     rows = []
 
@@ -306,31 +307,29 @@ def step_mount():
     )
     params = {}
     if mount == "FixedMount":
-        l,r = st.columns(2)
-        tilt = l.number_input("Tilt",value=30)
+        l, r = st.columns(2)
+        tilt = l.number_input("Tilt", value=30)
         params["surface_tilt"] = tilt
-        azimuth = r.number_input("Azimuth",value=180)
+        azimuth = r.number_input("Azimuth", value=180)
         params["surface_azimuth"] = azimuth
     else:
-        # implant_mount["type"] == "SingleAxisTrackerMount": 
-        l,c = st.columns(2)
-        r,rr = st.columns(2)
-        tilt = l.number_input("Tilt",value=30)
+        # implant_mount["type"] == "SingleAxisTrackerMount":
+        l, c = st.columns(2)
+        r, rr = st.columns(2)
+        tilt = l.number_input("Tilt", value=30)
         params["axis_tilt"] = tilt
-        azimuth = c.number_input("Azimuth",value=180)
+        azimuth = c.number_input("Azimuth", value=180)
         params["axis_azimuth"] = azimuth
-        max_angle = r.number_input("Max Angle inclination",value=45)
+        max_angle = r.number_input("Max Angle inclination", value=45)
         params["max_angle"] = max_angle
-        cross_axis_tilt =  rr.number_input("Surface angle", value=0) 
+        cross_axis_tilt = rr.number_input("Surface angle", value=0)
         params["cross_axis_tilt"] = cross_axis_tilt
-        
-        
+
         gcr = st.number_input("Ground Coverage Ratio", value=0.35)
         params["gcr"] = gcr
-        backtrack = st.checkbox("Avoid shadings (backtrack)",value=False)
+        backtrack = st.checkbox("Avoid shadings (backtrack)", value=False)
         params["backtrack"] = backtrack
-    pv3d(tilt,azimuth)
-    
+    pv3d(tilt, azimuth)
 
     navigation_buttons(
         4,
