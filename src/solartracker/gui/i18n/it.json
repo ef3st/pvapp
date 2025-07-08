@@ -26,7 +26,9 @@
         "subtitle":{
             "select_implants": "Seleziona gli Impianti da confrontare",
             "plots": "Grafici",
-            "time_distribution": "Valori in funzione del tempo"
+            "time_distribution": "Valori in funzione del tempo",
+            "periodic": "Valori medi e sommari per periodo"    
+
         },
         "buttons":{
             "select_all": "Seleziona tutti",
@@ -51,13 +53,14 @@
         }
 
     },
-    "implants_performance":
+    "implant_performance":
     {
         "title": "Analisi impianto PV",
         "subtitle": {
             "implant_config": "Configurazione impianto",
             "site": "Sito",
             "implant": "Impianto",
+            "coordinates": "Coordinate",
             "performance": "Performance",
             "periodic": "Valori medi e sommari per periodo",
             "time_distribution": "Valori in funzione del tempo"

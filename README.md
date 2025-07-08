@@ -114,14 +114,15 @@ In the sidebare (on the left) you can select these pages, but you can also chang
 > - Efficienza, fattori angolari, derating, ecc.
 
 #### 3. **Custum parameters**
-- Moudule: {
-    pdc0: nominal power of the module (DC) in Watts at STC (Standard Test Conditions: 1000 W/m², 25°C, AM1.5) 
-         -> It is the maximum power that the module can generate under ideal conditions. e.g. a 400 Wp module → pdc0 = 400
-    γ_pdc: temperature coefficient of power, in 1/°C 
-         -> It tells you how much the module loses in power for each degree above 25°C (STC). It is assumed negative, because efficiency decreases as the temperature increases 
-            (‼️ SO DON'T FORGET TO PUT MINUS WHEN USE IT IN THIS APP)
-            e.g. γ_pdc = -0.004   → -0.4% per °C
-}
+- Moudule: 
+    - pdc0: nominal power of the module (DC) in Watts at STC (Standard Test Conditions: 1000 W/m², 25°C, AM1.5) 
+        - It is the maximum power that the module can generate under ideal conditions. 
+        - e.g. a 400 Wp module → pdc0 = 400
+    - γ_pdc: temperature coefficient of power, in 1/°C 
+        - It tells you how much the module loses in power for each degree above 25°C (STC). It is assumed negative, because efficiency decreases as the temperature increases 
+            ( SO DON'T FORGET TO PUT MINUS WHEN USE IT IN THIS APP)
+        - e.g. γ_pdc = -0.004  →  -0.4% per °C
+
 - Inverter: {
     pdc0: nominal DC input power of the inverter, in Watts.
          -> It is the reference value on which the efficiency of the inverter and the clipping are evaluated. 

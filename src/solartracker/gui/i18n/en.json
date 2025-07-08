@@ -25,7 +25,8 @@
       "subtitle": {
         "select_implants": "Select plants to compare",
         "plots": "Charts",
-        "time_distribution": "Values over time"
+        "time_distribution": "Values over time",
+        "periodic": "Average and summary values by period"
       },
       "buttons": {
         "select_all": "Select all",
@@ -49,13 +50,14 @@
         }
       }
     },
-    "implants_performance": {
+    "implant_performance": {
       "title": "PV Implant Analysis",
       "subtitle": {
         "imImplant_config": "Implant configuration",
         "site": "Site",
         "imImplant": "Implant",
         "performance": "Performance",
+        "coordinates": "Coordinates",
         "periodic": "Average and summary values by period",
         "time_distribution": "Values over time"
       },

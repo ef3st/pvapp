@@ -10,21 +10,12 @@ import pydeck as pdk
 import plotly.graph_objects as go
 import numpy as np
 import math
-
-
-def translate(key: str) -> str | list:
-    keys = key.split(".")
-    result = st.session_state.get("T", {})
-    for k in keys:
-        if isinstance(result, dict) and k in result:
-            result = result[k]
-        else:
-            return key  # fallback se manca qualcosa
-    return result
+from .support import plots
+from .support.traslator import translate
 
 
 def T(key: str) -> str | list:
-    return translate(f"implants_performance.{key}")
+    return translate(f"implant_performance.{key}")
 
 
 def load_all_implants(folder: Path = Path("data/")) -> pd.DataFrame:
@@ -85,7 +76,7 @@ def edit_site(subfolder: Path) -> dict:
 
     # Mappa più piccola (es. 300px altezza)
     st.pydeck_chart(deck, use_container_width=False, height=300)
-
+    st.markdown(f" 🗺️ {T("subtitle.coordinates")}")
     col1, col2 = st.columns(2)
     site["coordinates"]["lat"] = col1.number_input(
         T("buttons.site.lat"), value=site["coordinates"]["lat"], format="%.4f"
@@ -95,7 +86,7 @@ def edit_site(subfolder: Path) -> dict:
     )
 
     site["altitude"] = st.number_input(
-        f"🗻 {T("buttons.site.altitude")} (m)", value=site["altitude"]
+        f"🗻 {T("buttons.site.altitude")} (m)", value=site["altitude"], min_value=0
     )
     site["tz"] = st.text_input(f"🕐 {T("buttons.site.timezone")}", site["tz"])
 
@@ -137,10 +128,10 @@ def edit_implant(subfolder: Path) -> dict:
         )
         sub1, sub2 = st.columns(2)
         implant["module"]["model"]["pdc0"] = sub1.number_input(
-            "pdc0 (W)", value=implant["module"]["model"]["pdc0"]
+            "pdc0 (W)", value=implant["module"]["model"]["pdc0"], min_value=0
         )
         implant["module"]["model"]["gamma_pdc"] = sub2.number_input(
-            "γ_pdc (%/C)", value=implant["module"]["model"]["gamma_pdc"]
+            "γ_pdc (%/C)", value=implant["module"]["model"]["gamma_pdc"], min_value=0
         )
 
     implant["module"]["dc_module"] = {"CECMod": "cec", "SandiaMod": "sapm"}.get(
@@ -180,13 +171,11 @@ def edit_implant(subfolder: Path) -> dict:
     implant["inverter"]["ac_model"] = (
         "cec" if implant["inverter"]["origin"] == "cecinverter" else "pvwatts"
     )
-    st.markdown("---")
     mount_setting(implant["mount"])
     return implant
 
 
 def mount_setting(implant_mount):
-    st.markdown(f"⚠️ ***{T("buttons.implant.mount.title")}***")
     mount_opts = [
         "SingleAxisTrackerMount",
         "FixedMount",
@@ -194,11 +183,13 @@ def mount_setting(implant_mount):
         "DevelopementMount",
     ]
     mount_index = mount_opts.index(implant_mount["type"])
-    implant_mount["type"] = st.selectbox(
-        T("buttons.implant.mount.type"), mount_opts, index=mount_index
-    )
     col1, col2 = st.columns([2, 1])
     with col1:
+        st.markdown("---")
+        st.markdown(f"⚠️ ***{T("buttons.implant.mount.title")}***")
+        implant_mount["type"] = st.selectbox(
+            T("buttons.implant.mount.type"), mount_opts, index=mount_index
+        )
         if implant_mount["type"] == "FixedMount":
             l, r = st.columns(2)
             value = 30
@@ -227,19 +218,28 @@ def mount_setting(implant_mount):
             value = 45
             if "max_Angle" in implant_mount["params"]:
                 value = implant_mount["params"]["max_angle"]
-            max_angle = r.number_input("Max Angle inclination", value=value)
+            max_angle = r.number_input(
+                "Max Angle inclination",
+                value=float(value),
+                min_value=0.0,
+                max_value=90.0,
+            )
             implant_mount["params"]["max_angle"] = max_angle
             value = 0
             if "cross_axis_tilt" in implant_mount["params"]:
                 value = implant_mount["params"]["cross_axis_tilt"]
-            cross_axis_tilt = rr.number_input("Surface angle", value=value)
+            cross_axis_tilt = rr.number_input(
+                "Surface angle", value=float(value), min_value=0.0, max_value=90.0
+            )
             implant_mount["params"]["cross_axis_tilt"] = cross_axis_tilt
             q, _, w, _, _ = st.columns([5, 2, 5, 2, 1])
 
             value = 0.35
             if "gcr" in implant_mount["params"]:
                 value = implant_mount["params"]["gcr"]
-            gcr = q.number_input("Ground Coverage Ratio", value=value)
+            gcr = q.number_input(
+                "Ground Coverage Ratio", value=value, min_value=0.0, max_value=1.0
+            )
             implant_mount["params"]["gcr"] = gcr
             value = True
             if "backtrack" in implant_mount["params"]:
@@ -248,189 +248,7 @@ def mount_setting(implant_mount):
             implant_mount["params"]["backtrack"] = backtrack
 
     with col2:
-        pv3d(tilt, azimuth)
-
-
-def pv3d(tilt, azimuth):
-    fig = go.Figure()
-
-    # Add a tilted panel
-    # --- Vertici del pannello inclinato ---
-    panel_x, panel_y, panel_z = get_panel_vertices(
-        tilt_deg=tilt, azimuth_deg=azimuth, width=2, height=1, center=(0, 0, 0.5)  # Sud
-    )
-
-    # --- Facce per il pannello (2 triangoli per lato) ---
-    faces = [0, 1, 2, 0, 2, 3]
-
-    fig = go.Figure()
-
-    # === Pannello inclinato (lato sopra) ===
-    fig.add_trace(
-        go.Mesh3d(
-            x=panel_x,
-            y=panel_y,
-            z=panel_z,
-            i=faces[0::3],
-            j=faces[1::3],
-            k=faces[2::3],
-            color="skyblue",
-            opacity=1,
-            name="PV",
-        )
-    )
-
-    # === Pavimento ===
-    floor_x = [-2, 2, 2, -2]
-    floor_y = [-2, -2, 2, 2]
-    floor_z = [0, 0, 0, 0]  # tutto a livello terra
-
-    # Facce per il pavimento (2 triangoli)
-    floor_faces = [0, 1, 2, 0, 2, 3]
-
-    fig.add_trace(
-        go.Mesh3d(
-            x=floor_x,
-            y=floor_y,
-            z=floor_z,
-            i=floor_faces[0::3],
-            j=floor_faces[1::3],
-            k=floor_faces[2::3],
-            color="lightgreen",
-            opacity=0.7,
-            name="Surface",
-        )
-    )
-    # === Assi cardinali come coni ===
-    fig.add_trace(
-        go.Cone(
-            x=[0],
-            y=[0],
-            z=[0],
-            u=[1],
-            v=[0],
-            w=[0],
-            sizemode="absolute",
-            sizeref=0.5,
-            name="East",
-            showscale=False,
-        )
-    )
-    fig.add_trace(
-        go.Cone(
-            x=[0],
-            y=[0],
-            z=[0],
-            u=[-1],
-            v=[0],
-            w=[0],
-            sizemode="absolute",
-            sizeref=0.5,
-            name="West",
-            showscale=False,
-        )
-    )
-    fig.add_trace(
-        go.Cone(
-            x=[0],
-            y=[0],
-            z=[0],
-            u=[0],
-            v=[1],
-            w=[0],
-            sizemode="absolute",
-            sizeref=0.5,
-            name="North",
-            showscale=False,
-        )
-    )
-    fig.add_trace(
-        go.Cone(
-            x=[0],
-            y=[0],
-            z=[0],
-            u=[0],
-            v=[-1],
-            w=[0],
-            sizemode="absolute",
-            sizeref=0.5,
-            name="South",
-            showscale=False,
-        )
-    )
-
-    # === Etichette "N", "S", "E", "O" sul pavimento ===
-    labels = go.Scatter3d(
-        x=[0, 0, 1.5, -1.5],  # Est-Ovest sui +X/-X
-        y=[0.8, -0.8, 0, 0],  # Nord-Sud sui +Y/-Y
-        z=[0, 0, 0, 0],  # Pavimento (z=0)
-        mode="text",
-        text=["S", "N", "E", "O"],
-        textposition="top center",
-        textfont=dict(size=20, color="red"),
-        showlegend=False,
-    )
-    fig.add_trace(labels)
-
-    # === Layout ===
-    fig.update_layout(
-        scene=dict(
-            xaxis=dict(visible=False),  # Nasconde l'asse X
-            yaxis=dict(visible=False),  # Nasconde l'asse Y
-            zaxis=dict(visible=False),  # Nasconde l'asse Z
-            xaxis_showgrid=False,
-            yaxis_showgrid=False,
-            zaxis_showgrid=False,
-        ),
-        scene_camera=dict(
-            eye=dict(
-                x=0.8, y=0.8, z=0.5
-            )  # Valori più alti = zoom out, più bassi = zoom in
-        ),
-    )
-
-    st.plotly_chart(fig)
-
-
-def get_panel_vertices(tilt_deg, azimuth_deg, width=2.0, height=1.0, center=(0, 0, 0)):
-    # Convert to radians
-    tilt = math.radians(tilt_deg)
-    azimuth = math.radians(azimuth_deg)
-
-    # Half-dimensions
-    w, h = width / 2, height / 2
-
-    # Define panel in local coordinates (flat, centered)
-    points = np.array(
-        [
-            [-w, -h, 0],
-            [w, -h, 0],
-            [w, h, 0],
-            [-w, h, 0],
-        ]
-    )
-
-    # Rotate around X (tilt)
-    tilt_matrix = np.array(
-        [[1, 0, 0], [0, np.cos(tilt), -np.sin(tilt)], [0, np.sin(tilt), np.cos(tilt)]]
-    )
-    points = points @ tilt_matrix.T
-
-    # Rotate around Z (azimuth)
-    azimuth_matrix = np.array(
-        [
-            [np.cos(azimuth), -np.sin(azimuth), 0],
-            [np.sin(azimuth), np.cos(azimuth), 0],
-            [0, 0, 1],
-        ]
-    )
-    points = points @ azimuth_matrix.T
-
-    # Translate to center
-    points += np.array(center)
-
-    x, y, z = points[:, 0], points[:, 1], points[:, 2]
-    return x.tolist(), y.tolist(), z.tolist()
+        plots.pv3d(tilt, azimuth)
 
 
 def render():
@@ -507,143 +325,7 @@ def render():
     st.subheader("🔋 " + T("subtitle.performance"))
     if (subfolder / "simulation.csv").exists():
         analyser = ImplantAnalyser(subfolder)
-        sum_mean_plot(analyser.periodic_report())
-        plot_time_series(analyser.numeric_dataframe())
+        plots.seasonal_plot(analyser.periodic_report(), "implant_performance")
+        plots.time_plot(analyser.numeric_dataframe(), page="implant_performance")
     else:
         st.warning("⚠️ Simulation not perfermed")
-
-
-def sum_mean_plot(df_plot):
-    st.markdown(f"### {T("subtitle.periodic")}")
-
-    col_graph, col_settings = st.columns([8, 1])
-    with col_settings:
-        variable_options = df_plot["variable"].unique().tolist()
-        index = variable_options.index("dc_p_mp")
-        variable_selected = st.selectbox(
-            T("buttons.choose_variable"), variable_options, index=index
-        )
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button(
-                T("buttons.sum"),
-                type=(
-                    "primary" if st.session_state.get("stat") == "sum" else "secondary"
-                ),
-            ):
-                st.session_state["stat"] = "sum"
-                st.rerun()
-
-        with col2:
-            if st.button(
-                T("buttons.mean"),
-                type=(
-                    "primary" if st.session_state.get("stat") == "mean" else "secondary"
-                ),
-            ):
-                st.session_state["stat"] = "mean"
-                st.rerun()
-
-    # Fallback iniziale se non ancora impostato
-    if "stat" not in st.session_state:
-        st.session_state["stat"] = "sum"
-
-    stat_selected = st.session_state["stat"]
-
-    # Filtro dati
-    filtered_df = df_plot[
-        (df_plot["variable"] == variable_selected) & (df_plot["stat"] == stat_selected)
-    ]
-
-    # Costruisci il grafico
-    fig = px.bar(
-        filtered_df,
-        x="season",
-        y="value",
-        color="season",
-        title=f"{stat_selected.upper()} - {variable_selected}",
-        labels={"value": stat_selected},
-        height=500,
-    )
-
-    with col_graph:
-        st.plotly_chart(fig, use_container_width=True)
-
-
-def plot_time_series(data: pd.DataFrame):
-    st.markdown(f"### {T("subtitle.time_distribution")}")
-
-    numeric_cols = data.select_dtypes(include="number").columns.tolist()
-    default_var = "dc_p_mp"
-    default_index = (
-        numeric_cols.index(default_var) if default_var in numeric_cols else 0
-    )
-
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
-        variable = st.selectbox(
-            f"⚙️ {T("buttons.choose_variable")}",
-            options=numeric_cols,
-            index=default_index,
-        )
-
-    # Pulsante ON/OFF per "giorno singolo"
-    with col2:
-        mode = st.radio(
-            f"{T("buttons.option.label")}",
-            T("buttons.option.options"),
-            index=0,
-            horizontal=True,
-        )
-
-    df = data.copy()
-    df = df[[variable]].dropna()
-    df["timestamp"] = df.index
-
-    min_date = df["timestamp"].min().date()
-    max_date = df["timestamp"].max().date()
-
-    if mode == T("buttons.option.options")[0]:
-        # Seleziona un range di giorni
-        start_day, end_day = st.slider(
-            "Intervallo date:",
-            min_value=min_date,
-            max_value=max_date,
-            value=(min_date, max_date),
-            format="DD/MM/YYYY",
-        )
-        mask = (df["timestamp"].dt.date >= start_day) & (
-            df["timestamp"].dt.date <= end_day
-        )
-        df_filtered = df[mask]
-
-    else:  # Giorno singolo
-        with col3:
-            day = st.date_input(
-                f"🗓️ {T("buttons.choose_date")}",
-                min_value=min_date,
-                max_value=max_date,
-                value=max_date,
-            )
-        start_hour, end_hour = st.slider(
-            "Hors:", min_value=0, max_value=23, value=(0, 23)
-        )
-        mask = (
-            (df["timestamp"].dt.date == day)
-            & (df["timestamp"].dt.hour >= start_hour)
-            & (df["timestamp"].dt.hour <= end_hour)
-        )
-        df_filtered = df[mask]
-
-    # Mostra grafico
-    fig = px.line(
-        df_filtered,
-        x="timestamp",
-        y=variable,
-        title=f"{variable} along time",
-        markers=True,
-    )
-
-    fig.update_layout(xaxis_title="Timestamp", yaxis_title=variable, height=500)
-
-    st.plotly_chart(fig, use_container_width=True)

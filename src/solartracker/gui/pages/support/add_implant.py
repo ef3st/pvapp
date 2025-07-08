@@ -6,7 +6,7 @@ from geopy.geocoders import Nominatim
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
 from simulator.simulator import Simulate
-from ..implant_performance import pv3d
+from .plots import pv3d
 
 
 def load_sites_df(base_path=Path("data/")) -> pd.DataFrame:
@@ -194,7 +194,7 @@ def step_location():
     lat = lat_col.number_input("Latitude", value=lat or 0.0, format="%.4f")
     lon = lon_col.number_input("Longitude", value=lon or 0.0, format="%.4f")
     col1, col2 = st.columns(2)
-    altitude = col1.number_input("🗻 Altitude (m)", value=0)
+    altitude = col1.number_input("🗻 Altitude (m)", value=0, min_value=0)
     tz = col2.text_input("🕐 Time Zone", value="Europe/Rome")
 
     df = pd.DataFrame([{"lat": lat, "lon": lon}])
@@ -244,8 +244,8 @@ def step_module():
         st.code(modules[name], language="json")
     else:
         name = st.text_input("Custom Module Name")
-        pdc = st.number_input("pdc0 (W)")
-        gamma = st.number_input("γ_pdc (%/C)")
+        pdc = st.number_input("pdc0 (W)", min_value=0)
+        gamma = st.number_input("γ_pdc (%/C)", min_value=0)
         model = {"pdc0": pdc, "gamma": gamma}
 
     navigation_buttons(
@@ -279,7 +279,7 @@ def step_inverter():
         st.warning("⚠️ THIS INVERTER CANNOT BE SIMULATED⚠️")
     else:
         name = st.text_input("Custom Inverter Name")
-        pdc = st.number_input("pdc0 (W)")
+        pdc = st.number_input("pdc0 (W)", min_value=0)
         model = {"pdc0": pdc}
 
     navigation_buttons(
@@ -320,9 +320,13 @@ def step_mount():
         params["axis_tilt"] = tilt
         azimuth = c.number_input("Azimuth", value=180)
         params["axis_azimuth"] = azimuth
-        max_angle = r.number_input("Max Angle inclination", value=45)
+        max_angle = r.number_input(
+            "Max Angle inclination", value=45.0, min_value=0.0, max_value=90
+        )
         params["max_angle"] = max_angle
-        cross_axis_tilt = rr.number_input("Surface angle", value=0)
+        cross_axis_tilt = rr.number_input(
+            "Surface angle", value=0.0, min_value=0.0, max_value=90
+        )
         params["cross_axis_tilt"] = cross_axis_tilt
 
         gcr = st.number_input("Ground Coverage Ratio", value=0.35)

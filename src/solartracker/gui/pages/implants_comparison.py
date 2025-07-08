@@ -5,17 +5,8 @@ import pandas as pd
 from analysis.implantanalyser import ImplantAnalyser
 import plotly.express as px
 from .page import Page
-
-
-def translate(key: str) -> str | list:
-    keys = key.split(".")
-    result = st.session_state.get("T", {})
-    for k in keys:
-        if isinstance(result, dict) and k in result:
-            result = result[k]
-        else:
-            return key  # fallback se manca qualcosa
-    return result
+from .support import plots
+from .support.traslator import translate
 
 
 def T(key: str) -> str | list:
@@ -108,74 +99,6 @@ class ImplantsComparisonPage(Page):
         ]
         self.df_selected = df[df["id"].isin(selected_ids)]
 
-    def render_plot(self):
-        st.subheader("\U0001f4ca " + T("subtitle.plots"))
-        col_graph, col_settings = st.columns([8, 2])
-
-        if "stat" not in st.session_state:
-            st.session_state.stat = "sum"
-
-        with col_settings:
-            variable_options = self.df_total["variable"].unique().tolist()
-            index = (
-                variable_options.index("dc_p_mp")
-                if "dc_p_mp" in variable_options
-                else 0
-            )
-            self.variable_selected = st.selectbox(
-                T("buttons.choose_var"), variable_options, index=index
-            )
-
-            season_options = self.df_total["season"].unique().tolist()
-            default = season_options
-            if not self.selected_seasons == []:
-                default = self.selected_seasons
-            self.selected_seasons = st.multiselect(
-                T("buttons.periods"), season_options, default=default
-            )
-
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button(
-                    T("buttons.sum"),
-                    type=("primary" if st.session_state.stat == "sum" else "secondary"),
-                ):
-                    st.session_state.stat = "sum"
-                    st.rerun()
-            with col2:
-                if st.button(
-                    T("buttons.mean"),
-                    type=(
-                        "primary" if st.session_state.stat == "mean" else "secondary"
-                    ),
-                ):
-                    st.session_state.stat = "mean"
-                    st.rerun()
-
-        self.stat_selected = st.session_state.stat
-
-        df_filtered = self.df_total[
-            (self.df_total["variable"] == self.variable_selected)
-            & (self.df_total["stat"] == self.stat_selected)
-            & (self.df_total["season"].isin(self.selected_seasons))
-        ]
-
-        with col_graph:
-            fig = px.bar(
-                df_filtered,
-                x="season",
-                y="value",
-                color="implant",
-                barmode="group",
-                labels={
-                    "value": self.stat_selected,
-                    "implant": T("plots.periodic.legend"),
-                    "season": T("plots.periodic.x"),
-                },
-                height=500,
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
     def render(self):
         st.title("\U0001f3ad " + T("title"))
         st.markdown("---\n---")
@@ -185,9 +108,6 @@ class ImplantsComparisonPage(Page):
         if self.df_selected.empty:
             st.info("\u2139\ufe0f Nessun impianto selezionato")
             return
-
-        # st.write("Impianti selezionati:")
-        # st.dataframe(self.df_selected)
         st.markdown("---")
         dfs = []
         for row in self.df_selected.itertuples(index=True):
@@ -196,7 +116,8 @@ class ImplantsComparisonPage(Page):
             dfs.append(df)
 
         self.df_total = pd.concat(dfs, ignore_index=True)
-        self.render_plot()
+        st.subheader("\U0001f4ca " + T("subtitle.plots"))
+        plots.seasonal_plot(self.df_total, "implants_comparison")
         dfs = []
         for row in self.df_selected.itertuples(index=True):
             df = ImplantAnalyser(row.subfolder).numeric_dataframe()
@@ -204,84 +125,4 @@ class ImplantsComparisonPage(Page):
             dfs.append(df)
 
         dfs = pd.concat(dfs)
-        self.render_dayly_plot(dfs)
-
-    def render_dayly_plot(self, data):
-        st.markdown(f"### {T('subtitle.time_distribution')}")
-
-        # Colonne numeriche disponibili per il plot
-        numeric_cols = data.select_dtypes(include="number").columns.tolist()
-        default_var = "dc_p_mp"
-        default_index = (
-            numeric_cols.index(default_var) if default_var in numeric_cols else 0
-        )
-
-        col1, col2, col3 = st.columns([2, 1, 1])
-        with col1:
-            variable = st.selectbox(
-                f"⚙️ {T('buttons.choose_variable')}",
-                options=numeric_cols,
-                index=default_index,
-            )
-
-        with col2:
-            mode = st.radio(
-                f"{T('buttons.option.label')}",
-                T("buttons.option.options"),
-                index=1,
-                horizontal=True,
-            )
-
-        # Prepara DataFrame
-        df = data.copy()
-        df = df[["implant", variable]].dropna()
-        df["timestamp"] = data.index  # assume datetime index
-        min_date = df["timestamp"].min().date()
-        max_date = df["timestamp"].max().date()
-
-        if mode == T("buttons.option.options")[0]:  # Range date
-            start_day, end_day = st.slider(
-                "Intervallo date:",
-                min_value=min_date,
-                max_value=max_date,
-                value=(min_date, max_date),
-                format="DD/MM/YYYY",
-            )
-            mask = (df["timestamp"].dt.date >= start_day) & (
-                df["timestamp"].dt.date <= end_day
-            )
-        else:  # Giorno singolo
-            with col3:
-                day = st.date_input(
-                    f"🗓️ {T('buttons.choose_date')}",
-                    min_value=min_date,
-                    max_value=max_date,
-                    value=max_date,
-                )
-            start_hour, end_hour = st.slider(
-                "⏰ Ore:", min_value=0, max_value=23, value=(0, 23)
-            )
-            mask = (
-                (df["timestamp"].dt.date == day)
-                & (df["timestamp"].dt.hour >= start_hour)
-                & (df["timestamp"].dt.hour <= end_hour)
-            )
-
-        df_filtered = df[mask]
-
-        if df_filtered.empty:
-            st.warning("⚠️ Nessun dato disponibile nel periodo selezionato.")
-            return
-
-        # Mostra grafico con linea distinta per impianto
-        fig = px.line(
-            df_filtered,
-            x="timestamp",
-            y=variable,
-            color="implant",
-            title=f"{variable} nel tempo",
-            markers=True,
-        )
-        fig.update_layout(xaxis_title="Timestamp", yaxis_title=variable, height=500)
-
-        st.plotly_chart(fig, use_container_width=True)
+        plots.time_plot(dfs, 1, "implants_comparison")
