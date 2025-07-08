@@ -195,8 +195,8 @@ def mount_setting(implant_mount):
     ]
     mount_index = mount_opts.index(implant_mount["type"])
     implant_mount["type"] = st.selectbox(
-                T("buttons.implant.mount.type"), mount_opts, index=mount_index
-            )
+        T("buttons.implant.mount.type"), mount_opts, index=mount_index
+    )
     col1, col2 = st.columns([2, 1])
     with col1:
         if implant_mount["type"] == "FixedMount":
@@ -209,9 +209,7 @@ def mount_setting(implant_mount):
             value = 270
             if "surface_azimuth" in implant_mount["params"]:
                 value = implant_mount["params"]["surface_azimuth"]
-            azimuth = r.number_input(
-                "Azimuth", value=value
-            )
+            azimuth = r.number_input("Azimuth", value=value)
             implant_mount["params"]["surface_azimuth"] = azimuth
         else:
             # implant_mount["type"] == "SingleAxisTrackerMount":
@@ -224,39 +222,29 @@ def mount_setting(implant_mount):
             value = 270
             if "axis_azimuth" in implant_mount["params"]:
                 value = implant_mount["params"]["axis_azimuth"]
-            azimuth = c.number_input(
-                "Azimuth", value=value
-            )
+            azimuth = c.number_input("Azimuth", value=value)
             implant_mount["params"]["axis_azimuth"] = azimuth
             value = 45
             if "max_Angle" in implant_mount["params"]:
                 value = implant_mount["params"]["max_angle"]
-            max_angle = r.number_input(
-                "Max Angle inclination", value=value
-            )
+            max_angle = r.number_input("Max Angle inclination", value=value)
             implant_mount["params"]["max_angle"] = max_angle
             value = 0
             if "cross_axis_tilt" in implant_mount["params"]:
                 value = implant_mount["params"]["cross_axis_tilt"]
-            cross_axis_tilt = rr.number_input(
-                "Surface angle", value=value
-            )
+            cross_axis_tilt = rr.number_input("Surface angle", value=value)
             implant_mount["params"]["cross_axis_tilt"] = cross_axis_tilt
             q, _, w, _, _ = st.columns([5, 2, 5, 2, 1])
 
             value = 0.35
             if "gcr" in implant_mount["params"]:
                 value = implant_mount["params"]["gcr"]
-            gcr = q.number_input(
-                "Ground Coverage Ratio", value=value
-            )
+            gcr = q.number_input("Ground Coverage Ratio", value=value)
             implant_mount["params"]["gcr"] = gcr
             value = True
             if "backtrack" in implant_mount["params"]:
                 value = implant_mount["params"]["backtrack"]
-            backtrack = st.checkbox(
-                "Avoid shadings (backtrack)", value=value
-            )
+            backtrack = st.checkbox("Avoid shadings (backtrack)", value=value)
             implant_mount["params"]["backtrack"] = backtrack
 
     with col2:
@@ -487,11 +475,20 @@ def render():
             if implant["mount"]["type"] == "FixedMount":
                 keep_mount_params = {"surface_tilt", "surface_azimuth"}
             else:
-                keep_mount_params = {"axis_tilt","axis_azimuth","max_angle","backtrack","gcr","cross_axis_tilt"}
-            implant["mount"]["params"] = {k: v for k, v in implant["mount"]["params"].items() if k in keep_mount_params}
-            
-            
-            
+                keep_mount_params = {
+                    "axis_tilt",
+                    "axis_azimuth",
+                    "max_angle",
+                    "backtrack",
+                    "gcr",
+                    "cross_axis_tilt",
+                }
+            implant["mount"]["params"] = {
+                k: v
+                for k, v in implant["mount"]["params"].items()
+                if k in keep_mount_params
+            }
+
             json.dump(site, (subfolder / "site.json").open("w"), indent=4)
             json.dump(implant, (subfolder / "implant.json").open("w"), indent=4)
             st.success("Changes saved.")

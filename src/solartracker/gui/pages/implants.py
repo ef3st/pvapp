@@ -88,7 +88,6 @@ class ImplantsPage(Page):
 
     def render(self):
         st.title("💡 " + T("title"))
-        
 
         if "adding_implant" not in st.session_state:
             st.session_state.adding_implant = False
@@ -135,7 +134,6 @@ class ImplantsPage(Page):
             st.dataframe(df[columns_to_show], use_container_width=True)
             st.markdown("---")
             self._render_map(df)
-
 
     def _render_map(self, df: pd.DataFrame):
         """Visualize implant locations on a map."""
