@@ -25,7 +25,8 @@
         "title": "Confronto Impianti",
         "subtitle":{
             "select_implants": "Seleziona gli Impianti da confrontare",
-            "plots": "Grafici"
+            "plots": "Grafici",
+            "time_distribution": "Valori in funzione del tempo"
         },
         "buttons":{
             "select_all": "Seleziona tutti",
@@ -33,6 +34,7 @@
             "sum": "somma",
             "mean": "media",
             "choose_var": "Seleziona la variabile da mostrare",
+            "choose_variable": "Scegli variabile",
             "periods": "Scegli il periodo",
             "option":  {
                 "label": "Intervallo",

@@ -19,9 +19,15 @@ The app is divided in 4 pages:
 
 In the sidebare (on the left) you can select these pages, but you can also change language and a button in the bottom will start all simulation in one shot
 
---- 
+---
+---
 
-
+# Simulations
+>‼️ **FUTURE UPDATE**: 
+> - Verrà implementata anche la possibilità di gestire stringhe di pannelli e settare anche l'altezza da terra
+> - Attraverso le cordiante dei vertici del terreno e della posizione e dimensione dei pannelli, si potrà memorizzare e visualizzare sulla mappa l'estensione dell'impianto e rendere automatica il settaggio di alcuni parametri
+> - In ottica di sviluppo di questa app come monitoraggio, sarà possibile visualizzare anche lo stato dei pannelli sulla mappa in base ai dati in input (sia in simulazione, che magari nella realtà)
+> NOTE: Nei grafici della simulazione "stagionali" dove si mostrano somme e medie, vengono considerati anche gli 0 della "notte", quindi la media è oggettivamente più bassa di quella effettiva
 
 # Modules - Inverters parameters:
 #### 1. **CEC (California Energy Commission) database**
@@ -140,6 +146,29 @@ In the sidebare (on the left) you can select these pages, but you can also chang
 >     'c3': 0.000005
 > }
 > ```
+---
+# Mount System
+#### 1. Fixed
+
+|   **Parameter**    | **GUI selection name** | **Desription**                                                                                 |
+| ------------------ | ---------------------- | ---------------------------------------------------------------------------------------------- |
+| `surface_tilt`     | Tilt                   | (in degrees) Angle of inclination wrt the vertical (0 -> panel parallel to the soil)           |
+| `surface_azimuth`  | Azimuth                | (in degrees) Angle of rotation wrt the North (0 -> when tilt > 0, panel surface points north)  | 
+#### 2. SingleAxisTrackerMount 
+|   **Parameter**    | **GUI selection name**     | **Desription**                                                                                                |
+| ------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `azis_tilt`        | Tilt                       | (in degrees) Angle of inclination wrt the vertical (0 -> panel parallel to the soil)                          |
+| `azis_azimuth`     | Azimuth                    | (in degrees) Angle of rotation wrt the North (0 -> when tilt > 0, panel surface points north)                 | 
+| `max_angle`        | Max Angle inclination      | (in degrees) Maximum angle that the panel can cover (45 -> if tilt = 0, panel can cover ±45°)                 | 
+| `cross_axis_tilt`  | Surface Angle              | (in degrees) Angle of soil inclination to consider in tracking system (0 -> soil is horizonatal               | 
+| `gcr`              | Ground Surface Ratio       | (pure number) Ratio between area covered by panel and total area aviable (must be 0 < gcr ≤ 1)                | 
+| `backtrack`        | Avoid shadings (backtrack) | (bool) If selected (True), the sistem moves panel avoiding that panes cover others (computed on base of *cr*) |
+#### 3. ValidatedMount
+At this moment same as in [SingleAxisTrackerMount](#2-singleaxistrackermount)
+#### 4. DevelopementMounts
+At this moment same as in [SingleAxisTrackerMount](#2-singleaxistrackermount)
+
+---
 # ➡️ OUTPUT SIMULATION DATA
 
 | **Variable**           | **Description**                                            | **Unit** | **Source Function**      | **Example values** |

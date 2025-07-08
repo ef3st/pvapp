@@ -194,44 +194,68 @@ def mount_setting(implant_mount):
         "DevelopementMount",
     ]
     mount_index = mount_opts.index(implant_mount["type"])
+    implant_mount["type"] = st.selectbox(
+                T("buttons.implant.mount.type"), mount_opts, index=mount_index
+            )
     col1, col2 = st.columns([2, 1])
     with col1:
         if implant_mount["type"] == "FixedMount":
-            implant_mount["type"] = st.selectbox(
-                T("buttons.implant.mount.type"), mount_opts, index=mount_index
-            )
             l, r = st.columns(2)
-            tilt = l.number_input("Tilt", value=implant_mount["params"]["surface_tilt"])
+            value = 30
+            if "surface_tilt" in implant_mount["params"]:
+                value = implant_mount["params"]["surface_tilt"]
+            tilt = l.number_input("Tilt", value=value)
             implant_mount["params"]["surface_tilt"] = tilt
+            value = 270
+            if "surface_azimuth" in implant_mount["params"]:
+                value = implant_mount["params"]["surface_azimuth"]
             azimuth = r.number_input(
-                "Azimuth", value=implant_mount["params"]["surface_azimuth"]
+                "Azimuth", value=value
             )
             implant_mount["params"]["surface_azimuth"] = azimuth
         else:
             # implant_mount["type"] == "SingleAxisTrackerMount":
             l, c, r, rr = st.columns(4)
-            tilt = l.number_input("Tilt", value=implant_mount["params"]["axis_tilt"])
+            value = 0
+            if "axis_tilt" in implant_mount["params"]:
+                value = implant_mount["params"]["axis_tilt"]
+            tilt = l.number_input("Tilt", value=value)
             implant_mount["params"]["axis_tilt"] = tilt
+            value = 270
+            if "axis_azimuth" in implant_mount["params"]:
+                value = implant_mount["params"]["axis_azimuth"]
             azimuth = c.number_input(
-                "Azimuth", value=implant_mount["params"]["axis_azimuth"]
+                "Azimuth", value=value
             )
             implant_mount["params"]["axis_azimuth"] = azimuth
+            value = 45
+            if "max_Angle" in implant_mount["params"]:
+                value = implant_mount["params"]["max_angle"]
             max_angle = r.number_input(
-                "Max Angle inclination", value=implant_mount["params"]["max_angle"]
+                "Max Angle inclination", value=value
             )
             implant_mount["params"]["max_angle"] = max_angle
+            value = 0
+            if "cross_axis_tilt" in implant_mount["params"]:
+                value = implant_mount["params"]["cross_axis_tilt"]
             cross_axis_tilt = rr.number_input(
-                "Surface angle", value=implant_mount["params"]["cross_axis_tilt"]
+                "Surface angle", value=value
             )
             implant_mount["params"]["cross_axis_tilt"] = cross_axis_tilt
             q, _, w, _, _ = st.columns([5, 2, 5, 2, 1])
 
+            value = 0.35
+            if "gcr" in implant_mount["params"]:
+                value = implant_mount["params"]["gcr"]
             gcr = q.number_input(
-                "Ground Coverage Ratio", value=implant_mount["params"]["gcr"]
+                "Ground Coverage Ratio", value=value
             )
             implant_mount["params"]["gcr"] = gcr
+            value = True
+            if "backtrack" in implant_mount["params"]:
+                value = implant_mount["params"]["backtrack"]
             backtrack = st.checkbox(
-                "Avoid shadings (backtrack)", value=implant_mount["params"]["backtrack"]
+                "Avoid shadings (backtrack)", value=value
             )
             implant_mount["params"]["backtrack"] = backtrack
 
@@ -441,7 +465,7 @@ def render():
 
     selected_row = filtered[filtered["implant_name"] == selected_implant].iloc[0]
     subfolder = selected_row["subfolder"]
-    st.markdown("---")
+    st.markdown("---\n ---")
 
     # Edit and display site and implant
     st.subheader("🛠️ " + T("subtitle.implant_config"))
@@ -459,6 +483,15 @@ def render():
         st.markdown("---")
         _, a, b = st.columns([4.3, 2, 1.5])
         if a.button(f"💾 {T("buttons.save")}"):
+            keep_mount_params = {}
+            if implant["mount"]["type"] == "FixedMount":
+                keep_mount_params = {"surface_tilt", "surface_azimuth"}
+            else:
+                keep_mount_params = {"axis_tilt","axis_azimuth","max_angle","backtrack","gcr","cross_axis_tilt"}
+            implant["mount"]["params"] = {k: v for k, v in implant["mount"]["params"].items() if k in keep_mount_params}
+            
+            
+            
             json.dump(site, (subfolder / "site.json").open("w"), indent=4)
             json.dump(implant, (subfolder / "implant.json").open("w"), indent=4)
             st.success("Changes saved.")
@@ -472,7 +505,7 @@ def render():
             unsafe_allow_html=True,
         )
 
-    st.markdown("---")
+    st.markdown("---\n ---")
     # Output chart
     st.subheader("🔋 " + T("subtitle.performance"))
     if (subfolder / "simulation.csv").exists():

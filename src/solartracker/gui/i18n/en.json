@@ -24,7 +24,8 @@
       "title": "Compare Implants",
       "subtitle": {
         "select_implants": "Select plants to compare",
-        "plots": "Charts"
+        "plots": "Charts",
+        "time_distribution": "Values over time"
       },
       "buttons": {
         "select_all": "Select all",
@@ -32,6 +33,7 @@
         "sum": "sum",
         "mean": "mean",
         "choose_var": "Select variable to display",
+        "choose_variable": "Choose variable",
         "periods": "Choose period",
         "option": {
           "label": "Interval",

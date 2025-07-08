@@ -178,6 +178,7 @@ class ImplantsComparisonPage(Page):
 
     def render(self):
         st.title("\U0001f3ad " + T("title"))
+        st.markdown("---\n---")
         self.df_implants = self.load_all_implants()
         self.select_implants()
 
