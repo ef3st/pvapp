@@ -6,6 +6,40 @@
         "language": "Language"
       }
     },
+    "plots":{
+      "poa_global": "(W/m²) Global plane-of-array irradiance (direct + diffuse)",
+      "poa_direct": "(W/m²) Direct irradiance on the plane of array",
+      "poa_diffuse": "(W/m²) Diffuse irradiance on the plane of array",
+      "aoi": "(degrees) Angle of incidence between the sun and the module surface",
+      "effective_irradiance": "(W/m²) Irradiance adjusted for AOI and spectral losses",
+      "ac_v_mp": "(V) AC: Voltage at maximum power point",
+      "ac_i_mp": "(A) AC: Current at maximum power point",
+      "ac_p_mp": "(W) AC: Power at maximum power point",
+      "ac_i_sc": "(A) AC: Short-circuit current",
+      "ac_v_oc": "(V) AC: Open-circuit voltage",
+      "ac_i_x": "Unkonwn",
+      "ac_i_xx": "Unkonwn",
+      "dc_v_mp": "(V) DC: Voltage at maximum power point",
+      "dc_i_mp": "(A) DC: Current at maximum power point",
+      "dc_p_mp": "(W) DC: Power at maximum power point",
+      "dc_i_sc": "(A) DC: Short-circuit current",
+      "dc_v_oc": "(V) DC: Open-circuit voltage",
+      "dc_i_x": "Unkonwn",
+      "dc_i_xx": "Unkonwn",
+      "diode_voltage": "(V) Voltage across the internal diode",
+      "shunt_current": "(A) Current lost due to shunt resistance",
+      "temp_cell": "(°C) PV cell temperature",
+      "temp_module": "(°C) Module backside temperature",
+      "dc_power": "(W) DC output power from the module/system",
+      "ac_power": "(W) AC output power after the inverter",
+      "losses": "(%) Total system loss factor (optional, if modeled)",
+      "zenith": "(degrees) Solar zenith angle",
+      "azimuth": "(degrees) Solar azimuth angle",
+      "airmass": "(-) Relative air mass (optical path length through the atmosphere)",
+      "clearsky_ghi": "(W/m²) Global horizontal irradiance (clear-sky model)",
+      "clearsky_dni": "(W/m²) Direct normal irradiance (clear-sky model)",
+      "clearsky_dhi": "(W/m²) Diffuse horizontal irradiance (clear-sky model)"
+  },
     "implants": {
       "title": "Implants",
       "df_title": ["Site", "Address", "City", "Implant", "Module", "Inverter", "Mount", "Coordinates", "lat", "lon","Simulation"],
@@ -53,13 +87,16 @@
     "implant_performance": {
       "title": "PV Implant Analysis",
       "subtitle": {
-        "imImplant_config": "Implant configuration",
+        "implant_config": "Implant configuration",
         "site": "Site",
-        "imImplant": "Implant",
+        "implant": "Implant",
         "performance": "Performance",
         "coordinates": "Coordinates",
         "periodic": "Average and summary values by period",
-        "time_distribution": "Values over time"
+        "time_distribution": "Values over time",
+        "search_implant": "Search Implant",
+        "altitude_tz": "Altitude and Time zone e Fuso orario",
+        "address": "Address"
       },
       "buttons": {
         "site": {
@@ -98,6 +135,7 @@
         "choose_variable": "Choose variable",
         "sum": "Sum",
         "mean": "Mean",
+        "periods": "Choose period",
         "option": {
           "label": "Interval",
           "options": ["Yearly", "Daily"]

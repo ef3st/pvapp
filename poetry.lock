@@ -3408,6 +3408,21 @@ watchdog = {version = ">=2.1.5,<7", markers = "platform_system != \"Darwin\""}
 snowflake = ["snowflake-connector-python (>=3.3.0) ; python_version < \"3.12\"", "snowflake-snowpark-python[modin] (>=1.17.0) ; python_version < \"3.12\""]
 
 [[package]]
+name = "streamlit-custom-notification-box"
+version = "0.1.2"
+description = ""
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "streamlit-custom-notification-box-0.1.2.tar.gz", hash = "sha256:7055640647f53aad1d649807b58c5e69c4354a14e9aec97c44f27705de088ae0"},
+    {file = "streamlit_custom_notification_box-0.1.2-py3-none-any.whl", hash = "sha256:9b44ab555588e9825d5c16e6cc1cb17e6e58453f2388d348c8420a1b0afb0cd2"},
+]
+
+[package.dependencies]
+streamlit = ">=0.63"
+
+[[package]]
 name = "streamlit-option-menu"
 version = "0.4.0"
 description = "streamlit-option-menu is a simple Streamlit component that allows users to select a single item from a list of options in a menu."
@@ -3698,4 +3713,4 @@ test = ["websockets"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "981e95951178f244b5c2179c7917d0235d8f032ac560b64a0d95ae9463fdf9ff"
+content-hash = "7f367c48981d2dc1888c4c3bb46504eca228c4f84084cb634e613a8672c3350f"

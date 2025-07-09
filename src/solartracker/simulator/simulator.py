@@ -1,8 +1,8 @@
-from implant_model.site import Site
 import pandas as pd
-from implant_model.nature import Nature
-from implant_model.implant import Implant
-from implant_model.modelchain import BuildModelChain
+from pvlib_implant_model.site import Site
+from pvlib_implant_model.nature import Nature
+from pvlib_implant_model.implant import Implant
+from pvlib_implant_model.modelchain import BuildModelChain
 from pvlib.pvsystem import retrieve_sam
 from analysis.database import Database
 import json

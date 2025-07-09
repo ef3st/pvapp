@@ -6,6 +6,42 @@
         "language": "Lingua"
       }
     },
+    "plots":{
+        "variable_description": {
+            "poa_global": "(W/m²) Irradianza globale sul piano del modulo (diretta + diffusa)",
+            "poa_direct": "(W/m²) Irradianza diretta sul piano del modulo",
+            "poa_diffuse": "(W/m²) Irradianza diffusa sul piano del modulo",
+            "aoi": "(gradi) Angolo di incidenza tra il sole e la superficie del modulo",
+            "effective_irradiance": "(W/m²) Irradianza effettiva corretta per perdite angolari e spettrali",
+            "ac_v_mp": "(V) AC: Tensione al punto di massima potenza",
+            "ac_i_mp": "(A) AC: Corrente al punto di massima potenza",
+            "ac_p_mp": "(W) AC: Potenza al punto di massima potenza",
+            "ac_i_sc": "(A) AC: Corrente di cortocircuito",
+            "ac_v_oc": "(V) AC: Tensione a circuito aperto",
+            "ac_i_x": "Unkonwn",
+            "ac_i_xx": "Unkonwn",
+            "dc_v_mp": "(V) DC: Tensione al punto di massima potenza",
+            "dc_i_mp": "(A) DC: Corrente al punto di massima potenza",
+            "dc_p_mp": "(W) DC: Potenza al punto di massima potenza",
+            "dc_i_sc": "(A) DC: Corrente di cortocircuito",
+            "dc_v_oc": "(V) DC: Tensione a circuito aperto",
+            "dc_i_x": "Unkonwn",
+            "dc_i_xx": "Unkonwn",
+            "diode_voltage": "(V) Tensione ai capi del diodo interno",
+            "shunt_current": "(A) Corrente persa per effetto della resistenza di shunt",
+            "temp_cell": "(°C) Temperatura della cella fotovoltaica",
+            "temp_module": "(°C) Temperatura del retro del modulo",
+            "dc_power": "(W) Potenza in corrente continua in uscita dal modulo/sistema",
+            "ac_power": "(W) Potenza in corrente alternata dopo l’inverter",
+            "losses": "(%) Fattore di perdita totale del sistema (se modellato)",
+            "zenith": "(gradi) Angolo zenitale del sole",
+            "azimuth": "(gradi) Azimut solare",
+            "airmass": "(-) Massa d’aria relativa (lunghezza ottica nell’atmosfera)",
+            "clearsky_ghi": "(W/m²) Irradianza globale orizzontale (modello cielo sereno)",
+            "clearsky_dni": "(W/m²) Irradianza diretta normale (modello cielo sereno)",
+            "clearsky_dhi": "(W/m²) Irradianza diffusa orizzontale (modello cielo sereno)"
+        }
+    },
     "implants":{
         "title": "Impianti",
         "df_title":["Sito","Indirizzo","Città","Impianto","Modulo","Inverter","Movimento","Coordinate","lat","lon","Simulazione"],
@@ -63,7 +99,10 @@
             "coordinates": "Coordinate",
             "performance": "Performance",
             "periodic": "Valori medi e sommari per periodo",
-            "time_distribution": "Valori in funzione del tempo"
+            "time_distribution": "Valori in funzione del tempo",
+            "search_implant": "Ricerca Impianto",
+            "altitude_tz": "Altitudine e Fuso orario",
+            "address": "Indirizzo"
 
         },
         "buttons":{
@@ -103,6 +142,7 @@
             "choose_variable": "Scegli variabile",
             "sum": "Somma",
             "mean": "Media",
+            "periods": "Scegli il periodo",
             "option":  {
                 "label": "Intervallo",
                 "options": ["Annuale","Giornaliero"]

@@ -8,6 +8,7 @@ import json
 from typing import List
 from .pages.implants import ImplantsPage
 from .pages.implants_comparison import ImplantsComparisonPage
+from .pages.support.implant_distribution import implant_distribution
 
 sys.dont_write_bytecode = True
 
@@ -61,13 +62,20 @@ def streamlit():
     with st.sidebar:
         st.markdown("## 🌅 PV Implants Analyser")
         st.markdown("---")
-        index = aviable_language().index(st.session_state.current_lang)
-        lang = st.selectbox(
-            f"🌍 {T('buttons.language')}",
-            aviable_language(),
-            key="language",
-            index=index,
-        )
+        a,b = st.columns(2)
+        with a.popover(f"🌍 {T('buttons.language')}"):
+            
+            index = aviable_language().index(st.session_state.current_lang)
+    
+            lang = st.selectbox(
+                "",
+                aviable_language(),
+                key="language",
+                index=index,
+            )
+        with b.popover("🧰 Tools"):
+            if st.button(f"🔥 {T('buttons.simulate')}"):
+                simulate_all()
 
     # Caricamento traduzioni solo se cambiate
     if st.session_state.get("current_lang") != lang:
@@ -76,17 +84,15 @@ def streamlit():
 
     # 📋 Menu principale
     with st.sidebar:
+        st.markdown(" ")
         selected = option_menu(
             None,
-            options=T("menu"),
+            options=T("menu")+["Real-time monitor  (beta)"],
             icons=["house", "tools", "bar-chart", "graph-up"],
             menu_icon="cast",
-            default_index=1,
+            default_index=0
         )
 
-        st.markdown("---")
-        if st.button(f"🔥 {T('buttons.simulate')}"):
-            simulate_all()
 
     # 🔁 Routing alle pagine
     if selected == T("menu")[0]:  # "Home"
@@ -97,3 +103,5 @@ def streamlit():
         pages["implants_comparison"].render()
     elif selected == T("menu")[3]:  # "Implant performance"
         implant_performance.render()
+    elif "Real-time monitor (beta)":
+        implant_distribution()
