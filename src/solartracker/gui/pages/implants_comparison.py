@@ -29,7 +29,11 @@ class ImplantsComparisonPage(Page):
                 site_file = subfolder / "site.json"
                 implant_file = subfolder / "implant.json"
                 simulation_file = subfolder / "simulation.csv"
-                if site_file.exists() and implant_file.exists() and simulation_file.exists():
+                if (
+                    site_file.exists()
+                    and implant_file.exists()
+                    and simulation_file.exists()
+                ):
                     try:
                         site = json.load(site_file.open())
                         implant = json.load(implant_file.open())
@@ -67,7 +71,7 @@ class ImplantsComparisonPage(Page):
             col1, col2, col3 = st.columns(3)
             i = -1
             l = df.shape[0] / 3
-            
+
             for _, row in df.iterrows():
                 i += 1
                 imp_id = row["id"]

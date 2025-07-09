@@ -62,11 +62,11 @@ def streamlit():
     with st.sidebar:
         st.markdown("## 🌅 PV Implants Analyser")
         st.markdown("---")
-        a,b = st.columns(2)
+        a, b = st.columns(2)
         with a.popover(f"🌍 {T('buttons.language')}"):
-            
+
             index = aviable_language().index(st.session_state.current_lang)
-    
+
             lang = st.selectbox(
                 "",
                 aviable_language(),
@@ -87,12 +87,11 @@ def streamlit():
         st.markdown(" ")
         selected = option_menu(
             None,
-            options=T("menu")+["Real-time monitor  (beta)"],
+            options=T("menu") + ["Real-time monitor  (beta)"],
             icons=["house", "tools", "bar-chart", "graph-up"],
             menu_icon="cast",
-            default_index=0
+            default_index=0,
         )
-
 
     # 🔁 Routing alle pagine
     if selected == T("menu")[0]:  # "Home"

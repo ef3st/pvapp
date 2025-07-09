@@ -40,6 +40,7 @@ def load_all_implants(folder: Path = Path("data/")) -> pd.DataFrame:
                     st.error(f"Error reading {subfolder.name}: {e}")
     return pd.DataFrame(data)
 
+
 @st.fragment
 def edit_site(subfolder: Path) -> dict:
     site_file = subfolder / "site.json"
@@ -49,14 +50,20 @@ def edit_site(subfolder: Path) -> dict:
     with st.expander(f" 🏠 {T("subtitle.address")}"):
         site["address"] = st.text_input(T("buttons.site.address"), site["address"])
         site["city"] = st.text_input(T("buttons.site.city"), site["city"])
-    
+
     with st.expander(f" 🗺️ {T("subtitle.coordinates")}"):
         col1, col2 = st.columns(2)
         site["coordinates"]["lat"] = col1.number_input(
-            T("buttons.site.lat"), value=site["coordinates"]["lat"], format="%.4f", step=0.0001
+            T("buttons.site.lat"),
+            value=site["coordinates"]["lat"],
+            format="%.4f",
+            step=0.0001,
         )
         site["coordinates"]["lon"] = col2.number_input(
-            T("buttons.site.lon"), value=site["coordinates"]["lon"], format="%.4f", step=0.0001
+            T("buttons.site.lon"),
+            value=site["coordinates"]["lon"],
+            format="%.4f",
+            step=0.0001,
         )
         df = pd.DataFrame(
             [{"lat": site["coordinates"]["lat"], "lon": site["coordinates"]["lon"]}]
@@ -94,6 +101,7 @@ def edit_site(subfolder: Path) -> dict:
 
     return site
 
+
 @st.fragment
 def edit_implant(subfolder: Path) -> dict:
     implant_file = subfolder / "implant.json"
@@ -129,10 +137,14 @@ def edit_implant(subfolder: Path) -> dict:
             )
             sub1, sub2 = st.columns(2)
             implant["module"]["model"]["pdc0"] = sub1.number_input(
-                "pdc0 (W)", value=float(implant["module"]["model"]["pdc0"]), min_value=0.
+                "pdc0 (W)",
+                value=float(implant["module"]["model"]["pdc0"]),
+                min_value=0.0,
             )
             implant["module"]["model"]["gamma_pdc"] = sub2.number_input(
-                "γ_pdc (%/C)", value=float(implant["module"]["model"]["gamma_pdc"]), min_value=0.
+                "γ_pdc (%/C)",
+                value=float(implant["module"]["model"]["gamma_pdc"]),
+                min_value=0.0,
             )
 
         implant["module"]["dc_module"] = {"CECMod": "cec", "SandiaMod": "sapm"}.get(
@@ -165,7 +177,9 @@ def edit_implant(subfolder: Path) -> dict:
                 T("buttons.implant.inverter.name"), implant["inverter"]["name"]
             )
             implant["inverter"]["model"]["pdc0"] = st.number_input(
-                "pdc0 (W)", value=float(implant["inverter"]["model"]["pdc0"]), min_value=0.
+                "pdc0 (W)",
+                value=float(implant["inverter"]["model"]["pdc0"]),
+                min_value=0.0,
             )
 
         implant["inverter"]["ac_model"] = (
@@ -183,7 +197,7 @@ def mount_setting(implant_mount):
         "DevelopementMount",
     ]
     mount_index = mount_opts.index(implant_mount["type"])
-    
+
     with st.expander(f"⚠️ ***{T("buttons.implant.mount.title")}***"):
         col1, col2 = st.columns([2, 1])
         with col1:
@@ -218,19 +232,28 @@ def mount_setting(implant_mount):
                 value = 45
                 if "max_angle" in implant_mount["params"]:
                     value = implant_mount["params"]["max_angle"]
-                max_angle = r.number_input("Max Angle inclination", value=float(value), min_value=0., max_value=90.)
+                max_angle = r.number_input(
+                    "Max Angle inclination",
+                    value=float(value),
+                    min_value=0.0,
+                    max_value=90.0,
+                )
                 implant_mount["params"]["max_angle"] = max_angle
                 value = 0
                 if "cross_axis_tilt" in implant_mount["params"]:
                     value = implant_mount["params"]["cross_axis_tilt"]
-                cross_axis_tilt = rr.number_input("Surface angle", value=float(value), min_value=0., max_value=90.)
+                cross_axis_tilt = rr.number_input(
+                    "Surface angle", value=float(value), min_value=0.0, max_value=90.0
+                )
                 implant_mount["params"]["cross_axis_tilt"] = cross_axis_tilt
                 q, _, w, _, _ = st.columns([5, 2, 5, 2, 1])
 
                 value = 0.35
                 if "gcr" in implant_mount["params"]:
                     value = implant_mount["params"]["gcr"]
-                gcr = q.number_input("Ground Coverage Ratio", value=value,min_value=0., max_value=1.)
+                gcr = q.number_input(
+                    "Ground Coverage Ratio", value=value, min_value=0.0, max_value=1.0
+                )
                 implant_mount["params"]["gcr"] = gcr
                 value = True
                 if "backtrack" in implant_mount["params"]:
@@ -239,7 +262,8 @@ def mount_setting(implant_mount):
                 implant_mount["params"]["backtrack"] = backtrack
 
         with col2:
-            plots.pv3d(tilt,azimuth)
+            plots.pv3d(tilt, azimuth)
+
 
 def render():
     st.title("📈 " + T("title"))
@@ -250,7 +274,7 @@ def render():
         return
 
     # Select implant
-    ll, rr = st.columns([3,1])
+    ll, rr = st.columns([3, 1])
     with ll.expander(f" 🔎 {T("subtitle.search_implant")}"):
         col1, col2 = st.columns(2)
         selected_site = col1.selectbox(
@@ -264,12 +288,12 @@ def render():
     selected_row = filtered[filtered["implant_name"] == selected_implant].iloc[0]
     subfolder = selected_row["subfolder"]
     st.markdown("---")
-    
+
     # Edit and display site and implant
     st.subheader("🛠️ " + T("subtitle.implant_config"))
-    
+
     col_left, col_sep, col_right = st.columns([2, 0.1, 3])
-    
+
     with col_right:
         st.subheader(f"🧰 {T("subtitle.implant")}")
         implant = edit_implant(subfolder)
@@ -278,8 +302,6 @@ def render():
         st.subheader(f"🏢 {T("subtitle.site")}")
         site = edit_site(subfolder)
         _, col1, col2 = st.columns([5, 2, 2])
-    
-   
 
     with rr:
         a, b = st.columns(2)
@@ -304,7 +326,7 @@ def render():
 
             json.dump(site, (subfolder / "site.json").open("w"), indent=4)
             json.dump(implant, (subfolder / "implant.json").open("w"), indent=4)
-            sim_file = (subfolder / "simulation.csv")
+            sim_file = subfolder / "simulation.csv"
             if sim_file.exists():
                 sim_file.unlink()
             # st.success("Changes saved.")
@@ -314,14 +336,13 @@ def render():
             st.toast("🚀Simulation running ✅")
             Simulate(subfolder)
             st.toast("Simulation completed ✅")
-          
-            
+
     st.markdown("---")
     # Output chart
     st.subheader("🔋 " + T("subtitle.performance"))
     if (subfolder / "simulation.csv").exists():
         analyser = ImplantAnalyser(subfolder)
-        plots.seasonal_plot(analyser.periodic_report(),"implant_performance")
-        plots.time_plot(analyser.numeric_dataframe(),page="implant_performance")
+        plots.seasonal_plot(analyser.periodic_report(), "implant_performance")
+        plots.time_plot(analyser.numeric_dataframe(), page="implant_performance")
     else:
         st.warning("⚠️ Simulation not perfermed")

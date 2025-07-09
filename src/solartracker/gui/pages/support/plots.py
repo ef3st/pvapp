@@ -8,7 +8,6 @@ from .traslator import translate
 import pandas as pd
 
 
-
 def pv3d(tilt, azimuth):
     fig = go.Figure()
 
@@ -189,6 +188,7 @@ def get_panel_vertices(tilt_deg, azimuth_deg, width=2.0, height=1.0, center=(0, 
     x, y, z = points[:, 0], points[:, 1], points[:, 2]
     return x.tolist(), y.tolist(), z.tolist()
 
+
 def seasonal_plot(df_plot, page):
     st.markdown(f"### {translate(f"{page}.subtitle.periodic")}")
     col_graph, col_settings = st.columns([8, 2])
@@ -215,21 +215,25 @@ def seasonal_plot(df_plot, page):
                 default_seasons = st.session_state["selected_seasons"]
             else:
                 st.session_state["selected_seasons"] = default_seasons
-            with st.expander(f"📅  {translate(f"{page}.buttons.periods")}",expanded=True):
+            with st.expander(
+                f"📅  {translate(f"{page}.buttons.periods")}", expanded=True
+            ):
                 selected_seasons = []
-                a,b = st.columns(2)
+                a, b = st.columns(2)
                 i = 0
                 for season in season_options[:]:
                     col = st
-                    if i<2:
+                    if i < 2:
                         col = a
-                    elif i<4:
+                    elif i < 4:
                         col = b
                     # else:
                     #     st.markdown("---")
-                    if col.toggle(season,value=(True if season in default_seasons else False)):
+                    if col.toggle(
+                        season, value=(True if season in default_seasons else False)
+                    ):
                         selected_seasons.append(season)
-                    i+=1
+                    i += 1
             if st.session_state["selected_seasons"] != selected_seasons:
                 st.session_state["selected_seasons"] = selected_seasons
                 st.rerun()
@@ -254,7 +258,7 @@ def seasonal_plot(df_plot, page):
                 st.rerun()
 
     stat_selected = st.session_state["stat"]
-    
+
     # Filtro dati
     df_filtered = df_plot[
         (df_plot["variable"] == variable_selected)
@@ -289,21 +293,30 @@ def seasonal_plot(df_plot, page):
         )
 
     with col_graph:
-        st.plotly_chart(fig, use_container_width=True)    
+        st.plotly_chart(fig, use_container_width=True)
     if "implant" in df_filtered.columns:
-        df:pd.DataFrame = df_plot[(df_plot["variable"] == variable_selected)
-    & (df_plot["stat"] == stat_selected) & (df_plot["season"] == "annual")]
+        df: pd.DataFrame = df_plot[
+            (df_plot["variable"] == variable_selected)
+            & (df_plot["stat"] == stat_selected)
+            & (df_plot["season"] == "annual")
+        ]
         length = df.shape[0]
-        a,b = st.columns([1,20])
+        a, b = st.columns([1, 20])
         with a.popover("ℹ️"):
-            st.text(" 1. Nome impanto \n 2. Valore della variabile nell'anno (somma o media a seconda della selezione) \n 3. Percentuale rispetto la media dei valori mostrati sopra")
+            st.text(
+                " 1. Nome impanto \n 2. Valore della variabile nell'anno (somma o media a seconda della selezione) \n 3. Percentuale rispetto la media dei valori mostrati sopra"
+            )
         with b:
-            cols = st.columns(length+1)
-            mean = df["value"].sum()/length
+            cols = st.columns(length + 1)
+            mean = df["value"].sum() / length
             for i in range(length):
                 s = translate("plots.variable_description")[variable_selected]
-                cols[i].metric(label=df["implant"].to_list()[i], value=f"{df["value"].to_list()[i]} {s[1:s.find(")")]}", delta=f"{round((df["value"].to_list()[i]-mean)*100/(mean),2)}%")
-        
+                cols[i].metric(
+                    label=df["implant"].to_list()[i],
+                    value=f"{df["value"].to_list()[i]} {s[1:s.find(")")]}",
+                    delta=f"{round((df["value"].to_list()[i]-mean)*100/(mean),2)}%",
+                )
+
 
 @st.fragment
 def time_plot(data: pd.DataFrame, default=0, page=""):
@@ -316,8 +329,8 @@ def time_plot(data: pd.DataFrame, default=0, page=""):
         numeric_cols.index(default_var) if default_var in numeric_cols else 0
     )
 
-    left, right = st.columns([3,1])
-    
+    left, right = st.columns([3, 1])
+
     with left.expander(f"⚙️ {translate(f"{page}.buttons.choose_variable")}"):
         col1, col2, col3 = st.columns([2, 1, 1])
 

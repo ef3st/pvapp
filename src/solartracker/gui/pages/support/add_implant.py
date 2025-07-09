@@ -244,8 +244,8 @@ def step_module():
         st.code(modules[name], language="json")
     else:
         name = st.text_input("Custom Module Name")
-        pdc = st.number_input("pdc0 (W)", min_value=0.)
-        gamma = st.number_input("γ_pdc (%/C)", min_value=0.)
+        pdc = st.number_input("pdc0 (W)", min_value=0.0)
+        gamma = st.number_input("γ_pdc (%/C)", min_value=0.0)
         model = {"pdc0": pdc, "gamma": gamma}
 
     navigation_buttons(
@@ -279,7 +279,7 @@ def step_inverter():
         st.warning("⚠️ THIS INVERTER CANNOT BE SIMULATED⚠️")
     else:
         name = st.text_input("Custom Inverter Name")
-        pdc = st.number_input("pdc0 (W)", min_value=0.)
+        pdc = st.number_input("pdc0 (W)", min_value=0.0)
         model = {"pdc0": pdc}
 
     navigation_buttons(
@@ -320,12 +320,18 @@ def step_mount():
         params["axis_tilt"] = tilt
         azimuth = c.number_input("Azimuth", value=180)
         params["axis_azimuth"] = azimuth
-        max_angle = r.number_input("Max Angle inclination", value=45., min_value=0., max_value=90.)
+        max_angle = r.number_input(
+            "Max Angle inclination", value=45.0, min_value=0.0, max_value=90.0
+        )
         params["max_angle"] = max_angle
-        cross_axis_tilt = rr.number_input("Surface angle", value=0., min_value=0., max_value=90.)
+        cross_axis_tilt = rr.number_input(
+            "Surface angle", value=0.0, min_value=0.0, max_value=90.0
+        )
         params["cross_axis_tilt"] = cross_axis_tilt
 
-        gcr = st.number_input("Ground Coverage Ratio", value=0.35, min_value=0., max_value=1.)
+        gcr = st.number_input(
+            "Ground Coverage Ratio", value=0.35, min_value=0.0, max_value=1.0
+        )
         params["gcr"] = gcr
         backtrack = st.checkbox("Avoid shadings (backtrack)", value=False)
         params["backtrack"] = backtrack
@@ -353,6 +359,7 @@ def navigation_buttons(step_back, next_key, target_dict, section_key, update_dic
             target_dict[section_key].update(update_dict)
             st.session_state.implant_step = step_back + 1
             st.rerun()
+
 
 @st.fragment
 def render():
