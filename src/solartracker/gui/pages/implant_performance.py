@@ -95,9 +95,9 @@ def edit_site(subfolder: Path) -> dict:
 
     with st.expander(f" 🕐 {T("subtitle.altitude_tz")}"):
         site["altitude"] = st.number_input(
-            f"🗻 {T("buttons.site.altitude")} (m)", value=site["altitude"], min_value=0
+            f"{T("buttons.site.altitude")} (m)", value=site["altitude"], min_value=0, icon="🗻"
         )
-        site["tz"] = st.text_input(f"🕐 {T("buttons.site.timezone")}", site["tz"])
+        site["tz"] = st.text_input(f"{T("buttons.site.timezone")}", site["tz"], icon="🕐")
 
     return site
 
@@ -110,7 +110,7 @@ def edit_implant(subfolder: Path) -> dict:
     implant["name"] = st.text_input(T("buttons.implant.name"), implant["name"])
 
     # Module configuration
-    with st.expander(f"⚡ ***{T("buttons.implant.module.title")}***"):
+    with st.expander(f"***{T("buttons.implant.module.title")}***",icon="⚡"):
         col1, col2 = st.columns(2)
         module_origins = ["CECMod", "SandiaMod", "pvwatts", "Custom"]
         origin_index = module_origins.index(implant["module"]["origin"])
@@ -152,7 +152,7 @@ def edit_implant(subfolder: Path) -> dict:
         )
 
     # Inverter configuration
-    with st.expander(f"🔌 ***{T("buttons.implant.inverter.title")}***"):
+    with st.expander(f"***{T("buttons.implant.inverter.title")}***",icon="🔌"):
         col1, col2 = st.columns(2)
         inverter_origins = ["cecinverter", "pvwatts", "Custom"]
         inv_index = inverter_origins.index(implant["inverter"]["origin"])
@@ -198,7 +198,7 @@ def mount_setting(implant_mount):
     ]
     mount_index = mount_opts.index(implant_mount["type"])
 
-    with st.expander(f"⚠️ ***{T("buttons.implant.mount.title")}***"):
+    with st.expander(f"***{T("buttons.implant.mount.title")}***",icon="⚠️"):
         col1, col2 = st.columns([2, 1])
         with col1:
             implant_mount["type"] = st.selectbox(
@@ -287,25 +287,29 @@ def render():
 
     selected_row = filtered[filtered["implant_name"] == selected_implant].iloc[0]
     subfolder = selected_row["subfolder"]
-    st.markdown("---")
 
     # Edit and display site and implant
-    st.subheader("🛠️ " + T("subtitle.implant_config"))
-
-    col_left, col_sep, col_right = st.columns([2, 0.1, 3])
-
-    with col_right:
-        st.subheader(f"🧰 {T("subtitle.implant")}")
-        implant = edit_implant(subfolder)
-
-    with col_left:
-        st.subheader(f"🏢 {T("subtitle.site")}")
-        site = edit_site(subfolder)
-        _, col1, col2 = st.columns([5, 2, 2])
+    with st.expander("🛠️ " + T("subtitle.implant_config")):
+        site, implant = st.tabs([f"🏢 {T("subtitle.site")}",f"🧰 {T("subtitle.implant")}"])
+        with site:
+            site = edit_site(subfolder)
+        with implant:
+            implant = edit_implant(subfolder)
+            
+    # col_left, col_sep, col_right = st.columns([2, 0.1, 3])
+# 
+    # with col_right:
+        # st.subheader(f"🧰 {T("subtitle.implant")}")
+        # implant = edit_implant(subfolder)
+# 
+    # with col_left:
+        # st.subheader(f"🏢 {T("subtitle.site")}")
+        # site = edit_site(subfolder)
+    _, col1, col2 = st.columns([5, 2, 2])
 
     with rr:
         a, b = st.columns(2)
-        if a.button(f"💾 {T("buttons.save")}"):
+        if a.button(f"{T("buttons.save")}",icon="💾", key="save_changes"):
             keep_mount_params = {}
             if implant["mount"]["type"] == "FixedMount":
                 keep_mount_params = {"surface_tilt", "surface_azimuth"}
@@ -330,9 +334,8 @@ def render():
             if sim_file.exists():
                 sim_file.unlink()
             # st.success("Changes saved.")
-            st.rerun()
 
-        if b.button(f"🔥 {T("buttons.simulate")}"):
+        if b.button(f"{T("buttons.simulate")}",icon="🔥"):
             st.toast("🚀Simulation running ✅")
             Simulate(subfolder)
             st.toast("Simulation completed ✅")

@@ -60,13 +60,15 @@ class ImplantsComparisonPage(Page):
                 }
             a, b, _ = st.columns([1, 1, 7])
             with a:
-                if st.button(T("buttons.select_all")):
+                if st.button(T("buttons.select_all"), key="select_all"):
                     for imp_id in df["id"]:
                         st.session_state.implant_selection[imp_id] = True
+                    st.rerun()
             with b:
-                if st.button(T("buttons.deselect_all")):
+                if st.button(T("buttons.deselect_all"), key="deselect_all"):
                     for imp_id in df["id"]:
                         st.session_state.implant_selection[imp_id] = False
+                    st.rerun()
 
             col1, col2, col3 = st.columns(3)
             i = -1
@@ -80,14 +82,14 @@ class ImplantsComparisonPage(Page):
                     with col1:
                         st.session_state.implant_selection[imp_id] = st.checkbox(
                             label,
-                            value=st.session_state.implant_selection.get(imp_id, False),
+                            value= st.session_state.implant_selection.get(imp_id, False),
                             key=f"checkbox_{imp_id}",
                         )
                 elif i < 2 * l:
                     with col2:
                         st.session_state.implant_selection[imp_id] = st.checkbox(
                             label,
-                            value=st.session_state.implant_selection.get(imp_id, False),
+                            value= st.session_state.implant_selection.get(imp_id, False),
                             key=f"checkbox_{imp_id}",
                         )
                 else:

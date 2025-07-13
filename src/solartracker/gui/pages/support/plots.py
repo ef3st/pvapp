@@ -189,6 +189,7 @@ def get_panel_vertices(tilt_deg, azimuth_deg, width=2.0, height=1.0, center=(0, 
     return x.tolist(), y.tolist(), z.tolist()
 
 
+@st.fragment
 def seasonal_plot(df_plot, page):
     st.markdown(f"### {translate(f"{page}.subtitle.periodic")}")
     col_graph, col_settings = st.columns([8, 2])
@@ -218,25 +219,25 @@ def seasonal_plot(df_plot, page):
             with st.expander(
                 f"📅  {translate(f"{page}.buttons.periods")}", expanded=True
             ):
-                selected_seasons = []
-                a, b = st.columns(2)
-                i = 0
-                for season in season_options[:]:
-                    col = st
-                    if i < 2:
-                        col = a
-                    elif i < 4:
-                        col = b
-                    # else:
-                    #     st.markdown("---")
-                    if col.toggle(
-                        season, value=(True if season in default_seasons else False)
-                    ):
-                        selected_seasons.append(season)
-                    i += 1
+                selected_seasons = st.pills(" ", options=season_options,default=season_options,selection_mode="multi", label_visibility="collapsed", key=f"{page}_season_selected")
+                # selected_seasons = []
+                # a, b = st.columns(2)
+                # i = 0
+                # for season in season_options[:]:
+                #     col = st
+                #     if i < 2:
+                #         col = a
+                #     elif i < 4:
+                #         col = b
+                #     # else:
+                #     #     st.markdown("---")
+                #     if col.toggle(
+                #         season, value=(True if season in default_seasons else False)
+                #     ):
+                #         selected_seasons.append(season)
+                #     i += 1
             if st.session_state["selected_seasons"] != selected_seasons:
                 st.session_state["selected_seasons"] = selected_seasons
-                st.rerun()
         else:
             selected_seasons = df_plot["season"].unique().tolist()
 

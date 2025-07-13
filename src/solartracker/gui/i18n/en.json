@@ -7,6 +7,7 @@
       }
     },
     "plots":{
+      "variable_description": {
       "poa_global": "(W/m²) Global plane-of-array irradiance (direct + diffuse)",
       "poa_direct": "(W/m²) Direct irradiance on the plane of array",
       "poa_diffuse": "(W/m²) Diffuse irradiance on the plane of array",
@@ -39,7 +40,8 @@
       "clearsky_ghi": "(W/m²) Global horizontal irradiance (clear-sky model)",
       "clearsky_dni": "(W/m²) Direct normal irradiance (clear-sky model)",
       "clearsky_dhi": "(W/m²) Diffuse horizontal irradiance (clear-sky model)"
-  },
+     }
+    },
     "implants": {
       "title": "Implants",
       "df_title": ["Site", "Address", "City", "Implant", "Module", "Inverter", "Mount", "Coordinates", "lat", "lon","Simulation"],
