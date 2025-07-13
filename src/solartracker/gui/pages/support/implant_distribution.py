@@ -10,121 +10,235 @@ import plotly.graph_objects as go
 import time
 from ..beta import network_classes as net
 from streamlit_elements import elements, mui, html
+
+
 def implant_distribution():
     # tests()
-    #network_status()
+    # network_status()
     implant_map()
     stremlit_test()
     # new_status_panels()
-    #create_net()
+    # create_net()
 
 
 def new_status_panels():
     from streamlit_elements import elements, mui, html
     from streamlit_elements import dashboard
     from itertools import product
+
     N_STRINGS = 2
     MODULES_PER_STRING = 2
     df = generate_data(N_STRINGS, MODULES_PER_STRING)
 
-
     with elements("dashboard"):
         layout = [
-        dashboard.Item(f"{i}_{j}", x=j+2, y=0, w=1, h=1, isDraggable=True, isResizable=True)
-        for i, j in product(range(N_STRINGS), range(MODULES_PER_STRING))
-    ]
+            dashboard.Item(
+                f"{i}_{j}", x=j + 2, y=0, w=1, h=1, isDraggable=True, isResizable=True
+            )
+            for i, j in product(range(N_STRINGS), range(MODULES_PER_STRING))
+        ]
         with dashboard.Grid(layout):
-                for pair in range(N_STRINGS):
-                    str_df = df[df["string"] == pair]
-                    for m in range(MODULES_PER_STRING):
-                        mod = str_df[str_df["module"] == m].iloc[0]
-                        module_card(mod, f"{pair}_{m}")
+            for pair in range(N_STRINGS):
+                str_df = df[df["string"] == pair]
+                for m in range(MODULES_PER_STRING):
+                    mod = str_df[str_df["module"] == m].iloc[0]
+                    module_card(mod, f"{pair}_{m}")
 
 
 def ciao():
     st.info("Switch ON")
-    
+
+
 def rgba(temp):
-    if temp<20:
-        norm = (1-temp/20) if (temp>=0 and temp <20) else 1
+    if temp < 20:
+        norm = (1 - temp / 20) if (temp >= 0 and temp < 20) else 1
         return f"rgba(0,0,{255*norm},0.8)"
     else:
-        norm = (temp-20)/(80-20)
+        norm = (temp - 20) / (80 - 20)
         return f"rgba({255*norm},{255*(1-norm)},0,0.5)"
 
-def module_card(panel_data,key):
+
+def module_card(panel_data, key):
     from streamlit_elements import lazy, sync
-    with mui.Card(key=key, sx={
-                "backgroundColor": rgba(panel_data["Temperature"]),
-                "color": "white",
-                "border": "1px solid #00acc1",
-                "minWidth": "150px",
-                "maxWidth": "150px",
-            }):
+
+    with mui.Card(
+        key=key,
+        sx={
+            "backgroundColor": rgba(panel_data["Temperature"]),
+            "color": "white",
+            "border": "1px solid #00acc1",
+            "minWidth": "150px",
+            "maxWidth": "150px",
+        },
+    ):
         # with mui.CardActionArea(onClick=lazy(alert)):
-            with mui.CardContent():
-                mui.Typography(f'{panel_data["name"]}', variant="h6")
-                mui.Typography(f'Power: {round(panel_data["Power"])}W', color="text.secondary")
-                mui.Slider(label="Custom marks",  defaultValue= {panel_data["Tilt"]}, marks= True,valueLabelDisplay="auto", min={0.},max={180.})
-                with mui.Box(sx={"border": '1px dashed grey', "backgroundColor": "rgba(0,0,0,0.8)" }):
-                    if panel_data["status"]== "ok":
-                        if panel_data["on"]:
-                            mui.Chip(label="ON ", color = "success",size="small")
-                        else:
-                            mui.Chip(label="OFF", variant="outlined", color = "success",size="small")
-                        
-                        mui.Radio(label="On", color = "success",checked = True ,size="small")
-                        if panel_data["n_messages"]:
-                            mui.Badge("ℹ️", badgeContent={panel_data["n_messages"]},key=f"b{key}")
-                        else:
-                            mui.Badge("🚀",key=f"b{key}")
-                            
-                    if panel_data["status"] == "war":
-                        if panel_data["on"]:
-                            mui.Chip(label="ON", color = "warning",size="small")
-                        else:
-                            mui.Chip(label="OFF", variant="outlined", color = "warning",size="small")
-                        mui.Radio(label="On", color = "warning",checked = True ,size="small")
-                        if panel_data["n_messages"]:
-                            mui.Badge("⚠️", badgeContent={panel_data["n_messages"]},key=f"b{key}")
-                    
-                    if panel_data["status"]== "err":
-                        if panel_data["on"]:
-                            mui.Chip(label="ON", color = "error",size="small")
-                        else:
-                            mui.Chip(label="OFF", variant="outlined", color = "error",size="small")
-                        mui.Radio(label="On", color = "error",checked = True ,size="small")
-                        if panel_data["n_messages"]:
-                            mui.Badge("‼️", badgeContent={panel_data["n_messages"]},key=f"b{key}")
-                        
-                        
-    
+        with mui.CardContent():
+            mui.Typography(f'{panel_data["name"]}', variant="h6")
+            mui.Typography(
+                f'Power: {round(panel_data["Power"])}W', color="text.secondary"
+            )
+            mui.Slider(
+                label="Custom marks",
+                defaultValue={panel_data["Tilt"]},
+                marks=True,
+                valueLabelDisplay="auto",
+                min={0.0},
+                max={180.0},
+            )
+            with mui.Box(
+                sx={"border": "1px dashed grey", "backgroundColor": "rgba(0,0,0,0.8)"}
+            ):
+                if panel_data["status"] == "ok":
+                    if panel_data["on"]:
+                        mui.Chip(label="ON ", color="success", size="small")
+                    else:
+                        mui.Chip(
+                            label="OFF",
+                            variant="outlined",
+                            color="success",
+                            size="small",
+                        )
+
+                    mui.Radio(label="On", color="success", checked=True, size="small")
+                    if panel_data["n_messages"]:
+                        mui.Badge(
+                            "ℹ️", badgeContent={panel_data["n_messages"]}, key=f"b{key}"
+                        )
+                    else:
+                        mui.Badge("🚀", key=f"b{key}")
+
+                if panel_data["status"] == "war":
+                    if panel_data["on"]:
+                        mui.Chip(label="ON", color="warning", size="small")
+                    else:
+                        mui.Chip(
+                            label="OFF",
+                            variant="outlined",
+                            color="warning",
+                            size="small",
+                        )
+                    mui.Radio(label="On", color="warning", checked=True, size="small")
+                    if panel_data["n_messages"]:
+                        mui.Badge(
+                            "⚠️", badgeContent={panel_data["n_messages"]}, key=f"b{key}"
+                        )
+
+                if panel_data["status"] == "err":
+                    if panel_data["on"]:
+                        mui.Chip(label="ON", color="error", size="small")
+                    else:
+                        mui.Chip(
+                            label="OFF", variant="outlined", color="error", size="small"
+                        )
+                    mui.Radio(label="On", color="error", checked=True, size="small")
+                    if panel_data["n_messages"]:
+                        mui.Badge(
+                            "‼️", badgeContent={panel_data["n_messages"]}, key=f"b{key}"
+                        )
 
 
-#streamlit-graphic test
+# streamlit-graphic test
 def stremlit_test():
-    st.segmented_control(" ",options=["Monitoring","Settings"],label_visibility="collapsed",default="Monitoring", key="monitoring")
+    st.segmented_control(
+        " ",
+        options=["Monitoring", "Settings"],
+        label_visibility="collapsed",
+        default="Monitoring",
+        key="monitoring",
+    )
     if "info_panel" not in st.session_state:
         st.session_state.info_panel = None
     if st.session_state.info_panel:
         with st.container(border=True):
             st.markdown("Ciao")
+
             def close():
                 st.session_state.info_panel = None
+
             st.button("Close", icon="❌", on_click=close)
-    aa, bb,_ = st.columns([1,1,5], gap=None, border=True)
+    aa, bb, _ = st.columns([1, 1, 5], gap=None, border=True)
     with aa.container(border=False):
         general = {"Tilt": None}
         with st.expander("⚙️ Settings"):
-            general["on"] = st.toggle("On/Off",value= True, key="a")
+            general["on"] = st.toggle("On/Off", value=True, key="a")
             general["on"] = st.number_input("Tilt", key="aa", on_change=st.rerun)
-        panel_display({"name": "Test_1", "Power": 250, "Temperature":10, "status":"ok", "n_messages": 0, "on":st.session_state.a, "Tilt": st.session_state.aa})
-        panel_display({"name": "Test_2", "Power": 250, "Temperature":20,"status":"war", "n_messages": 1, "on":st.session_state.a, "Tilt": st.session_state.aa})
-        panel_display({"name": "Test_7", "Power": 250, "Temperature":30,"status":"err", "n_messages": 3, "on":st.session_state.a, "Tilt": st.session_state.aa})
-        panel_display({"name": "Test_3", "Power": 250, "Temperature":40,"status":"ok", "n_messages": 0, "on":st.session_state.a, "Tilt": st.session_state.aa})
-        panel_display({"name": "Test_4", "Power": 250, "Temperature":50,"status":"ok", "n_messages": 2, "on":st.session_state.a, "Tilt": st.session_state.aa})
-        panel_display({"name": "Test_5", "Power": 250, "Temperature":60,"status":"ok", "n_messages": 5, "on":st.session_state.a, "Tilt": st.session_state.aa})
-        panel_display({"name": "Test_6", "Power": 250, "Temperature":70,"status":"ok", "n_messages": 5, "on":st.session_state.a, "Tilt": st.session_state.aa})
+        panel_display(
+            {
+                "name": "Test_1",
+                "Power": 250,
+                "Temperature": 10,
+                "status": "ok",
+                "n_messages": 0,
+                "on": st.session_state.a,
+                "Tilt": st.session_state.aa,
+            }
+        )
+        panel_display(
+            {
+                "name": "Test_2",
+                "Power": 250,
+                "Temperature": 20,
+                "status": "war",
+                "n_messages": 1,
+                "on": st.session_state.a,
+                "Tilt": st.session_state.aa,
+            }
+        )
+        panel_display(
+            {
+                "name": "Test_7",
+                "Power": 250,
+                "Temperature": 30,
+                "status": "err",
+                "n_messages": 3,
+                "on": st.session_state.a,
+                "Tilt": st.session_state.aa,
+            }
+        )
+        panel_display(
+            {
+                "name": "Test_3",
+                "Power": 250,
+                "Temperature": 40,
+                "status": "ok",
+                "n_messages": 0,
+                "on": st.session_state.a,
+                "Tilt": st.session_state.aa,
+            }
+        )
+        panel_display(
+            {
+                "name": "Test_4",
+                "Power": 250,
+                "Temperature": 50,
+                "status": "ok",
+                "n_messages": 2,
+                "on": st.session_state.a,
+                "Tilt": st.session_state.aa,
+            }
+        )
+        panel_display(
+            {
+                "name": "Test_5",
+                "Power": 250,
+                "Temperature": 60,
+                "status": "ok",
+                "n_messages": 5,
+                "on": st.session_state.a,
+                "Tilt": st.session_state.aa,
+            }
+        )
+        panel_display(
+            {
+                "name": "Test_6",
+                "Power": 250,
+                "Temperature": 70,
+                "status": "ok",
+                "n_messages": 5,
+                "on": st.session_state.a,
+                "Tilt": st.session_state.aa,
+            }
+        )
     # with bb.container(border=False):
     #     general = {}
     #     with st.expander("⚙️ Settings"):
@@ -132,35 +246,40 @@ def stremlit_test():
     #         general["Tilt"] = st.number_input("Tilt", key="ba")
     #     panel_display({"name": "test", "Power": 250, "Temperature":80, "on":general["on"], "Tilt": general["Tilt"]})
     #     panel_display({"name": "tes3", "Power": 250, "Temperature":15, "on":general["on"], "Tilt": general["Tilt"]})
-    
-    
+
+
 ####
 
 
 def panel_display(panel_data):
     borders = False if st.session_state.monitoring == "Monitoring" else True
     with st.container(border=borders):
-        top,bottom= st.columns([25,1],vertical_alignment="top",border=borders,gap="small",)
+        top, bottom = st.columns(
+            [25, 1],
+            vertical_alignment="top",
+            border=borders,
+            gap="small",
+        )
         with top:
             with elements(f"{panel_data["name"]}"):
                 module_card(panel_data, "test")
         if st.session_state.monitoring != "Monitoring":
-            a,b,c = bottom.columns(3)
+            a, b, c = bottom.columns(3)
+
             def open_info():
                 st.session_state.info_panel = "info"
                 st.rerun()
+
             def change_angle():
                 st.session_state.info_panel = "change_angle"
                 st.rerun()
-            a.button("ℹ️", key = f"a{panel_data["name"]}", on_click=open_info)
-            c.toggle("🔛", label_visibility="collapsed",  key = f"b{panel_data["name"]}")
-            b.button("📐",  key = f"c{panel_data["name"]}", on_click=change_angle)
+
+            a.button("ℹ️", key=f"a{panel_data["name"]}", on_click=open_info)
+            c.toggle("🔛", label_visibility="collapsed", key=f"b{panel_data["name"]}")
+            b.button("📐", key=f"c{panel_data["name"]}", on_click=change_angle)
 
 
-
-
-
-def generate_data(n_strings,modules_per_string):
+def generate_data(n_strings, modules_per_string):
     # Simulazione dati
     n_strings = 6
     modules_per_string = 9
@@ -183,11 +302,12 @@ def generate_data(n_strings,modules_per_string):
             )
     return pd.DataFrame(data)
 
+
 def create_net():
     if not "net" in st.session_state:
         st.session_state.net = net.Network()
-    
-    network =  st.session_state.net
+
+    network = st.session_state.net
     with st.popover("Add inverter"):
         with st.form("Add Inverter"):
             inv_name = st.text_input("Invertername")
@@ -204,15 +324,11 @@ def create_net():
     a = st.selectbox("first node", options=list(network.nodes.keys()))
     b = st.selectbox("second node", options=list(network.nodes.keys()))
     if st.button("Create link"):
-        network.link_nodes(a,b)
+        network.link_nodes(a, b)
     st.plotly_chart(visualizza_plotly(network))
     # html = network.show_net()
     # components.html(html, height=600, width=1000, scrolling=False)
     pass
-
-
-
-
 
 
 def visualizza_plotly(network):
@@ -243,39 +359,46 @@ def visualizza_plotly(network):
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
-        tipo = G.nodes[node]['tipo']
-        node_color.append('green' if tipo == 'Modulo' else 'orange')
+        tipo = G.nodes[node]["tipo"]
+        node_color.append("green" if tipo == "Modulo" else "orange")
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=1, color='gray'),
-        hoverinfo='none', mode='lines'))
+    fig.add_trace(
+        go.Scatter(
+            x=edge_x,
+            y=edge_y,
+            line=dict(width=1, color="gray"),
+            hoverinfo="none",
+            mode="lines",
+        )
+    )
 
-    fig.add_trace(go.Scatter(
-    x=node_x,
-    y=node_y,
-    mode='markers+text',
-    marker=dict(size=20, color=node_color, symbol='circle'),  # o 'square', 'diamond'
-    text=[f"{id}" for id in G.nodes],
-    hovertext=[f"{G.nodes[nodo]['tipo']}<br>ID: {nodo}" for nodo in G.nodes],
-    hoverinfo='text',
-    textposition="bottom center"
-))
-    
-    fig.update_layout(showlegend=False,  xaxis=dict(showgrid=False, zeroline=False, visible=False),
-    yaxis=dict(showgrid=False, zeroline=False, visible=False))
+    fig.add_trace(
+        go.Scatter(
+            x=node_x,
+            y=node_y,
+            mode="markers+text",
+            marker=dict(
+                size=20, color=node_color, symbol="circle"
+            ),  # o 'square', 'diamond'
+            text=[f"{id}" for id in G.nodes],
+            hovertext=[f"{G.nodes[nodo]['tipo']}<br>ID: {nodo}" for nodo in G.nodes],
+            hoverinfo="text",
+            textposition="bottom center",
+        )
+    )
+
+    fig.update_layout(
+        showlegend=False,
+        xaxis=dict(showgrid=False, zeroline=False, visible=False),
+        yaxis=dict(showgrid=False, zeroline=False, visible=False),
+    )
     return fig
-
-
-
-
-
-
 
 
 def tests():
     from streamlit_elements import elements, mui, html
+
     with elements("dashboard"):
 
         # You can create a draggable and resizable dashboard using
@@ -312,46 +435,40 @@ def tests():
             mui.Paper("First item", key="first_item")
             mui.Paper("Second item (cannot drag)", key="second_item")
             mui.Paper("Third item (cannot resize)", key="third_item")
-            
-    st.button("Test_",type="primary")
-    st.button("Test_1",type="secondary",help="HELP")
-    st.button("Test_2",type="tertiary")
+
+    st.button("Test_", type="primary")
+    st.button("Test_1", type="secondary", help="HELP")
+    st.button("Test_2", type="tertiary")
     with st.form("my_form"):
         st.write("Inside the form")
         slider_val = st.slider("Form slider")
         checkbox_val = st.checkbox("Form checkbox")
-    
+
         # Every form must have a submit button.
         submitted = st.form_submit_button("Submit")
         if submitted:
             st.write("slider", slider_val, "checkbox", checkbox_val)
     st.write("Outside the form")
 
-    
     uploaded_file = st.file_uploader("Choose a file")
-    st.link_button("ansa","https://www.ansa.it/")
+    st.link_button("ansa", "https://www.ansa.it/")
     st.badge("Ciao")
 
     progress_text = "Operation in progress. Please wait."
     my_bar = st.progress(0, text=progress_text)
-   
-    
+
     options = ["North", "East", "South", "West"]
-    selection = st.segmented_control(
-        "Directions", options, selection_mode="multi"
-    )
+    selection = st.segmented_control("Directions", options, selection_mode="multi")
     st.markdown(f"Your selected options")
-   
-    
+
     tab1, tab2 = st.tabs(["📈 Chart", "🗃 Data"])
     data = np.random.randn(10, 1)
-   
+
     tab1.subheader("A tab with a chart")
     tab1.line_chart(data)
-   
+
     tab2.subheader("A tab with the data")
     tab2.write(data)
-
 
     for percent_complete in range(100):
         time.sleep(0.01)
@@ -360,11 +477,12 @@ def tests():
     my_bar.empty()
     progress_text = "Operation in progress. Please wait."
     my_bar = st.progress(0, text=progress_text)
-   
+
     for percent_complete in range(100):
         time.sleep(0.01)
         my_bar.progress(percent_complete + 1, text=progress_text)
     time.sleep(1)
+
 
 def status_panels():
 
@@ -450,13 +568,15 @@ def status_panels():
                             unsafe_allow_html=True,
                         )
                         a, b = st.columns(2)
-                        panel_on = b.toggle(f"S{pair}-M{m}",label_visibility="collapsed",value=True)
+                        panel_on = b.toggle(
+                            f"S{pair}-M{m}", label_visibility="collapsed", value=True
+                        )
                         if panel_on:
                             a.badge("🟩")
                         else:
                             a.badge("🟥")
                         st.markdown("---")
-    
+
                     # Modulo stringa sinistra
                     with center_l:
                         st.markdown(
@@ -487,7 +607,9 @@ def status_panels():
                         unsafe_allow_html=True,
                     )
                     a, b = st.columns(2)
-                    panel_on = b.toggle(f"S{pair+1}-M{m}",label_visibility="collapsed",value=True)
+                    panel_on = b.toggle(
+                        f"S{pair+1}-M{m}", label_visibility="collapsed", value=True
+                    )
                     if panel_on:
                         a.badge("🟩")
                     else:
@@ -497,72 +619,71 @@ def status_panels():
 
 
 def network_status():
-      
-    data =    [
-            {"lat": 44.3602, "lon": 12.2144},
-            {"lat": 44.3602, "lon": 12.2145},
-            {"lat": 44.3602, "lon": 12.2146},
-            {"lat": 44.3602, "lon": 12.2147},
-            {"lat": 44.3602, "lon": 12.2148},
-            {"lat": 44.3602, "lon": 12.2149},
-            {"lat": 44.3602, "lon": 12.2150},
-            {"lat": 44.3602, "lon": 12.2151},
-            {"lat": 44.3602, "lon": 12.2152},
-            {"lat": 44.3603, "lon": 12.2144},
-            {"lat": 44.3603, "lon": 12.2145},
-            {"lat": 44.3603, "lon": 12.2146},
-            {"lat": 44.3603, "lon": 12.2147},
-            {"lat": 44.3603, "lon": 12.2148},
-            {"lat": 44.3603, "lon": 12.2149},
-            {"lat": 44.3603, "lon": 12.2150},
-            {"lat": 44.3603, "lon": 12.2151},
-            {"lat": 44.3603, "lon": 12.2152},
-            {"lat": 44.3605, "lon": 12.2144},
-            {"lat": 44.3605, "lon": 12.2145},
-            {"lat": 44.3605, "lon": 12.2146},
-            {"lat": 44.3605, "lon": 12.2147},
-            {"lat": 44.3605, "lon": 12.2148},
-            {"lat": 44.3605, "lon": 12.2149},
-            {"lat": 44.3605, "lon": 12.2150},
-            {"lat": 44.3605, "lon": 12.2151},
-            {"lat": 44.3605, "lon": 12.2152},
-            {"lat": 44.3606, "lon": 12.2144},
-            {"lat": 44.3606, "lon": 12.2145},
-            {"lat": 44.3606, "lon": 12.2146},
-            {"lat": 44.3606, "lon": 12.2147},
-            {"lat": 44.3606, "lon": 12.2148},
-            {"lat": 44.3606, "lon": 12.2149},
-            {"lat": 44.3606, "lon": 12.2150},
-            {"lat": 44.3606, "lon": 12.2151},
-            {"lat": 44.3606, "lon": 12.2152},
-        ]
+
+    data = [
+        {"lat": 44.3602, "lon": 12.2144},
+        {"lat": 44.3602, "lon": 12.2145},
+        {"lat": 44.3602, "lon": 12.2146},
+        {"lat": 44.3602, "lon": 12.2147},
+        {"lat": 44.3602, "lon": 12.2148},
+        {"lat": 44.3602, "lon": 12.2149},
+        {"lat": 44.3602, "lon": 12.2150},
+        {"lat": 44.3602, "lon": 12.2151},
+        {"lat": 44.3602, "lon": 12.2152},
+        {"lat": 44.3603, "lon": 12.2144},
+        {"lat": 44.3603, "lon": 12.2145},
+        {"lat": 44.3603, "lon": 12.2146},
+        {"lat": 44.3603, "lon": 12.2147},
+        {"lat": 44.3603, "lon": 12.2148},
+        {"lat": 44.3603, "lon": 12.2149},
+        {"lat": 44.3603, "lon": 12.2150},
+        {"lat": 44.3603, "lon": 12.2151},
+        {"lat": 44.3603, "lon": 12.2152},
+        {"lat": 44.3605, "lon": 12.2144},
+        {"lat": 44.3605, "lon": 12.2145},
+        {"lat": 44.3605, "lon": 12.2146},
+        {"lat": 44.3605, "lon": 12.2147},
+        {"lat": 44.3605, "lon": 12.2148},
+        {"lat": 44.3605, "lon": 12.2149},
+        {"lat": 44.3605, "lon": 12.2150},
+        {"lat": 44.3605, "lon": 12.2151},
+        {"lat": 44.3605, "lon": 12.2152},
+        {"lat": 44.3606, "lon": 12.2144},
+        {"lat": 44.3606, "lon": 12.2145},
+        {"lat": 44.3606, "lon": 12.2146},
+        {"lat": 44.3606, "lon": 12.2147},
+        {"lat": 44.3606, "lon": 12.2148},
+        {"lat": 44.3606, "lon": 12.2149},
+        {"lat": 44.3606, "lon": 12.2150},
+        {"lat": 44.3606, "lon": 12.2151},
+        {"lat": 44.3606, "lon": 12.2152},
+    ]
     arcs = []
-    for i,j in enumerate(data):
-        if i < len(data)-1:
+    for i, j in enumerate(data):
+        if i < len(data) - 1:
             arc = {
-            "from_lat": data[i]["lat"],
-            "from_lon": data[i]["lon"],
-            "to_lat": data[i+1]["lat"],
-            "to_lon": data[i+1]["lon"]
-        }
+                "from_lat": data[i]["lat"],
+                "from_lon": data[i]["lon"],
+                "to_lat": data[i + 1]["lat"],
+                "to_lon": data[i + 1]["lon"],
+            }
         arcs.append(arc)
-    
+
     arc_data = pd.DataFrame(arcs)
     points_data = pd.DataFrame(data)
 
-    
     arc_layer = pdk.Layer(
-    "ArcLayer",
-    data=arc_data,
-    get_source_position='[from_lon, from_lat]',
-    get_target_position='[to_lon, to_lat]',
-    get_source_color=[0, 128, 200],
-    get_target_color=[200, 0, 80],
-    auto_highlight=True,
-    width_scale=0.5,
-    get_width=5,
-    pickable=True
-)
+        "ArcLayer",
+        data=arc_data,
+        get_source_position="[from_lon, from_lat]",
+        get_target_position="[to_lon, to_lat]",
+        get_source_color=[0, 128, 200],
+        get_target_color=[200, 0, 80],
+        auto_highlight=True,
+        width_scale=0.5,
+        get_width=5,
+        pickable=True,
+    )
     layer1 = pdk.Layer(
         "ScatterplotLayer",
         data=points_data,
@@ -574,21 +695,18 @@ def network_status():
         radius_max_pixels=5,  # Dimensione massima visibile
     )
     view_state = pdk.ViewState(
-    latitude= 44.3602,
-    longitude=12.2152,
-    zoom=18,
-    bearing=0,
-    pitch=30
-)
+        latitude=44.3602, longitude=12.2152, zoom=18, bearing=0, pitch=30
+    )
 
     deck = pdk.Deck(
-    layers=[layer1,arc_layer],
-    initial_view_state=view_state,
-    map_style="mapbox://styles/mapbox/light-v9",
-    tooltip={"text": "Flusso da {from_lat}, {from_lon} a {to_lat}, {to_lon}"}
-)
+        layers=[layer1, arc_layer],
+        initial_view_state=view_state,
+        map_style="mapbox://styles/mapbox/light-v9",
+        tooltip={"text": "Flusso da {from_lat}, {from_lon} a {to_lat}, {to_lon}"},
+    )
 
     st.pydeck_chart(deck)
+
 
 def implant_map():
 

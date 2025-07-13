@@ -219,7 +219,14 @@ def seasonal_plot(df_plot, page):
             with st.expander(
                 f"📅  {translate(f"{page}.buttons.periods")}", expanded=True
             ):
-                selected_seasons = st.pills(" ", options=season_options,default=season_options,selection_mode="multi", label_visibility="collapsed", key=f"{page}_season_selected")
+                selected_seasons = st.pills(
+                    " ",
+                    options=season_options,
+                    default=season_options,
+                    selection_mode="multi",
+                    label_visibility="collapsed",
+                    key=f"{page}_season_selected",
+                )
                 # selected_seasons = []
                 # a, b = st.columns(2)
                 # i = 0

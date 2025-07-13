@@ -15,8 +15,9 @@ sys.dont_write_bytecode = True
 
 def simulate_all(folder: Path = Path("data/")):
     from streamlit_elements import elements, mui, html
+
     # bar = st.progress(0, text="Simulations execution")
-    
+
     l = len(sorted(folder.iterdir()))
     for i, subfolder in enumerate(sorted(folder.iterdir())):
         if subfolder.is_dir():
@@ -67,45 +68,57 @@ def streamlit():
     # 🔤 Gestione lingua
     with st.sidebar:
         st.markdown("## 🌅 PV Implants Analyser")
-        #with a.popover(f"🌍 {T('buttons.language')}"):
+        # with a.popover(f"🌍 {T('buttons.language')}"):
         if not "current_lang" in st.session_state:
             st.session_state.current_lang = "it"
-        lang = st.segmented_control(" ",options=aviable_languages(),label_visibility="collapsed", default=st.session_state.current_lang)
+        lang = st.segmented_control(
+            " ",
+            options=aviable_languages(),
+            label_visibility="collapsed",
+            default=st.session_state.current_lang,
+        )
         # if lang is None:
         #     st.rerun()
         if lang and lang != st.session_state.current_lang:
             st.session_state.T = load_translation(lang)
             st.session_state.current_lang = lang
             st.rerun()
-                
+
         if not "beta_tools" in st.session_state:
             st.session_state.beta_tools = False
         st.markdown(" ")
         if "menu" not in st.session_state:
             st.session_state.menu = 0
 
-        
-        options = T("menu") + (["Real-time monitor  (beta)"] if st.session_state.get("beta_tools") else [])
-        
+        options = T("menu") + (
+            ["Real-time monitor  (beta)"] if st.session_state.get("beta_tools") else []
+        )
+
         selected = option_menu(
             None,
             options=options,
-            icons=["house", "tools", "bar-chart", "graph-up"][:len(options)],
+            icons=["house", "tools", "bar-chart", "graph-up"][: len(options)],
             menu_icon="cast",
-            default_index= st.session_state.menu if st.session_state.menu < len(options) else 0,
-            key = "option_menu"
+            default_index=(
+                st.session_state.menu if st.session_state.menu < len(options) else 0
+            ),
+            key="option_menu",
         )
-        if selected != options[st.session_state.menu if st.session_state.menu < len(options) else 0]:
-                st.session_state.menu = options.index(selected) if selected in options else 0
+        if (
+            selected
+            != options[
+                st.session_state.menu if st.session_state.menu < len(options) else 0
+            ]
+        ):
+            st.session_state.menu = (
+                options.index(selected) if selected in options else 0
+            )
 
         with st.popover("🧰 Tools"):
-            a,b = st.columns(2)
-            if a.button(f"{T('buttons.simulate')}",icon="🔥"):
+            a, b = st.columns(2)
+            if a.button(f"{T('buttons.simulate')}", icon="🔥"):
                 simulate_all()
-            b.toggle("🧬 β tools", key="beta_tools",on_change=st.rerun)
-            
-            
-            
+            b.toggle("🧬 β tools", key="beta_tools", on_change=st.rerun)
 
     # 🔁 Routing alle pagine
     if selected == options[0]:  # "Home"

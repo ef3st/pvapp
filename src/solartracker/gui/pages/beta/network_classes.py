@@ -1,13 +1,16 @@
 from typing import List, Dict, Optional, Union
 from pyvis.network import Network as PyvisNetwork
+
+
 class Node:
     """Nodo base della rete (astratto)"""
+
     def __init__(self, id: str, **params):
         self.id = id
-        self.connections: List['Node'] = []
+        self.connections: List["Node"] = []
         self.params = params
 
-    def create_link(self, node: 'Node'):
+    def create_link(self, node: "Node"):
         if node not in self.connections:
             self.connections.append(node)
 
@@ -17,18 +20,21 @@ class Node:
 
 class Modulo(Node):
     """Modulo PV"""
+
     def __init__(self, id: str, **params):
         super().__init__(id)
 
 
 class Inverter(Node):
     """Inverter della rete"""
+
     def __init__(self, id: str, **params):
         super().__init__(id)
 
 
 class Network:
     """Rete di pannelli e inverter"""
+
     def __init__(self):
         self.nodes: Dict[str, Node] = {}
 
@@ -52,7 +58,7 @@ class Network:
     def print_connections(self):
         for nodo in self.nodes.values():
             print(f"{nodo.id} connected to {[n.id for n in nodo.connections]}")
-            
+
     def show_net(self) -> str:
         """Ritorna l'HTML della rete come stringa per Streamlit"""
         from pyvis.network import Network as PyvisNetwork
@@ -76,7 +82,9 @@ class Network:
                 color = "gray"
                 shape = "ellipse"
 
-            net_vis.add_node(nodo.id, label=label, title=title, color=color, shape=shape)
+            net_vis.add_node(
+                nodo.id, label=label, title=title, color=color, shape=shape
+            )
 
         added_edges = set()
         for nodo in self.nodes.values():

@@ -82,14 +82,14 @@ class ImplantsComparisonPage(Page):
                     with col1:
                         st.session_state.implant_selection[imp_id] = st.checkbox(
                             label,
-                            value= st.session_state.implant_selection.get(imp_id, False),
+                            value=st.session_state.implant_selection.get(imp_id, False),
                             key=f"checkbox_{imp_id}",
                         )
                 elif i < 2 * l:
                     with col2:
                         st.session_state.implant_selection[imp_id] = st.checkbox(
                             label,
-                            value= st.session_state.implant_selection.get(imp_id, False),
+                            value=st.session_state.implant_selection.get(imp_id, False),
                             key=f"checkbox_{imp_id}",
                         )
                 else:
