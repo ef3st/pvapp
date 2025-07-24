@@ -64,7 +64,7 @@ class Network:
         from pyvis.network import Network as PyvisNetwork
         import tempfile
 
-        net_vis = PyvisNetwork(height="600px", width="100%")
+        net_vis = PyvisNetwork(height="600px", width="100%", bgcolor="#222222")
         net_vis.barnes_hut()
 
         for nodo in self.nodes.values():
