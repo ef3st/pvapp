@@ -29,7 +29,7 @@
             "dc_i_xx": "Unkonwn",
             "diode_voltage": "(V) Tensione ai capi del diodo interno",
             "shunt_current": "(A) Corrente persa per effetto della resistenza di shunt",
-            "temp_cell": "(°C) Temperatura della cella fotovoltaica",
+            "cell_teperature": "(°C) Temperatura della cella fotovoltaica",
             "temp_module": "(°C) Temperatura del retro del modulo",
             "dc_power": "(W) Potenza in corrente continua in uscita dal modulo/sistema",
             "ac_power": "(W) Potenza in corrente alternata dopo l’inverter",

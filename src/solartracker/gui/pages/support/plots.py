@@ -207,7 +207,8 @@ def seasonal_plot(df_plot, page):
         variable_selected = st.selectbox(
             translate(f"{page}.buttons.choose_variable"), variable_options, index=index
         )
-        st.info(translate("plots.variable_description")[variable_selected])
+        if variable_selected in translate("plots.variable_description"):
+            st.info(translate("plots.variable_description")[variable_selected])
         st.markdown("---")
         if "season" in df_plot.columns:
             season_options = df_plot["season"].unique().tolist()
@@ -309,20 +310,18 @@ def seasonal_plot(df_plot, page):
             & (df_plot["season"] == "annual")
         ]
         length = df.shape[0]
-        a, b = st.columns([1, 20])
-        with a.popover("ℹ️"):
-            st.text(
-                " 1. Nome impanto \n 2. Valore della variabile nell'anno (somma o media a seconda della selezione) \n 3. Percentuale rispetto la media dei valori mostrati sopra"
-            )
-        with b:
+        with st.container(border=False):
+            
             cols = st.columns(length + 1)
             mean = df["value"].sum() / length
             for i in range(length):
-                s = translate("plots.variable_description")[variable_selected]
+                s = " "
+                if variable_selected in translate("plots.variable_description"):
+                    s = translate("plots.variable_description")[variable_selected]
                 cols[i].metric(
                     label=df["implant"].to_list()[i],
-                    value=f"{df["value"].to_list()[i]} {s[1:s.find(")")]}",
-                    delta=f"{round((df["value"].to_list()[i]-mean)*100/(mean),2)}%",
+                    value=f"{round(df["value"].to_list()[i],2)} {s[1:s.find(")")]}",
+                    delta=f"{round((df["value"].to_list()[i]-mean)*100/(mean),2)}%",help= " 1. Nome impanto \n 2. Valore della variabile nell'anno (somma o media a seconda della selezione) \n 3. Percentuale rispetto la media dei valori mostrati sopra"
                 )
 
 
@@ -403,7 +402,8 @@ def time_plot(data: pd.DataFrame, default=0, page=""):
         if df_filtered.empty:
             st.warning("⚠️ Nessun dato disponibile nel periodo selezionato.")
             return
-    right.info(translate("plots.variable_description")[variable])
+    if variable in translate("plots.variable_description"):
+        right.info(translate("plots.variable_description")[variable])
     # Costruzione grafico adattivo
     if "implant" in df_filtered.columns:
         fig = px.line(
@@ -424,4 +424,8 @@ def time_plot(data: pd.DataFrame, default=0, page=""):
         )
 
     fig.update_layout(xaxis_title="Timestamp", yaxis_title=variable, height=500)
-    st.plotly_chart(fig, use_container_width=True)
+    graphtab, datatab = st.tabs(tabs=["📈", "🔢"])
+    with graphtab:
+        st.plotly_chart(fig, use_container_width=True)
+    with datatab:
+        st.dataframe(df_filtered)

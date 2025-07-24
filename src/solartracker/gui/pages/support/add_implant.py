@@ -78,7 +78,7 @@ def save_implant(path=Path("data/")):
 
 
 def exit_button():
-    if st.button("❌ Annulla", key="exit"):
+    if st.button("❌ Exit", key="exit"):
         st.session_state.implant_step = 0
         st.session_state.new_implant = {"site": {}, "implant": {}}
         st.session_state.adding_implant = False
@@ -363,32 +363,79 @@ def navigation_buttons(step_back, next_key, target_dict, section_key, update_dic
 
 @st.fragment
 def render():
-    st.title("➕ New Implant")
-    init_session()
-    step = st.session_state.implant_step
-    if step == 0:
-        step_site()
-    elif step == 1:
-        step_location()
-    elif step == 2:
-        step_module()
-    elif step == 3:
-        step_inverter()
-    elif step == 4:
-        step_mount()
-    elif step == 5:
-        new_implant = st.session_state.new_implant
-        st.markdown("### 🧾 Riepilogo")
-        st.markdown("🏢 **Site**")
-        st.json(new_implant["site"])
-        st.markdown("🧰 **Implant**")
-        name = st.text_input("Give a name to this implant", value="New Implant")
-        new_implant["implant"]["name"] = name
-        st.json(new_implant["implant"])
-        col1, col2, col3 = st.columns(3)
-        if col1.button("✅ Save Implant"):
-            save_implant()
-        with col2:
-            exit_button()
-        if col3.button("🌩️ Save and Simulate"):
-            save_and_simulate()
+        # import extra_streamlit_components as stx
+        st.title("➕ New Plant")
+        init_session()
+        step = st.session_state.implant_step
+        steps()
+    # left, right = st.columns([2,3])
+    # with right:
+        if step == 0:
+            step_site()
+        elif step == 1:
+            step_location()
+            # stx.stepper_bar(steps=["Site","Location"])
+        elif step == 2:
+            step_module()
+            # stx.stepper_bar(steps=["Site","Location","Set Module"])
+        elif step == 3:
+            step_inverter()
+            # stx.stepper_bar(steps=["Site","Location","Set Module", "Set Inverter"])
+        elif step == 4:
+            step_mount()
+            # stx.stepper_bar(steps=["Site","Location","Set Module", "Set Inverter","Set Mount"])
+        elif step == 5:
+            new_implant = st.session_state.new_implant
+            st.markdown("### 🧾 Riepilogo")
+            st.markdown("🏢 **Site**")
+            st.json(new_implant["site"])
+            st.markdown("🧰 **Implant**")
+            name = st.text_input("Give a name to this implant", value="New Implant")
+            new_implant["implant"]["name"] = name
+            st.json(new_implant["implant"])
+            col1, col2, col3 = st.columns(3)
+            if col1.button("✅ Save Implant"):
+                save_implant()
+            with col2:
+                exit_button()
+            if col3.button("🌩️ Save and Simulate"):
+                save_and_simulate()
+            # stx.stepper_bar(steps=["Site","Location","Set Module", "Set Inverter","Save"])
+    # with left:
+        
+
+def steps():
+    import streamlit_antd_components as sac
+    import re
+    icons = ["house","crosshair","battery-charging","plug-fill","brightness-alt-high","floppy"]
+    disableds = [ (True, None) for i in range(0,6)]
+    disableds[st.session_state.implant_step] = (False,icons[st.session_state.implant_step])
+    subtitles = [None for i in range(6)]
+    new_implant = st.session_state.new_implant
+    if ("site" in new_implant):
+        if "name" in new_implant["site"]:
+            subtitles[0] = f"\n {new_implant["site"]["name"]}"
+        if "coordinates" in new_implant["site"]:
+            subtitles[1] = f"\n({new_implant["site"]["coordinates"]["lat"]}, {new_implant["site"]["coordinates"]["lon"]})"
+    if ("implant" in new_implant):
+        if "module" in new_implant["implant"]:
+            subtitles[2] = f"\n{new_implant["implant"]["module"]["name"]}".replace("_", " ")
+        if "inverter" in new_implant["implant"]:
+            subtitles[3] = f"\n{new_implant["implant"]["inverter"]["name"]}".replace("_", " ")
+        if "mount" in new_implant["implant"]:
+            subtitles[4] = re.sub(r"(?<!^)(?=[A-Z])", " ", f"\n{new_implant["implant"]["mount"]["type"]}")
+            
+         
+    sac.steps(
+
+    items=[
+            sac.StepsItem(title='Site', disabled=disableds[0][0],icon = disableds[0][1], subtitle=subtitles[0]),
+        sac.StepsItem(title='Location', disabled=disableds[1][0],icon = disableds[1][1],subtitle=subtitles[1]),
+        sac.StepsItem(title='Module', disabled=disableds[2][0],icon = disableds[2][1],subtitle=subtitles[2]),
+        sac.StepsItem(title='Inverter', disabled=disableds[3][0],icon = disableds[3][1],subtitle=subtitles[3]),
+            sac.StepsItem(title='Mount', disabled=disableds[4][0],icon = disableds[4][1],subtitle=subtitles[4]),
+            sac.StepsItem(title='Save', disabled=disableds[5][0],icon = disableds[5][1], description=subtitles[5]),
+
+    ], placement='vertical', index=st.session_state.implant_step, dot=False,direction="horizontal"
+
+)

@@ -9,15 +9,14 @@ from typing import List
 from .pages.implants import ImplantsPage
 from .pages.implants_comparison import ImplantsComparisonPage
 from .pages.support.implant_distribution import implant_distribution
+from streamlit_elements import elements, mui, html
 
 sys.dont_write_bytecode = True
 
-
 def simulate_all(folder: Path = Path("data/")):
     from streamlit_elements import elements, mui, html
-
     # bar = st.progress(0, text="Simulations execution")
-
+    
     l = len(sorted(folder.iterdir()))
     for i, subfolder in enumerate(sorted(folder.iterdir())):
         if subfolder.is_dir():
@@ -88,7 +87,7 @@ def streamlit():
             st.session_state.beta_tools = False
         st.markdown(" ")
         if "menu" not in st.session_state:
-            st.session_state.menu = 0
+            st.session_state.menu = 1
 
         options = T("menu") + (
             ["Real-time monitor  (beta)"] if st.session_state.get("beta_tools") else []

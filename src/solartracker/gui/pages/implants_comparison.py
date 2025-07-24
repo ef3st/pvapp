@@ -115,7 +115,9 @@ class ImplantsComparisonPage(Page):
         if self.df_selected.empty:
             st.info("\u2139\ufe0f Nessun impianto selezionato")
             return
-        st.markdown("---")
+        import streamlit_antd_components as sac
+    
+        sac.divider(label='Analysis', icon=sac.BsIcon("clipboard2-data",20), align='center', color='gray',  variant='dashed')
         dfs = []
         for row in self.df_selected.itertuples(index=True):
             if (row.subfolder / "simulation.csv").exists():
@@ -126,7 +128,7 @@ class ImplantsComparisonPage(Page):
         self.df_total = pd.concat(dfs, ignore_index=True)
         st.subheader("\U0001f4ca " + T("subtitle.plots"))
         plots.seasonal_plot(self.df_total, "implants_comparison")
-        st.markdown("---")
+        sac.divider(label='Istantant measures', icon=sac.BsIcon("clock",20), align='center', color='gray',  variant='dashed')
         dfs = []
         for row in self.df_selected.itertuples(index=True):
             if (row.subfolder / "simulation.csv").exists():

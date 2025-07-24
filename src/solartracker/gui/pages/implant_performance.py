@@ -347,7 +347,9 @@ def render():
             Simulate(subfolder)
             st.toast("Simulation completed ✅")
 
-    st.markdown("---")
+    import streamlit_antd_components as sac
+    
+    sac.divider(label='Analysis', icon=sac.BsIcon("clipboard2-data",20), align='center', color='gray',  variant='dashed')
     # Output chart
     st.subheader("🔋 " + T("subtitle.performance"))
     if (subfolder / "simulation.csv").exists():

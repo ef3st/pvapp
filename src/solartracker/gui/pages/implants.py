@@ -87,18 +87,19 @@ class ImplantsPage(Page):
         return pd.DataFrame(rows)
 
     def render(self):
-        st.title("💡 " + T("title"))
 
         if "adding_implant" not in st.session_state:
             st.session_state.adding_implant = False
 
         if st.session_state.adding_implant:
-            main, lateral = st.columns([7, 2])
+            main, lateral = st.columns([7, 5])
 
             with lateral:
-                add_implant.render()
+                with st.container(border=True):
+                    add_implant.render()
             with main:
-                st.markdown("---\n---")
+                st.title("🏛️ " + T("title"))
+                st.markdown("---")
                 df = self._load_implants()
 
                 # Show table with selected columns
@@ -106,15 +107,15 @@ class ImplantsPage(Page):
                 columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]]
                 st.dataframe(df[columns_to_show], use_container_width=True)
 
-                st.markdown("---")
                 self._render_map(df)
                 if df.empty:
                     st.info("ℹ️ Nessun impianto disponibile.")
                     return
             return
         else:
+            st.title("🏛️ " + T("title"))
+            st.markdown("---")
             df = self._load_implants()
-            st.markdown("---\n---")
 
             col1, col2, space = st.columns([2, 2, 15])
             if col1.button("➕ " + T("buttons.add_implant")):
@@ -132,11 +133,17 @@ class ImplantsPage(Page):
             titles = T("df_title")
             columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]]
             st.dataframe(df[columns_to_show], use_container_width=True)
-            st.markdown("---")
+
             self._render_map(df)
+
+        # if st.session_state.adding_implant:
+        #     add_implant.render()
+        #     return
+        # else:
 
     def _render_map(self, df: pd.DataFrame):
         """Visualize implant locations on a map."""
+        import streamlit_antd_components as sac
         titles = T("df_title")
         rows = []
 
@@ -159,7 +166,7 @@ class ImplantsPage(Page):
             return
 
         df_map = pd.DataFrame(rows)
-        st.subheader("📌 " + T("map.title"))
+        sac.divider(label=T("map.title"), icon=sac.BsIcon(name='crosshair', size=20), align="center")
 
         layer = pdk.Layer(
             "ScatterplotLayer",
@@ -182,7 +189,7 @@ class ImplantsPage(Page):
             latitude=df_map["lat"].mean(),
             longitude=df_map["lon"].mean(),
             zoom=6,
-            pitch=0,
+            pitch=0
         )
 
         deck = pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip)
