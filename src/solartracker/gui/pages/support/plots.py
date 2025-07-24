@@ -311,7 +311,7 @@ def seasonal_plot(df_plot, page):
         ]
         length = df.shape[0]
         with st.container(border=False):
-            
+
             cols = st.columns(length + 1)
             mean = df["value"].sum() / length
             for i in range(length):
@@ -321,7 +321,8 @@ def seasonal_plot(df_plot, page):
                 cols[i].metric(
                     label=df["implant"].to_list()[i],
                     value=f"{round(df["value"].to_list()[i],2)} {s[1:s.find(")")]}",
-                    delta=f"{round((df["value"].to_list()[i]-mean)*100/(mean),2)}%",help= " 1. Nome impanto \n 2. Valore della variabile nell'anno (somma o media a seconda della selezione) \n 3. Percentuale rispetto la media dei valori mostrati sopra"
+                    delta=f"{round((df["value"].to_list()[i]-mean)*100/(mean),2)}%",
+                    help=" 1. Nome impanto \n 2. Valore della variabile nell'anno (somma o media a seconda della selezione) \n 3. Percentuale rispetto la media dei valori mostrati sopra",
                 )
 
 

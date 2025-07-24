@@ -13,10 +13,12 @@ from streamlit_elements import elements, mui, html
 
 sys.dont_write_bytecode = True
 
+
 def simulate_all(folder: Path = Path("data/")):
     from streamlit_elements import elements, mui, html
+
     # bar = st.progress(0, text="Simulations execution")
-    
+
     l = len(sorted(folder.iterdir()))
     for i, subfolder in enumerate(sorted(folder.iterdir())):
         if subfolder.is_dir():

@@ -144,6 +144,7 @@ class ImplantsPage(Page):
     def _render_map(self, df: pd.DataFrame):
         """Visualize implant locations on a map."""
         import streamlit_antd_components as sac
+
         titles = T("df_title")
         rows = []
 
@@ -166,7 +167,11 @@ class ImplantsPage(Page):
             return
 
         df_map = pd.DataFrame(rows)
-        sac.divider(label=T("map.title"), icon=sac.BsIcon(name='crosshair', size=20), align="center")
+        sac.divider(
+            label=T("map.title"),
+            icon=sac.BsIcon(name="crosshair", size=20),
+            align="center",
+        )
 
         layer = pdk.Layer(
             "ScatterplotLayer",
@@ -189,7 +194,7 @@ class ImplantsPage(Page):
             latitude=df_map["lat"].mean(),
             longitude=df_map["lon"].mean(),
             zoom=6,
-            pitch=0
+            pitch=0,
         )
 
         deck = pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip=tooltip)
