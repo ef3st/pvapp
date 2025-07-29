@@ -43,5 +43,7 @@ lab:
 	poetry run jupyter lab
 
 streamlit:
-	poetry run streamlit run src/solartracker/main.py
+	poetry run streamlit run src/solartracker/main.py gui
 
+developer:
+	poetry run python src/solartracker/main.py dev
