@@ -115,7 +115,7 @@ def streamlit():
                 simulate_all()
             b.toggle("🧬 β tools", key="beta_tools", on_change=st.rerun)
 
-    # Routing alle pagine
+    # Page routing
     if selected == options[0]:  # "Home"
         home.render()
     elif selected == options[1]:  # "Implants"
