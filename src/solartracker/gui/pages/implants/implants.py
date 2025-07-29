@@ -6,10 +6,11 @@ import pydeck as pdk
 from .add_implant import add_implant
 from ..page import Page
 
+
 class ImplantsPage(Page):
     def __init__(self):
         super().__init__("implants")
-        
+
     def _load_implants(self, folder: Path = Path("data/")) -> pd.DataFrame:
         """Load implant and site data from JSON files."""
         rows = []
@@ -121,7 +122,6 @@ class ImplantsPage(Page):
             st.dataframe(df[columns_to_show], use_container_width=True)
 
             self._render_map(df)
-
 
     def _render_map(self, df: pd.DataFrame):
         """Visualize implant locations on a map."""

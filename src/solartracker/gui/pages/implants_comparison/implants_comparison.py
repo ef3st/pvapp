@@ -7,6 +7,7 @@ import plotly.express as px
 from ..page import Page
 from ...utils.plots import plots
 
+
 class ImplantsComparisonPage(Page):
     def __init__(self):
         super().__init__("implants_comparison")
