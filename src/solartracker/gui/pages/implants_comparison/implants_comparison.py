@@ -4,17 +4,12 @@ from pathlib import Path
 import pandas as pd
 from analysis.implantanalyser import ImplantAnalyser
 import plotly.express as px
-from .page import Page
-from .support import plots
-from .support.traslator import translate
-
-
-def T(key: str) -> str | list:
-    return translate(f"implants_comparison.{key}")
-
+from ..page import Page
+from ...utils.plots import plots
 
 class ImplantsComparisonPage(Page):
     def __init__(self):
+        super().__init__("implants_comparison")
         self.df_implants = pd.DataFrame()
         self.df_selected = pd.DataFrame()
         self.df_total = pd.DataFrame()
@@ -50,7 +45,7 @@ class ImplantsComparisonPage(Page):
         return pd.DataFrame(data)
 
     def select_implants(self):
-        with st.expander("\U0001f4da " + T("subtitle.select_implants")):
+        with st.expander("\U0001f4da " + self.T("subtitle.select_implants")):
             df = self.df_implants
             df["label"] = df["site_name"] + " - " + df["implant_name"]
 
@@ -60,12 +55,12 @@ class ImplantsComparisonPage(Page):
                 }
             a, b, _ = st.columns([1, 1, 7])
             with a:
-                if st.button(T("buttons.select_all"), key="select_all"):
+                if st.button(self.T("buttons.select_all"), key="select_all"):
                     for imp_id in df["id"]:
                         st.session_state.implant_selection[imp_id] = True
                     st.rerun()
             with b:
-                if st.button(T("buttons.deselect_all"), key="deselect_all"):
+                if st.button(self.T("buttons.deselect_all"), key="deselect_all"):
                     for imp_id in df["id"]:
                         st.session_state.implant_selection[imp_id] = False
                     st.rerun()
@@ -108,7 +103,7 @@ class ImplantsComparisonPage(Page):
             self.df_selected = df[df["id"].isin(selected_ids)]
 
     def render(self):
-        st.title("\U0001f3ad " + T("title"))
+        st.title("\U0001f3ad " + self.T("title"))
         self.df_implants = self.load_all_implants()
         self.select_implants()
 
@@ -132,7 +127,7 @@ class ImplantsComparisonPage(Page):
                 dfs.append(df)
 
         self.df_total = pd.concat(dfs, ignore_index=True)
-        st.subheader("\U0001f4ca " + T("subtitle.plots"))
+        st.subheader("\U0001f4ca " + self.T("subtitle.plots"))
         plots.seasonal_plot(self.df_total, "implants_comparison")
         sac.divider(
             label="Istantant measures",

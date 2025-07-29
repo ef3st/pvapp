@@ -1,6 +1,6 @@
 import pandas as pd
 from pvlib_implant_model.site import Site
-from pvlib_implant_model.nature import Nature
+from .nature import Nature
 from pvlib_implant_model.implant import Implant
 from pvlib_implant_model.modelchain import BuildModelChain
 from pvlib.pvsystem import retrieve_sam

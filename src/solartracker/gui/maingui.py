@@ -1,15 +1,15 @@
 import streamlit as st
-from .pages import home, implant_performance
+from .pages.home import home
+from .pages.implant_performance import implant_performance
 from streamlit_option_menu import option_menu
 import sys
-from simulator.simulator import Simulate
+from simulation import simulator
 from pathlib import Path
 import json
 from typing import List
-from .pages.implants import ImplantsPage
-from .pages.implants_comparison import ImplantsComparisonPage
-from .pages.support.implant_distribution import implant_distribution
-from streamlit_elements import elements, mui, html
+from .pages.implants.implants import ImplantsPage
+from .pages.implants_comparison.implants_comparison import ImplantsComparisonPage
+from .pages.beta.implant_distribution import implant_distribution
 
 sys.dont_write_bytecode = True
 
@@ -17,14 +17,10 @@ sys.dont_write_bytecode = True
 def simulate_all(folder: Path = Path("data/")):
     from streamlit_elements import elements, mui, html
 
-    # bar = st.progress(0, text="Simulations execution")
-
     l = len(sorted(folder.iterdir()))
     for i, subfolder in enumerate(sorted(folder.iterdir())):
         if subfolder.is_dir():
-            Simulate(subfolder)
-            # bar.progress((i+1)/l, text=f"Simulations {i+1}/{l} executed")
-    # bar.empty()
+            simulator.Simulate(subfolder)
 
 
 def load_translation(lang):
@@ -66,7 +62,7 @@ def streamlit():
 
     st.set_page_config(page_title="Implant Simulator", layout="wide")
 
-    # 🔤 Gestione lingua
+    # Gestione lingua
     with st.sidebar:
         st.markdown("## 🌅 PV Implants Analyser")
         # with a.popover(f"🌍 {T('buttons.language')}"):
@@ -78,8 +74,6 @@ def streamlit():
             label_visibility="collapsed",
             default=st.session_state.current_lang,
         )
-        # if lang is None:
-        #     st.rerun()
         if lang and lang != st.session_state.current_lang:
             st.session_state.T = load_translation(lang)
             st.session_state.current_lang = lang
@@ -121,7 +115,8 @@ def streamlit():
                 simulate_all()
             b.toggle("🧬 β tools", key="beta_tools", on_change=st.rerun)
 
-    # 🔁 Routing alle pagine
+
+    # Routing alle pagine
     if selected == options[0]:  # "Home"
         home.render()
     elif selected == options[1]:  # "Implants"

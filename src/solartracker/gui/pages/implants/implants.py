@@ -3,32 +3,18 @@ import pandas as pd
 import json
 from pathlib import Path
 import pydeck as pdk
-
-from .support import add_implant
-from .page import Page
-
-
-def translate(key: str) -> str | list:
-    keys = key.split(".")
-    result = st.session_state.get("T", {})
-    for k in keys:
-        if isinstance(result, dict) and k in result:
-            result = result[k]
-        else:
-            return key  # fallback se manca qualcosa
-    return result
-
-
-def T(key: str) -> str | list:
-    return translate(f"implants.{key}")
-
+from .add_implant import add_implant
+from ..page import Page
 
 class ImplantsPage(Page):
+    def __init__(self):
+        super().__init__("implants")
+        
     def _load_implants(self, folder: Path = Path("data/")) -> pd.DataFrame:
         """Load implant and site data from JSON files."""
         rows = []
 
-        titles = T("df_title")  # list of column labels
+        titles = self.T("df_title")  # list of column labels
         for subfolder in sorted(folder.iterdir()):
             if not subfolder.is_dir():
                 continue
@@ -98,12 +84,12 @@ class ImplantsPage(Page):
                 with st.container(border=True):
                     add_implant.render()
             with main:
-                st.title("🏛️ " + T("title"))
+                st.title("🏛️ " + self.T("title"))
                 st.markdown("---")
                 df = self._load_implants()
 
                 # Show table with selected columns
-                titles = T("df_title")
+                titles = self.T("df_title")
                 columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]]
                 st.dataframe(df[columns_to_show], use_container_width=True)
 
@@ -113,15 +99,15 @@ class ImplantsPage(Page):
                     return
             return
         else:
-            st.title("🏛️ " + T("title"))
+            st.title("🏛️ " + self.T("title"))
             st.markdown("---")
             df = self._load_implants()
 
             col1, col2, space = st.columns([2, 2, 15])
-            if col1.button("➕ " + T("buttons.add_implant")):
+            if col1.button("➕ " + self.T("buttons.add_implant")):
                 st.session_state.adding_implant = True
                 st.rerun()
-            if col2.button("➖ " + T("buttons.remove_implant")):
+            if col2.button("➖ " + self.T("buttons.remove_implant")):
                 st.warning(
                     "Non abbiate fretta, ci stiamo lavorando: per cancellare un impianto, cancellate la cartella relativa in data/ (⚠️NON CANCELLATE /data⚠️ - solo la cartella dell'impianto da eliminare)"
                 )
@@ -130,22 +116,18 @@ class ImplantsPage(Page):
                 st.info("ℹ️ Nessun impianto disponibile.")
                 return
             # Show table with selected columns
-            titles = T("df_title")
+            titles = self.T("df_title")
             columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]]
             st.dataframe(df[columns_to_show], use_container_width=True)
 
             self._render_map(df)
 
-        # if st.session_state.adding_implant:
-        #     add_implant.render()
-        #     return
-        # else:
 
     def _render_map(self, df: pd.DataFrame):
         """Visualize implant locations on a map."""
         import streamlit_antd_components as sac
 
-        titles = T("df_title")
+        titles = self.T("df_title")
         rows = []
 
         for row in df.to_dict(orient="records"):
@@ -168,7 +150,7 @@ class ImplantsPage(Page):
 
         df_map = pd.DataFrame(rows)
         sac.divider(
-            label=T("map.title"),
+            label=self.T("map.title"),
             icon=sac.BsIcon(name="crosshair", size=20),
             align="center",
         )

@@ -5,8 +5,8 @@ import pydeck as pdk
 from geopy.geocoders import Nominatim
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
-from simulator.simulator import Simulate
-from .plots import pv3d
+from simulation.simulator import Simulate
+from ....utils.plots.plots import pv3d
 
 
 def load_sites_df(base_path=Path("data/")) -> pd.DataFrame:

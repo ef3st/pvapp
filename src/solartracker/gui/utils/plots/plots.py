@@ -4,7 +4,7 @@ import numpy as np
 import streamlit as st
 import math
 import plotly.express as px
-from .traslator import translate
+from ..translation.traslator import translate
 import pandas as pd
 
 

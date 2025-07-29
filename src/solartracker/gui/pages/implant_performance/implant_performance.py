@@ -3,15 +3,12 @@ from pathlib import Path
 import json
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
-from simulator.simulator import Simulate
+from simulation.simulator import Simulate
 from analysis.implantanalyser import ImplantAnalyser
-import plotly.express as px
 import pydeck as pdk
 import plotly.graph_objects as go
-import numpy as np
-import math
-from .support import plots
-from .support.traslator import translate
+from ...utils.plots import plots
+from ...utils.translation.traslator import translate
 from streamlit_custom_notification_box import custom_notification_box
 
 
