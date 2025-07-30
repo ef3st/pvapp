@@ -7,7 +7,7 @@ from mount.developement import custommount as dev
 from mount.validated import custommount as valid
 
 
-class Implant:
+class PVSystemManager:
     implants_counter = 0
 
     def __init__(
@@ -19,8 +19,8 @@ class Implant:
         id: int = None,
     ):
         if not id:
-            self.id = Implant.implants_counter
-            Implant.implants_counter += 1
+            self.id = PVSystemManager.implants_counter
+            PVSystemManager.implants_counter += 1
         else:
             self.id = id
 

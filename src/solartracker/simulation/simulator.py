@@ -1,7 +1,7 @@
 import pandas as pd
 from pvlib_implant_model.site import Site
 from .nature import Nature
-from pvlib_implant_model.implant import Implant
+from pvlib_implant_model.implant import PVSystemManager
 from pvlib_implant_model.modelchain import BuildModelChain
 from pvlib.pvsystem import retrieve_sam
 from analysis.database import Database
@@ -24,7 +24,9 @@ def Simulate(subfolder: Path):
     implant_path = subfolder / "implant.json"
     with implant_path.open() as f:
         data_implant = json.load(f)
-    implant = Implant(name=data_implant["name"], location=site, id=subfolder.name)
+    implant = PVSystemManager(
+        name=data_implant["name"], location=site, id=subfolder.name
+    )
     module = None
     if data_implant["module"]["origin"] == "Custom":
         module = data_implant["module"]["model"]
