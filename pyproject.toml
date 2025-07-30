@@ -22,6 +22,7 @@ dependencies = [
     "streamlit-card (>=1.0.2,<2.0.0)",
     "extra-streamlit-components (>=0.1.80,<0.2.0)",
     "streamlit-antd-components (>=0.3.2,<0.4.0)",
+    "pandapower[all] (>=3.1.2,<4.0.0)",
 ]
 
 [tool.poetry]
