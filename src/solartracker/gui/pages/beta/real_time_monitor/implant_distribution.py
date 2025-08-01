@@ -8,7 +8,7 @@ from geopy.distance import geodesic
 import streamlit.components.v1 as components
 import plotly.graph_objects as go
 import time
-from ..beta import network_classes as net
+from ..real_time_monitor import network_classes as net
 from streamlit_elements import elements, mui, html
 
 

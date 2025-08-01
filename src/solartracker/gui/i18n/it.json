@@ -152,6 +152,70 @@
 
         }
 
+    },
+    "grid_manager":
+    {
+        "title": "Gestione Grid",
+        "buttons": {
+            "save_grid": "Salva Rete"
+        },
+        "tabs":
+        {
+            "links":
+            {
+                "title": "Bus, linee e trasformatori",
+                "new_item": "Aggiungi nuovo elemento",
+                "select_item": "Seleziona elemento",
+                "item":
+                {
+                    "bus":
+                    {
+                        "name": "Bus",
+                        "titles": ["Generale","Tensione"],
+                        "in_service": "Nodo attivo",
+                        "bus_level": ["Principale","Ausiliaro", "Moff"],
+                        "voltage":["Basso", "Medio", "Alto", "Altissimo"],
+                        "constraints": ["Fissa limiti di tensione","min (kV)", "max (kV)"],
+                        "add": "Aggiungi nodi"
+                        
+                    },
+                    "link":
+                    {
+                        "name": "Linea",
+                        "buses": ["BUS DI PARTENZA", "BUS DI ARRIVO"],
+                        "bus_identity": ["Nome Bus", "Indice Bus"],
+                        "bus_level": ["Principale","Ausiliaro", "Moff"],
+                        "line_params": ["Tipologia di linea","Lunghezza","Nome"],
+                        "add": "Aggiungi Linea",
+                        "infos": ["INFORMAZIONI","Linea","Bus di Partenza", "Bus di Arrivo"],
+                        "errors": ["Collegamento disponibile", "Stessi bus in collegamento", "Tensioni Differenti","Collegamento già esistente"]
+                    },
+                    "transformer":
+                    {
+                        "name": "Trasformatore"
+                    }
+                
+
+                }
+            },
+            "gens":
+            {
+                "title": "Generatori"
+            },
+            "passive":
+            {
+                "title": "Elementi passivi"
+            },
+            "sensors":
+            {
+                "title":"Sensori, controllori, limiti"
+            }
+        },
+        "messages":
+        {
+            "no_grid": "La rete non è ancora stata salvata"
+        }
+
     }
 
 

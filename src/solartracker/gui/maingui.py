@@ -9,7 +9,8 @@ import json
 from typing import List
 from .pages.implants.implants import ImplantsPage
 from .pages.implants_comparison.implants_comparison import ImplantsComparisonPage
-from .pages.beta.implant_distribution import implant_distribution
+from .pages.beta.real_time_monitor.implant_distribution import implant_distribution
+from .pages.beta.grid_manager.grid_manager import GridManager
 
 sys.dont_write_bytecode = True
 
@@ -55,6 +56,7 @@ def streamlit():
     pages = {
         "implants": ImplantsPage(),
         "implants_comparison": ImplantsComparisonPage(),
+        "grid_manager": GridManager(),
     }
     if "T" not in st.session_state:
         st.session_state.T = load_translation("it")
@@ -86,7 +88,7 @@ def streamlit():
             st.session_state.menu = 1
 
         options = T("menu") + (
-            ["Real-time monitor  (beta)"] if st.session_state.get("beta_tools") else []
+            ["Real-time monitor  (beta)", "Grid manager (beta)"] if st.session_state.get("beta_tools") else []
         )
 
         selected = option_menu(
@@ -113,7 +115,7 @@ def streamlit():
             a, b = st.columns(2)
             if a.button(f"{T('buttons.simulate')}", icon="🔥"):
                 simulate_all()
-            b.toggle("🧬 β tools", key="beta_tools", on_change=st.rerun)
+            b.toggle("🧬 β tools", key="beta_tools", on_change=st.rerun,value=True)
 
     # Page routing
     if selected == options[0]:  # "Home"
@@ -124,5 +126,7 @@ def streamlit():
         pages["implants_comparison"].render()
     elif selected == options[3]:  # "Implant performance"
         implant_performance.render()
-    elif selected == options[-1]:
+    elif selected == options[-2]:
         implant_distribution()
+    elif selected == options[-1]:
+        pages["grid_manager"].render()

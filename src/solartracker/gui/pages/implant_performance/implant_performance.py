@@ -6,7 +6,6 @@ from pvlib.pvsystem import retrieve_sam
 from simulation.simulator import Simulate
 from analysis.implantanalyser import ImplantAnalyser
 import pydeck as pdk
-import plotly.graph_objects as go
 from ...utils.plots import plots
 from ...utils.translation.traslator import translate
 from streamlit_custom_notification_box import custom_notification_box
