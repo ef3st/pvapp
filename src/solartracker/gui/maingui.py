@@ -88,7 +88,9 @@ def streamlit():
             st.session_state.menu = 1
 
         options = T("menu") + (
-            ["Real-time monitor  (beta)", "Grid manager (beta)"] if st.session_state.get("beta_tools") else []
+            ["Real-time monitor  (beta)", "Grid manager (beta)"]
+            if st.session_state.get("beta_tools")
+            else []
         )
 
         selected = option_menu(
@@ -115,7 +117,7 @@ def streamlit():
             a, b = st.columns(2)
             if a.button(f"{T('buttons.simulate')}", icon="🔥"):
                 simulate_all()
-            b.toggle("🧬 β tools", key="beta_tools", on_change=st.rerun,value=True)
+            b.toggle("🧬 β tools", key="beta_tools", on_change=st.rerun, value=True)
 
     # Page routing
     if selected == options[0]:  # "Home"
