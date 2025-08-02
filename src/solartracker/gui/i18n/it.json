@@ -165,7 +165,7 @@
             {
                 "title": "Bus, linee e trasformatori",
                 "new_item": "Aggiungi nuovo elemento",
-                "select_item": "Seleziona elemento",
+                "select_item": "Seleziona elemento da aggiungere",
                 "item":
                 {
                     "bus":
@@ -175,8 +175,8 @@
                         "in_service": "Nodo attivo",
                         "bus_level": ["Principale","Ausiliaro", "Moff"],
                         "voltage":["Basso", "Medio", "Alto", "Altissimo"],
-                        "constraints": ["Fissa limiti di tensione","min (kV)", "max (kV)"],
-                        "add": "Aggiungi nodi"
+                        "constraints": ["Fissa limiti di tensione","Tensione (kV)","min (kV)", "max (kV)"],
+                        "buttons": ["Nuovo Nodo"," Rimuovi Nodo", "Aggiungi Nodi"]
                         
                     },
                     "link":
@@ -188,6 +188,7 @@
                         "line_params": ["Tipologia di linea","Lunghezza","Nome"],
                         "add": "Aggiungi Linea",
                         "infos": ["INFORMAZIONI","Linea","Bus di Partenza", "Bus di Arrivo"],
+                        "no_bus_error": "Nessun Bus creato",
                         "errors": ["Collegamento disponibile", "Stessi bus in collegamento", "Tensioni Differenti","Collegamento già esistente"]
                     },
                     "transformer":
@@ -200,7 +201,31 @@
             },
             "gens":
             {
-                "title": "Generatori"
+                "title": "Generatori",
+                "new_item": "Aggiungi nuovo elemento",
+                "select_item": "Seleziona elemento da aggiungere",
+                "item":
+                {
+                    "sgen":{
+                        "name": "Generatore Statico",
+                        "titles": ["Proprietà","Tensione","Bus Connesso"],
+                        "labels": ["Nome","Quantità","Generatore Attivo","Tensione","Scala","Potenza Reattiva"],
+                        "bus_params":{
+                            "voltage": ["Basso","Medio","Alto","Altissimo"],
+                            "level": ["Principale","Ausiliaro","Moff"]
+                        },
+                        "buttons": ["Nuovo Generatore Statico"," Rimuovi generatore", "Aggiungi Generatori"]
+                        
+                    },
+                    "gen":{
+                        "name":"Generatore Attivo e Regolabile"
+                    },
+                    "storage":
+                    {
+                        "name":"Batteria"
+                    }
+                }
+
             },
             "passive":
             {

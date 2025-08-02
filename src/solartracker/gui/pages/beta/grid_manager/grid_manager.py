@@ -4,8 +4,8 @@ import streamlit_antd_components as sac
 from pathlib import Path
 import pandas as pd
 import json
-from pandapower_network.pvnetwork import PlantPowerGrid, BusParams, LineParams
-from typing import Optional, Tuple
+from pandapower_network.pvnetwork import PlantPowerGrid, BusParams, LineParams, SGenParams
+from typing import Optional, Tuple, List, Union
 from bidict import bidict
 
 
@@ -89,7 +89,7 @@ class GridManager(Page):
         selected_row = filtered[filtered["implant_name"] == selected_implant].iloc[0]
         return selected_row["subfolder"]
 
-    # -------- ELEMENTS MANAGER --------
+    # =========== ELEMENTS MANAGER ===========
     def tabs(self):
         titles = self.T("tabs")
         tags = {
@@ -108,7 +108,7 @@ class GridManager(Page):
             return_index=True,
         )
         if tab == 0:
-            self.links_manager()
+            self.bus_links_manager()
         elif tab == 1:
             self.gens_manager()
         elif tab == 2:
@@ -116,9 +116,9 @@ class GridManager(Page):
         elif tab == 3:
             self.sensors_manager()
 
-    # ---- Links Manager ----
-
-    def links_manager(self):
+    # ----> Buses and Links Manager <---- 
+    # ---- Main Manager container ----
+    def bus_links_manager(self):
         labels_root = "tabs.links"
         with st.expander(self.T(f"{labels_root}.new_item"), icon="➕"):
             items = self.T(f"{labels_root}.item")
@@ -136,48 +136,76 @@ class GridManager(Page):
                 self.add_line()
             elif item == 2:
                 self.add_tranformer()
-
+    # ---- Add containers ----
     def add_bus(self):
         labels_root = "tabs.links.item.bus"
-        new_bus = self.bus_params()
-        buttons_cols = st.columns([1, 1, 8])
-        n_new_bus = buttons_cols[0].number_input(
-            "n", label_visibility="collapsed", step=1, value=1, min_value=1
-        )
-        if buttons_cols[1].button(self.T(f"{labels_root}.add")):
-            grid: PlantPowerGrid = self.grid
-            n_bus = len(list(self.grid.net.bus["name"]))
-            name = new_bus["name"]
-            for i in range(0, n_new_bus):
-                new_bus["name"] = f"{name}" + (f"_{n_bus+i}" if n_new_bus > 1 else "")
-                grid.create_bus(new_bus)
-            st.session_state["plant_grid"] = grid
-
+        new_buses = self.build_bus()
+        if st.button(self.T(f"{labels_root}.buttons")[2]):
+            for buses in new_buses:
+                change_name = True if len(buses)>1 else False
+                bus = buses[1]
+                for i in range(0,buses[0]):
+                    if change_name:
+                        # st.info(f"{i}_{sgens}")
+                        bus["name"] = f"{i}_{bus["name"]}"
+                    st.session_state["plant_grid"].create_bus(bus)
+            
     def add_line(self):
         labels_root = "tabs.links.item.link"
-
-        aviable_link, new_links = self.build_links()
-        if st.button(self.T(f"{labels_root}.add")):
-            if aviable_link:
-                st.session_state["plant_grid"].link_buses(new_links)
-            else:
-                st.error("Line Creation Failed")
+        if len(self.grid.net.bus) == 0:
+            st.error(self.T(f"{labels_root}.no_bus_error"))
+        else:
+            aviable_link, new_links = self.build_links()
+            if st.button(self.T(f"{labels_root}.add")):
+                if aviable_link:
+                    st.session_state["plant_grid"].link_buses(new_links)
+                else:
+                    st.error("Line Creation Failed")
 
     def add_tranformer(self): ...
+    
+    # ---- Build Element containers ----
+    def build_bus(self,borders:bool=True) -> List[Tuple[int,BusParams]]:
+        labels_root = "tabs.links.item.bus.buttons"
+        bus_to_add = []
+        with st.container(border=borders):
+            cols = st.columns(3)
+            if "new_bus" not in st.session_state:
+                st.session_state["new_bus"] = { "n": 1,"buses": []}
+            buses = st.session_state["new_bus"]
+            col = 0
+            for i in range(buses["n"]):
+                if i%3 == 0:
+                    col = 0
+                with cols[col]:
+                    bus_to_add.append((self.bus_params(id=i)))
+                col += 1
+            with cols[0]:
+                a,b,_ = st.columns([3,2,1])
+                if a.button(self.T(labels_root)[0]):
+                    st.session_state["new_bus"]["n"] += 1
+                    st.rerun()
+                if b.button(self.T(labels_root)[1]) and (st.session_state["new_bus"]["n"] > 1):
+                    st.session_state["new_bus"]["n"] -= 1
+                    st.rerun()
+                    
+        return bus_to_add
 
-    def bus_params(self, borders: bool = True, bus: Optional[BusParams] = None):
+    # ---- Element Params Manager containers ----
+    def bus_params(self, borders: bool = True, id:Union[int,str]=1, quantity = True, bus: Optional[BusParams] = None) -> Tuple[int,BusParams]:
         labels_root = "tabs.links.item.bus"
+        n_new_bus = None
         if not bus:
             bus: BusParams = BusParams(
                 name="New_Bus", vn_kv=0.230, type="b", in_service="True"
             )
         with st.container(border=borders):
             titles = self.T(f"{labels_root}.titles")
-            sectors = st.columns([1, 2, 6])
+            sectors = st.columns([1, 2])
             with sectors[0]:
-                sac.divider(label=titles[0], align="center")
+                sac.divider(label=titles[0], align="center",key=f"{id}_bus_prop_div")
                 bus["name"] = st.text_input(
-                    "Name", label_visibility="collapsed", value=bus["name"]
+                    "Name", label_visibility="collapsed", value=bus["name"],key=f"{id}_bus_name"
                 )
                 type_idx = bidict({"b": 0, "n": 1, "m": 2})
                 bus["type"] = type_idx.inv[
@@ -191,19 +219,26 @@ class GridManager(Page):
                         index=type_idx[bus["type"]],
                         return_index=True,
                         align="center",
+                        key=f"{id}_bus_type"
+                        
                     )
                 ]
                 bus["in_service"] = sac.switch(
                     self.T(f"{labels_root}.in_service"),
                     value=bus["in_service"],
                     position="left",
-                    align="center",
+                    align="center",key=f"{id}_bus_on"
                 )
+                sac.divider("Quantità", key=f"{id}_bus_quantity_div")
+                if quantity:
+                    n_new_bus = st.number_input("Quantità", label_visibility="collapsed",step=1,min_value=1,value=1, key=f"{id}_bus_quantity")
 
             with sectors[1]:
-                sac.divider(label=titles[1], align="center")
+                sac.divider(label=titles[1], align="center",key=f"{id}_bus_volt_div")
                 left, right = st.columns(2)
                 with left:
+                    st.markdown("")
+                    st.markdown("")
                     voltage = sac.segmented(
                         items=[
                             sac.SegmentedItem(label=name)
@@ -212,16 +247,12 @@ class GridManager(Page):
                         direction="vertical",
                         color="grey",
                         align="center",
-                        return_index=True,
+                        return_index=True,key=f"{id}_bus_voltage_str"
                     )
                     voltage_type = bidict({"LV": 0, "MV": 1, "HV": 2, "EHV": 3})
                     voltages = {"LV": 0.250, "MV": 15, "HV": 150, "EHV": 380}
-                    bus["vn_kv"] = st.number_input(
-                        "Test",
-                        label_visibility="collapsed",
-                        disabled=True,
-                        value=voltages[voltage_type.inv[voltage]],
-                    )
+                    labels = self.T(f"{labels_root}.constraints")
+                    disabled = not st.checkbox(labels[0],key=f"{id}_bus_set_limits")
 
                 with right:
                     voltage_constraints = {
@@ -230,21 +261,29 @@ class GridManager(Page):
                         "HV": (36, 220),
                         "EHV": (220, 800),
                     }
+                    bus["vn_kv"] = st.number_input(
+                        labels[1],
+                        disabled=True,
+                        value=voltages[voltage_type.inv[voltage]],key=f"{id}_bus_volt_int"
+                    )
                     contraints = voltage_constraints[voltage_type.inv[voltage]]
-                    names = self.T(f"{labels_root}.constraints")
-                    disabled = not st.checkbox(names[0])
                     min = st.number_input(
-                        names[1], value=contraints[0], disabled=disabled
+                        labels[2], value=contraints[0], disabled=disabled,key=f"{id}_bus_min_volt"
                     )
                     max = st.number_input(
-                        names[2], value=contraints[1], disabled=disabled
+                        labels[3], value=contraints[1], disabled=disabled,key=f"{id}_bus_max_volt"
                     )
                     if not disabled:
                         bus["min_vm_pu"] = min
                         bus["max_vm_pu"] = max
 
-        return bus
+        return n_new_bus, bus
 
+    def link_params(self, borders: bool = True, id:Union[int,str]=1, line: Optional[LineParams] = None) -> Tuple[int,LineParams]:
+        ...
+    
+    
+    
     def build_links(
         self, borders: bool = True, bus: Optional[BusParams] = None
     ) -> Tuple[bool, LineParams]:
@@ -357,10 +396,150 @@ class GridManager(Page):
         return link_aviable, new_link
 
     def gens_manager(self):
-        st.text("gens")
+        labels_root = "tabs.gens"
+        with st.expander(self.T(f"{labels_root}.new_item"), icon="➕"):
+            items = self.T(f"{labels_root}.item")
+            item = sac.chip(
+                items=[sac.ChipItem(items[i]["name"]) for i in items],
+                label=self.T(f"{labels_root}.select_item"),
+                index=[0, 2],
+                radius="md",
+                variant="light",
+                return_index=True,
+            )
+            if item == 0:
+                self.add_sgen()
+            elif item == 1:
+                self.add_gen()
+            elif item == 2:
+                self.add_storage()
 
+    def add_sgen(self): 
+        labels_root = "tabs.gens.item.sgen"
+        new_sgens = self.build_sgens()
+        if st.button(self.T(f"{labels_root}.buttons")[2]):
+            for sgens in new_sgens:
+                change_name = True if len(sgens)>1 else False
+                sgen = sgens[1]
+                for i in range(0,sgens[0]):
+                    if change_name:
+                        # st.info(f"{i}_{sgens}")
+                        sgen["name"] = f"{i}_{sgen["name"]}"
+                    st.session_state["plant_grid"].add_active_element(type="sgen", params=sgen)
+    
+    def build_sgens(self,borders:bool=True) -> List[Tuple[int,SGenParams]]:
+        labels_root = "tabs.gens.item.sgen.buttons"
+        sgens_to_add = []
+        with st.container(border=borders):
+            cols = st.columns(3)
+            if "new_sgen" not in st.session_state:
+                st.session_state["new_sgen"] = { "n": 1,"sgens": []}
+            sgens = st.session_state["new_sgen"]
+            col = 0
+            for i in range(sgens["n"]):
+                if i%3 == 0:
+                    col = 0
+                with cols[col]:
+                    sgens_to_add.append((self.sgen_param(id=i)))
+                col += 1
+            with cols[0]:
+                a,b,_ = st.columns([3,2,1])
+                if a.button(self.T(labels_root)[0]):
+                    st.session_state["new_sgen"]["n"] += 1
+                    st.rerun()
+                if b.button(self.T(labels_root)[1]) and (st.session_state["new_sgen"]["n"] > 1):
+                    st.session_state["new_sgen"]["n"] -= 1
+                    st.rerun()
+                    
+        return sgens_to_add
+                
+                
+    
+    
+    def sgen_param(self, borders:bool = True,id:int = 1, sgen:Optional[SGenParams] = None, quantity = True) -> Tuple[int,SGenParams]:
+        labels_root = "tabs.gens.item.sgen"
+        aviable_buses_name = list(self.grid.net.get("bus")["name"])
+        sgen_type = 1
+        n_new_sgen = None
+        if sgen == None:
+            bus = aviable_buses_name[0] if aviable_buses_name else None
+            sgen:SGenParams = SGenParams(bus=bus,p_mw=0.4,q_mvar=0,name="New_PV",scaling=1,in_service=True)
+        
+        if "PV" in sgen["name"]:
+            sgen_type = 0
+            inputs = {
+                "p_mv": (False,0.4),
+                "q_var": (True,0),
+                "scaling": (False,1)
+            }
+            
+        with st.container(border=borders):
+            buttons_labels = self.T(f"{labels_root}.labels")
+            a,b = st.columns(2)
+            with a:
+                sac.divider(self.T(f"{labels_root}.titles")[0], align="center",key=f"{id}_sgen_prop_div")
+                sac.segmented(items=[sac.SegmentedItem("PV"),sac.SegmentedItem("Others")], color="grey", size="sm",key=f"{id}_sgen_type", index=sgen_type)
+                sgen["name"] = st.text_input(buttons_labels[0], key=f"{id}_sgen_name",value=sgen["name"])
+                if quantity:
+                    n_new_sgen = st.number_input(buttons_labels[1],key=f"{id}_sgen_quantity",value=1,min_value=1,step=1)
+                sgen["in_service"] = sac.switch(buttons_labels[2],key=f"{id}_sgen_on")
+            with b:
+                sac.divider(self.T(f"{labels_root}.titles")[1], align="center", key=f"{id}_sgen_volt_div")
+                sgen["p_mw"] = st.number_input(buttons_labels[3],key=f"{id}_sgen_volt_input",value=inputs["p_mv"][1],disabled=inputs["p_mv"][0])
+                sgen["scaling"] = st.number_input(buttons_labels[4],key=f"{id}_sgen_scale_input",value=inputs["scaling"][1],disabled=inputs["scaling"][0])
+                sgen["q_mvar"] = st.number_input(buttons_labels[0],key=f"{id}_sgen_qmvar_input",value=inputs["q_var"][1],disabled=inputs["q_var"][0])
+            
+            sac.divider(self.T(f"{labels_root}.titles")[2], align="center", key=f"{id}_sgen_bus_div")
+            bus_cols = st.columns(2)
+            bus_name = bus_cols[0].selectbox("Bus",options=aviable_buses_name, label_visibility="collapsed", key=f"{id}_sgen_bus")
+            voltage_constraints = {
+                        "LV": (0, 1),
+                        "MV": (1, 35),
+                        "HV": (36, 220),
+                        "EHV": (220, 800),
+                    }
+            level_names = {key: self.T(f"{labels_root}.bus_params.level")[i] for i,key in enumerate(["b","n","m"])}
+            if bus_name:
+                sgen["bus"] = self.grid.get_element("bus", name=bus_name, column="index")
+                bus_volt = self.grid.get_element("bus", name=bus_name, column="vn_kv")
+                bus_level = level_names[self.grid.get_element("bus", name=bus_name, column="type")]
+                voltage = next((k for k, (a, b) in voltage_constraints.items() if a <= bus_volt <= b), None)
+                bus_on = "ON" if self.grid.get_element("bus", name=bus_name, column="in_service") else "OFF"
+            else:
+                voltage = "NaN"
+                bus_level = "NaN"
+                bus_on = "NaN"
+                
+            with bus_cols[1]:
+                sac.segmented(items=[sac.SegmentedItem(voltage),sac.SegmentedItem(bus_level),sac.SegmentedItem(bus_on)],index=None, color="lime", disabled=True,size="sm",key=f"{id}_sgen_bus_prop", align="end")
+                
+                
+            
+        return n_new_sgen, sgen
+    
+    def add_gen(self): ...
+    def add_storage(self): ...
+    
+    
     def passive_manager(self):
         st.text("passives")
 
     def sensors_manager(self):
         st.text("sensors")
+
+    
+    
+    # ----> Generators Manager <---- 
+    # ---- Main container ----
+    # ---- Build Element containers ----
+    # ---- Element Params Manager containers ----
+    
+    # ----> Passive Elements Manager <---- 
+    # ---- Main container ----
+    # ---- Build Element containers ----
+    # ---- Element Params Manager containers ----
+    
+    # ----> Sensors, Controls and Limits Manager <---- 
+    # ---- Main container ----
+    # ---- Build Element containers ----
+    # ---- Element Params Manager containers ----

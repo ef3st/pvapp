@@ -41,12 +41,11 @@ class BusParams(TypedDict, total=False):
 class SGenParams(TypedDict, total=False):
     bus: int
     p_mw: float
-    q_mvar: float
+    q_mvar: Optional[float]
     name: Optional[str]
     scaling: float
     in_service: bool
     type: Optional[str]
-
 
 class GenParams(TypedDict, total=False):
     bus: int
@@ -68,9 +67,23 @@ class ExtGridParams(TypedDict, total=False):
     name: Optional[str]
     in_service: bool
 
+class StorageParam(TypedDict, total=False):
+    bus: int
+    p_mw: float
+    max_e_mwh: float
+    soc_percent: float
+    min_e_mwh: float
+    q_mvar: float
+    sn_mva: float
+    controllable: bool
+    name: str
+    in_service: bool
+    type: str
+    scaling: float
+
 
 # ===================================
-#   CLASS FOR POWER GRID MANAGEMENT
+#!   CLASS FOR POWER GRID MANAGEMENT
 # ===================================
 class PlantPowerGrid:
 
@@ -241,9 +254,8 @@ class PlantPowerGrid:
 
     def get_n_nodes_links(self):
         return len(self.net.bus)
-
     def get_n_active_elements(self):
-        return None
+        return len(self.net.sgen) + len(self.net.storage) + len(self.net.gen) + len(self.net.ext_grid)
 
     def get_n_passive_elements(self):
         return None
