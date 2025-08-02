@@ -145,7 +145,7 @@ class GridManager(Page):
     # ---- Add containers ----
     def add_bus(self):
         labels_root = "tabs.links.item.bus"
-        new_buses = self.build_bus()
+        new_buses = self.build_buses()
         if st.button(self.T(f"{labels_root}.buttons")[2]):
             for buses in new_buses:
                 change_name = True if len(buses) > 1 else False
@@ -161,17 +161,18 @@ class GridManager(Page):
         if len(self.grid.net.bus) == 0:
             st.error(self.T(f"{labels_root}.no_bus_error"))
         else:
-            aviable_link, new_links = self.build_links()
-            if st.button(self.T(f"{labels_root}.add")):
+            aviable_link, new_links = self.build_line()
+            if st.button(self.T(f"{labels_root}.buttons")[2]):
                 if aviable_link:
-                    st.session_state["plant_grid"].link_buses(new_links)
+                    for line in new_links:
+                        st.session_state["plant_grid"].link_buses(line)
                 else:
                     st.error("Line Creation Failed")
 
     def add_tranformer(self): ...
 
     # ---- Build Element containers ----
-    def build_bus(self, borders: bool = True) -> List[Tuple[int, BusParams]]:
+    def build_buses(self, borders: bool = True) -> List[Tuple[int, BusParams]]:
         labels_root = "tabs.links.item.bus.buttons"
         bus_to_add = []
         with st.container(border=borders):
@@ -199,6 +200,33 @@ class GridManager(Page):
 
         return bus_to_add
 
+    def build_line(self, borders: bool = True) -> Tuple[bool,List[LineParams]]:
+        labels_root = "tabs.links.item.link.buttons"
+        line_to_add = []
+        with st.container(border=borders):
+            if "new_line" not in st.session_state:
+                st.session_state["new_line"] = {"n": 1, "lines": []}
+            lines = st.session_state["new_line"]
+            aviable_link = True
+            for i in range(lines["n"]):
+                line = self.line_params(id=i)
+                if line[0]:
+                    line_to_add.append(line[1])
+                else:
+                    aviable_link = False
+                    
+            a, b, _ = st.columns([1, 1, 8])
+            if a.button(self.T(labels_root)[0]):
+                st.session_state["new_line"]["n"] += 1
+                st.rerun()
+            if b.button(self.T(labels_root)[1]) and (
+                st.session_state["new_line"]["n"] > 1
+            ):
+                st.session_state["new_line"]["n"] -= 1
+                st.rerun()
+
+        return aviable_link, line_to_add
+    
     # ---- Element Params Manager containers ----
     def bus_params(
         self,
@@ -311,47 +339,48 @@ class GridManager(Page):
 
         return n_new_bus, bus
 
-    def link_params(
+    def line_params(
         self,
         borders: bool = True,
         id: Union[int, str] = 1,
         line: Optional[LineParams] = None,
-    ) -> Tuple[int, LineParams]: ...
-
-    def build_links(
-        self, borders: bool = True, bus: Optional[BusParams] = None
-    ) -> Tuple[bool, LineParams]:
+    ) -> Tuple[bool, LineParams]: 
         labels_root = "tabs.links.item.link"
-        with st.container(border=borders):
-            first, link, second = st.columns([1, 2, 1])
-
-            def select_bus(align="start", name=None):
+        n_new_line = None
+        line_types = self.grid.get_aviable_lines()
+        if not line:
+            line:LineParams = LineParams(from_bus=0,to_bus=0,length_km=0.1,name="New_(NAVY 4x50 SE)_0.1km", std_type=line_types[0])
+        
+        def select_bus(align="start", name=None) -> int:
+                """ Bus Selection """
+                # columns
                 a = None
                 b = None
+                c = None
+                d = None
                 if align == "start":
                     a, b = st.columns([1, 3.5])
                     c, d = st.columns(2)
                 if align == "end":
                     b, a = st.columns([3.5, 1])
                     d, c = st.columns(2)
-                a.button("Reset", key=f"{name}_Reset", disabled=True)
-                cols = st.columns(2)
+                a.button("Reset", key=f"{id}_line_{align}_reset", disabled=True)
                 with c:
-                    sac.divider(self.T(f"{labels_root}.bus_identity")[0], align=align)
+                    sac.divider(self.T(f"{labels_root}.bus_identity")[0], align=align, key=f"{id}_line_{align}_bus_name_div")
                     name = st.selectbox(
                         label="Bus name",
                         label_visibility="collapsed",
                         options=list(self.grid.net.get("bus")["name"]),
-                        key=f"{align}_{name}Bus name",
+                        key=f"{id}_line_{align}_bus_name",
                     )
                 with d:
-                    sac.divider(self.T(f"{labels_root}.bus_identity")[1], align=align)
+                    sac.divider(self.T(f"{labels_root}.bus_identity")[1], align=align, key=f"{id}_line_{align}_bus_index_div")
                     index = st.number_input(
                         label="Bus Index",
                         label_visibility="collapsed",
                         disabled=True,
                         value=self.grid.get_element("bus", name=name, column="index"),
-                        key=f"{align}_{name}Bus Index",
+                        key=f"{id}_line_{align}_bus_index"
                     )
                 with b:
                     map_level = {"b": 0, "n": 1, "m": 2}
@@ -368,31 +397,33 @@ class GridManager(Page):
                         align="center",
                         color="gren",
                         size="sm",
-                        key=f"{align}_{name}_level_bus",
+                        key=f"{id}_line_{align}_bus_level",
                         disabled=True,
                         index=level_index,
                     )
                 return index
+        with st.container(border=borders):
+            first, link, second = st.columns([1, 2, 1])
 
             with first:
                 sac.divider(
-                    self.T(f"{labels_root}.buses")[0], align="center", variant="dashed"
+                    self.T(f"{labels_root}.buses")[0], align="center", variant="dashed", key=f"{id}_line_startbus_div"
                 )
                 start_bus = select_bus(name="1a")
             with second:
                 sac.divider(
-                    self.T(f"{labels_root}.buses")[1], align="center", variant="dashed"
+                    self.T(f"{labels_root}.buses")[1], align="center", variant="dashed", key=f"{id}_line_endbus_div"
                 )
                 end_bus = select_bus("end", "1b")
             with link:
                 label_line_params = self.T(f"{labels_root}.line_params")
                 a, b, c = st.columns([2, 1, 2])
                 type = a.selectbox(
-                    label_line_params[0], options=self.grid.get_aviable_lines()
+                    label_line_params[0], options=self.grid.get_aviable_lines(),key=f"{id}_line_type"
                 )
-                length = b.number_input(label=f"{label_line_params[1]} (km)", value=0.1)
+                length = b.number_input(label=f"{label_line_params[1]} (km)", value=0.1,key=f"{id}_line_length")
                 name = c.text_input(
-                    label_line_params[2], value=f"New_({type})_{length}km"
+                    label_line_params[2], value=f"New_({type})_{length}km", key=f"{id}_line_name"
                 )
                 error_map = self.T(f"{labels_root}.errors")
                 color = "green"
@@ -410,9 +441,10 @@ class GridManager(Page):
                     size=5,
                     color=color,
                     variant="dotted",
+                    key=f"{id}_line_status_div"
                 )
                 with st.expander(f"ℹ️ {self.T(f"{labels_root}.infos")[0]}"):
-                    start, end, line = st.tabs(tabs=self.T(f"{labels_root}.infos")[1:])
+                    line, start, end = st.tabs(tabs=self.T(f"{labels_root}.infos")[1:])
                     with start:
                         st.text(f"{self.grid.net.bus.iloc[start_bus]}")
                     with end:
@@ -427,8 +459,10 @@ class GridManager(Page):
                 std_type=type,
             )
 
-        return link_aviable, new_link
-
+        return link_aviable, new_link    
+    
+    # ----> Generators Manager <----
+    # ---- Main container ----
     def gens_manager(self):
         labels_root = "tabs.gens"
         with st.expander(self.T(f"{labels_root}.new_item"), icon="➕"):
@@ -448,6 +482,7 @@ class GridManager(Page):
             elif item == 2:
                 self.add_storage()
 
+    # ---- Add containers ----
     def add_sgen(self):
         labels_root = "tabs.gens.item.sgen"
         new_sgens = self.build_sgens()
@@ -463,6 +498,7 @@ class GridManager(Page):
                         type="sgen", params=sgen
                     )
 
+    # ---- Build Element containers ----
     def build_sgens(self, borders: bool = True) -> List[Tuple[int, SGenParams]]:
         labels_root = "tabs.gens.item.sgen.buttons"
         sgens_to_add = []
@@ -491,6 +527,7 @@ class GridManager(Page):
 
         return sgens_to_add
 
+    # ---- Element Params Manager containers ----
     def sgen_param(
         self,
         borders: bool = True,
@@ -508,9 +545,10 @@ class GridManager(Page):
                 bus=bus, p_mw=0.4, q_mvar=0, name="New_PV", scaling=1, in_service=True
             )
 
+        inputs = {"p_mv": [False, sgen["p_mw"]], "q_mvar": [False, sgen["q_mvar"]], "scaling": [False, sgen["scaling"]]}
         if "PV" in sgen["name"]:
-            sgen_type = 0
-            inputs = {"p_mv": (False, 0.4), "q_var": (True, 0), "scaling": (False, 1)}
+            inputs["q_mvar"][0] = False
+            
 
         with st.container(border=borders):
             buttons_labels = self.T(f"{labels_root}.labels")
@@ -535,11 +573,11 @@ class GridManager(Page):
                     n_new_sgen = st.number_input(
                         buttons_labels[1],
                         key=f"{id}_sgen_quantity",
-                        value=1,
+                        value=sgen["scaling"],
                         min_value=1,
                         step=1,
                     )
-                sgen["in_service"] = sac.switch(buttons_labels[2], key=f"{id}_sgen_on")
+                sgen["in_service"] = sac.switch(buttons_labels[2], value=sgen["in_service"], key=f"{id}_sgen_on")
             with b:
                 sac.divider(
                     self.T(f"{labels_root}.titles")[1],
@@ -561,8 +599,8 @@ class GridManager(Page):
                 sgen["q_mvar"] = st.number_input(
                     buttons_labels[0],
                     key=f"{id}_sgen_qmvar_input",
-                    value=inputs["q_var"][1],
-                    disabled=inputs["q_var"][0],
+                    value=inputs["q_mvar"][1],
+                    disabled=inputs["q_mvar"][0],
                 )
 
             sac.divider(
@@ -630,6 +668,9 @@ class GridManager(Page):
 
         return n_new_sgen, sgen
 
+
+ #! TO IMPLEMENT
+
     def add_gen(self): ...
     def add_storage(self): ...
 
@@ -639,11 +680,7 @@ class GridManager(Page):
     def sensors_manager(self):
         st.text("sensors")
 
-    # ----> Generators Manager <----
-    # ---- Main container ----
-    # ---- Build Element containers ----
-    # ---- Element Params Manager containers ----
-
+ 
     # ----> Passive Elements Manager <----
     # ---- Main container ----
     # ---- Build Element containers ----
@@ -653,3 +690,121 @@ class GridManager(Page):
     # ---- Main container ----
     # ---- Build Element containers ----
     # ---- Element Params Manager containers ----
+
+
+
+
+
+# -------------------------------------------------------------------------------------------------------------------------------
+    
+
+    # def build_links_old(
+    #     self, borders: bool = True, bus: Optional[BusParams] = None
+    # ) -> Tuple[bool, LineParams]:
+    #     labels_root = "tabs.links.item.link"
+    #     with st.container(border=borders):
+    #         first, link, second = st.columns([1, 2, 1])
+
+    #         def select_bus(align="start", name=None):
+    #             a = None
+    #             b = None
+    #             if align == "start":
+    #                 a, b = st.columns([1, 3.5])
+    #                 c, d = st.columns(2)
+    #             if align == "end":
+    #                 b, a = st.columns([3.5, 1])
+    #                 d, c = st.columns(2)
+    #             a.button("Reset", key=f"{name}_Reset", disabled=True)
+    #             cols = st.columns(2)
+    #             with c:
+    #                 sac.divider(self.T(f"{labels_root}.bus_identity")[0], align=align)
+    #                 name = st.selectbox(
+    #                     label="Bus name",
+    #                     label_visibility="collapsed",
+    #                     options=list(self.grid.net.get("bus")["name"]),
+    #                     key=f"{align}_{name}Bus name",
+    #                 )
+    #             with d:
+    #                 sac.divider(self.T(f"{labels_root}.bus_identity")[1], align=align)
+    #                 index = st.number_input(
+    #                     label="Bus Index",
+    #                     label_visibility="collapsed",
+    #                     disabled=True,
+    #                     value=self.grid.get_element("bus", name=name, column="index"),
+    #                     key=f"{align}_{name}Bus Index",
+    #                 )
+    #             with b:
+    #                 map_level = {"b": 0, "n": 1, "m": 2}
+    #                 level_index = self.grid.get_element(
+    #                     element="bus", index=index, column="type"
+    #                 )
+    #                 if level_index:
+    #                     level_index = map_level[level_index]
+    #                 sac.segmented(
+    #                     items=[
+    #                         sac.SegmentedItem(name)
+    #                         for name in self.T(f"{labels_root}.bus_level")
+    #                     ],
+    #                     align="center",
+    #                     color="gren",
+    #                     size="sm",
+    #                     key=f"{align}_{name}_level_bus",
+    #                     disabled=True,
+    #                     index=level_index,
+    #                 )
+    #             return index
+
+    #         with first:
+    #             sac.divider(
+    #                 self.T(f"{labels_root}.buses")[0], align="center", variant="dashed"
+    #             )
+    #             start_bus = select_bus(name="1a")
+    #         with second:
+    #             sac.divider(
+    #                 self.T(f"{labels_root}.buses")[1], align="center", variant="dashed"
+    #             )
+    #             end_bus = select_bus("end", "1b")
+    #         with link:
+    #             label_line_params = self.T(f"{labels_root}.line_params")
+    #             a, b, c = st.columns([2, 1, 2])
+    #             type = a.selectbox(
+    #                 label_line_params[0], options=self.grid.get_aviable_lines()
+    #             )
+    #             length = b.number_input(label=f"{label_line_params[1]} (km)", value=0.1)
+    #             name = c.text_input(
+    #                 label_line_params[2], value=f"New_({type})_{length}km"
+    #             )
+    #             error_map = self.T(f"{labels_root}.errors")
+    #             color = "green"
+    #             buses = self.grid.net.bus
+    #             link_aviable = True
+    #             error = self.grid.aviable_link(
+    #                 buses.iloc[start_bus], buses.iloc[end_bus]
+    #             )
+    #             if error:
+    #                 color = "red"
+    #                 link_aviable = False
+    #             sac.divider(
+    #                 error_map[error],
+    #                 align="center",
+    #                 size=5,
+    #                 color=color,
+    #                 variant="dotted",
+    #             )
+    #             with st.expander(f"ℹ️ {self.T(f"{labels_root}.infos")[0]}"):
+    #                 start, end, line = st.tabs(tabs=self.T(f"{labels_root}.infos")[1:])
+    #                 with start:
+    #                     st.text(f"{self.grid.net.bus.iloc[start_bus]}")
+    #                 with end:
+    #                     st.text(f"{self.grid.net.bus.iloc[end_bus]}")
+    #                 with line:
+    #                     st.text(f"{self.grid.get_line_infos(type)}")
+    #         new_link = LineParams(
+    #             from_bus=start_bus,
+    #             to_bus=end_bus,
+    #             length_km=length,
+    #             name=name,
+    #             std_type=type,
+    #         )
+
+    #     return link_aviable, new_link
