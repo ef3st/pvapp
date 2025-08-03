@@ -1,6 +1,8 @@
 import pandapower as pp
-import pandapower.plotting as plot
 import json
+
+# import pandapower.plotting as plot
+# import matplotlib.pyplot as plt
 
 from typing import (
     Protocol,
@@ -17,8 +19,18 @@ from utils.logger import get_logger
 
 
 # ===============================
-#   TypedDict for Grid Elements
+#!   TypedDict for Grid Elements
 # ===============================
+class SGenParams(TypedDict, total=False):
+    bus: int
+    p_mw: float
+    q_mvar: Optional[float]
+    name: Optional[str]
+    scaling: float
+    in_service: bool
+    type: Optional[str]
+
+
 class LineParams(TypedDict, total=False):
     from_bus: int
     to_bus: int
@@ -38,27 +50,19 @@ class BusParams(TypedDict, total=False):
     max_vm_pu: Optional[float]
 
 
-class SGenParams(TypedDict, total=False):
-    bus: int
-    p_mw: float
-    q_mvar: Optional[float]
-    name: Optional[str]
-    scaling: float
-    in_service: bool
-    type: Optional[str]
-
-
 class GenParams(TypedDict, total=False):
     bus: int
-    p_mw: float
+    p_mw: Optional[float]
     vm_pu: float
     name: Optional[str]
-    min_q_mvar: float
-    max_q_mvar: float
+    q_mvar: Optional[float]
+    min_q_mvar: Optional[float]
+    max_q_mvar: Optional[float]
     sn_mva: Optional[float]
     slack: Optional[bool]
-    scaling: float
+    scaling: Optional[float]
     in_service: bool
+    controllable: Optional[bool]
 
 
 class ExtGridParams(TypedDict, total=False):
@@ -93,7 +97,7 @@ class PlantPowerGrid:
         self.logger = get_logger("solartracker")
         self.net: pp.pandapowerNet = pp.create_empty_network()
         if path:
-            self.net = self.load_grid(path)
+            self.load_grid(path)
 
         # self.buses_df = pd.DataFrame(
         #     columns=[
@@ -109,6 +113,11 @@ class PlantPowerGrid:
 
     def load_grid(self, path):
         self.net = pp.from_json(path)
+        return self
+
+    def save(self, path):
+        pp.to_json(self.net, path)
+        return self
 
     def create_bus(self, bus: BusParams) -> None:
         # TODO Create a logical method of indexing
@@ -272,12 +281,76 @@ class PlantPowerGrid:
         return None
 
     def show_grid(self):
-        self.runnet()
-        if self.is_plot_ready():
-            plot.simple_plot(self.net)
+        from pandapower.plotting.plotly import simple_plotly
+
+        # import plotly.graph_objects as go
+        errors = self.runnet()
+        from pandapower.plotting.generic_geodata import create_generic_coordinates
+
+        create_generic_coordinates(self.net, overwrite=True)
+
+        # Usa plotly invece di matplotlib
+        fig = simple_plotly(self.net, respect_switches=True, auto_open=False)
+
+        return fig, errors
 
     def runnet(self):
-        pp.runpp(self.net)
+        errors = self.check_prerequisites()
+        if not errors:
+            pp.runpp(self.net)
+        return errors
+
+    def check_prerequisites(self) -> bool:
+        """
+        Verifica le condizioni minime per eseguire pp.runpp(net).
+        Ritorna True se la rete è pronta, altrimenti solleva eccezioni.
+        """
+        net = self.net
+        errors = []
+        # 1. Verifica che ci siano bus
+        if net.bus.empty:
+            errors.append("La rete non contiene bus.")
+
+        # 2. Verifica presenza di una fonte di tensione (ext_grid, gen, sgen, storage)
+        has_power_source = (
+            not net.ext_grid.empty
+            or not net.gen.empty
+            or not net.sgen.empty
+            or not net.storage.empty
+        )
+        if not has_power_source:
+            errors.append(
+                "Nessuna fonte di potenza presente (ext_grid/gen/sgen/storage)."
+            )
+
+        # 3. Verifica che tutti i bus abbiano vn_kv valido
+        if (net.bus.vn_kv <= 0).any():
+            errors.append("Alcuni bus hanno vn_kv <= 0 (tensione nominale non valida).")
+
+        # 4. Verifica che tutti i componenti siano collegati a bus esistenti
+        for comp in ["load", "sgen", "gen", "ext_grid", "storage"]:
+            if not getattr(net, comp).empty:
+                invalid = ~getattr(net, comp)["bus"].isin(net.bus.index)
+                if invalid.any():
+                    errors.append(f"{comp}: riferimenti a bus inesistenti.")
+
+        if not net.line.empty:
+            invalid_from = ~net.line["from_bus"].isin(net.bus.index)
+            invalid_to = ~net.line["to_bus"].isin(net.bus.index)
+            if invalid_from.any() or invalid_to.any():
+                errors.append("Linee collegate a bus inesistenti.")
+
+        # 5. Verifica che ci sia almeno un elemento con vm_pu definito (per inizializzazione)
+        if net.ext_grid.empty and net.gen.empty:
+            errors.append(
+                "⚠️ Nessun generatore controllato in tensione (ext_grid/gen): il calcolo potrebbe fallire."
+            )
+
+        # 6. Verifica che non ci siano bus isolati
+        # (opzionale: controlla se ci sono nodi disconnessi)
+        # --> si può aggiungere in base al livello di dettaglio desiderato
+
+        return errors  # rete pronta
 
     def is_plot_ready(self) -> bool:
         bus_geo = self.net.bus.get("geo", None)
@@ -302,6 +375,3 @@ class PlantPowerGrid:
                 return False
 
         return True
-
-    def save(self, path):
-        pp.to_json(self.net, path)

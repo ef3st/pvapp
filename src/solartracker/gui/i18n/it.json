@@ -218,7 +218,15 @@
                         
                     },
                     "gen":{
-                        "name":"Generatore Attivo e Regolabile"
+                        "name":"Generatore Attivo e Regolabile",
+                        "titles": ["Proprietà","Tensione","Bus Connesso"],
+                        "labels": ["Nome","Quantità","Generatore Attivo","Slack","Controllabile","Potenza Attiva","Tensione Nominale (al nodo)",
+                                   "Potenza Reattiva","Potenza Nominale Apparente","Scala"],
+                        "bus_params":{
+                            "voltage": ["Basso","Medio","Alto","Altissimo"],
+                            "level": ["Principale","Ausiliaro","Moff"]
+                        },
+                        "buttons": ["Nuovo Generatore Statico"," Rimuovi generatore", "Aggiungi Generatori"]
                     },
                     "storage":
                     {
