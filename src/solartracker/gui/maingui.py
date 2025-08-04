@@ -11,6 +11,7 @@ from .pages.implants.implants import ImplantsPage
 from .pages.implants_comparison.implants_comparison import ImplantsComparisonPage
 from .pages.beta.real_time_monitor.implant_distribution import implant_distribution
 from .pages.beta.grid_manager.grid_manager import GridManager
+from .pages.plant_manager.plant_manager import PlantManager
 
 sys.dont_write_bytecode = True
 
@@ -57,6 +58,7 @@ def streamlit():
         "implants": ImplantsPage(),
         "implants_comparison": ImplantsComparisonPage(),
         "grid_manager": GridManager(),
+        "plant_manager": PlantManager(),
     }
     if "T" not in st.session_state:
         st.session_state.T = load_translation("it")
@@ -85,7 +87,7 @@ def streamlit():
             st.session_state.beta_tools = True
         st.markdown(" ")
         if "menu" not in st.session_state:
-            st.session_state.menu = 5
+            st.session_state.menu = 4
 
         options = T("menu") + (
             ["Real-time monitor  (beta)", "Grid manager (beta)"]
@@ -128,6 +130,8 @@ def streamlit():
         pages["implants_comparison"].render()
     elif selected == options[3]:  # "Implant performance"
         implant_performance.render()
+    elif selected == options[4]:  # "Implant manager"
+        pages["plant_manager"].render()
     elif selected == options[-2]:
         implant_distribution()
     elif selected == options[-1]:

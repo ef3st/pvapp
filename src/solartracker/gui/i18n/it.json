@@ -1,6 +1,6 @@
 {
     "main": {
-      "menu": ["Home", "Impianti", "Confronta Impianti", "Performance Impianto"],
+      "menu": ["Home", "Impianti", "Confronta Impianti", "Performance Impianto", "Gestione Impianto"],
       "buttons": {
         "simulate": "Simula tutto",
         "language": "Lingua"
@@ -90,6 +90,70 @@
 
     },
     "implant_performance":
+    {
+        "title": "Analisi impianto PV",
+        "subtitle": {
+            "implant_config": "Configurazione impianto",
+            "site": "Sito",
+            "implant": "Impianto",
+            "coordinates": "Coordinate",
+            "performance": "Performance",
+            "periodic": "Valori medi e sommari per periodo",
+            "time_distribution": "Valori in funzione del tempo",
+            "search_implant": "Ricerca Impianto",
+            "altitude_tz": "Altitudine e Fuso orario",
+            "address": "Indirizzo"
+
+        },
+        "buttons":{
+            "site":{
+                "name": "Nome sito",
+                "address": "Indirizzo",
+                "city": "Città",
+                "coordinates": "Coordinate",
+                "lat": "Latitudine",
+                "lon":"Longitudine",
+                "altitude": "Altitudine",
+                "timezone": "Fuso Orario"
+            },
+            "implant":{
+                "name": "Nome impianto",
+                "module": {
+                    "title": "Modulo",
+                    "origin": "Fonte",
+                    "model": "Modello",
+                    "details": "Mostra dettagli del modulo",
+                    "name": "Name"
+                },
+                "inverter": {
+                    "title": "Inverter",
+                    "origin": "Fonte",
+                    "model": "Modello",
+                    "details": "Mostra dettagli dell'inverter",
+                    "name": "Name"
+                },
+                "mount":{
+                    "title": "Movimento impianto",
+                    "type": "Tipologia movimento"
+                }
+            },
+            "save": "Salva modifiche",
+            "simulate": "Simula",
+            "choose_variable": "Scegli variabile",
+            "sum": "Somma",
+            "mean": "Media",
+            "periods": "Scegli il periodo",
+            "option":  {
+                "label": "Intervallo",
+                "options": ["Annuale","Giornaliero"]
+            },
+            "choose_date": "Scegli una data",
+            "interval": "Scegli intervallo"
+
+        }
+
+    },
+    "module_manager":
     {
         "title": "Analisi impianto PV",
         "subtitle": {
@@ -249,6 +313,12 @@
             "no_grid": "La rete non è ancora stata salvata"
         }
 
+    },
+    "plant_manager":{
+        "title": "Gestione e analisi Impianto",
+        "selection": ["Seleziona impianto","Sito","Impianto"],
+        "buttons": ["Esegui simulazione","Salva","Tutto","Rete", "Sito","Modulo"],
+        "display_setup": ["Modulo FV","Rete","Sito","Schema","Descrizione","Setup","Analisi"]
     }
 
 
