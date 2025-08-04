@@ -60,10 +60,24 @@ class PlantManager(Page):
         with ll:
             with st.container(border=True):
                 st.markdown(f"🔎 {self.T("selection")[0]}")
+                if "subfolder" not in st.session_state:
+                    st.session_state["subfolder"] = -1
                 subfolder = self.select_plant()
-                self.module_manager = ModuleManager(subfolder)
-                self.grid_manager = GridManager(subfolder)
-                self.site_manager = SiteManager(subfolder)
+                if (
+                    "plant_manager" not in st.session_state
+                    or subfolder != st.session_state["subfolder"]
+                ):
+                    st.session_state["plant_manager"] = {
+                        "grid": GridManager(subfolder),
+                        "module": ModuleManager(subfolder),
+                        "site": SiteManager(subfolder),
+                    }
+                    st.session_state["subfolder"] = subfolder
+                self.grid_manager = st.session_state["plant_manager"]["grid"]
+                self.module_manager = st.session_state["plant_manager"]["module"]
+                self.site_manager = st.session_state["plant_manager"]["grid"]
+                st.session_state["subfolder"] = subfolder
+
         with rr.container(border=True):
             self.top_buttons()
 
@@ -84,6 +98,7 @@ class PlantManager(Page):
                 ],
                 variant="outline",
                 return_index=True,
+                key="display_tab",
             )
         with b:
             sumup = st.segmented_control(
@@ -93,8 +108,8 @@ class PlantManager(Page):
                 selection_mode="multi",
             )
 
-        scheme = True if 1 in sumup else False
-        description = True if 2 in sumup else False
+        scheme = True if labels_display[3] in sumup else False
+        description = True if labels_display[4] in sumup else False
         self.show_sumup(tab, scheme, description)
         tab_display = 0
         if tab < 2:  # Not the site
@@ -127,13 +142,13 @@ class PlantManager(Page):
         with a:
             save = {
                 0: [
-                    self.grid_manager.save,
-                    self.site_manager.save,
-                    self.module_manager.save,
+                    self.site_manager,
+                    self.grid_manager,
+                    self.module_manager,
                 ],
-                1: [self.grid_manager.save],
-                2: [self.site_manager.save],
-                3: [self.module_manager.save],
+                2: [self.site_manager],
+                1: [self.grid_manager],
+                3: [self.module_manager],
             }
             to_save = sac.buttons(
                 items=[
@@ -148,14 +163,22 @@ class PlantManager(Page):
                 gap="md",
                 return_index=True,
             )
-        if not (to_save == None):
-
+        if "to_save" not in st.session_state:
+            st.session_state["to_save"] = to_save
+        if to_save != st.session_state["to_save"] and not (to_save == None):
             with b:
-                with st.spinner("Saving", show_time=True):
-                    for i, save_method in enumerate(save[to_save]):
-                        save_method()
+                import time
 
-    def show_sumup(self, tab: int, scheme: bool, description: bool) -> None: ...
+                with st.spinner("Saving", show_time=True):
+                    for i, element in enumerate(save[to_save]):
+                        element.save()
+                        time.sleep(1)
+                st.session_state["to_save"] = to_save
+                st.rerun()
+
+    def show_sumup(self, tab: int, scheme: bool, description: bool) -> None:
+        if tab == 1 and description:
+            self.grid_manager.get_description()
 
     def show_display(self, tab: int = 0, display: int = 0) -> None:
         manager_map = {
@@ -169,13 +192,13 @@ class PlantManager(Page):
             raise ValueError(f"Invalid tab index: {tab}")
 
         if display == 0:
-            new_manager = manager.render_setup()
-            if tab == 0:
-                self.module_manager = new_manager
-            elif tab == 1:
-                self.grid_manager = new_manager
-            else:
-                self.site_manager = new_manager
+            change = manager.render_setup()
+            # if tab == 0:
+            #     self.module_manager = new_manager
+            # elif tab == 1:
+            #     self.grid_manager = new_manager
+            # else:
+            #     self.site_manager = new_manager
         elif display == 1:
             manager.render_analysis()
         else:

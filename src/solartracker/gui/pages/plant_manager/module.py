@@ -15,11 +15,11 @@ class ModuleManager(Page):
     def __init__(self, subfolder) -> None:
         super().__init__("module_manager")
         self.implant_file = subfolder / "implant.json"
+        self.implant = json.load(self.implant_file.open())
 
     # ========= RENDERS =======
-    def render_setup(self):
-        implant = json.load(self.implant_file.open())
-
+    def render_setup(self) -> bool:
+        implant = self.implant
         implant["name"] = st.text_input(self.T("buttons.implant.name"), implant["name"])
 
         # Module configuration
@@ -109,7 +109,8 @@ class ModuleManager(Page):
                 "cec" if implant["inverter"]["origin"] == "cecinverter" else "pvwatts"
             )
         self.mount_setting(implant["mount"])
-        return implant
+        self.implant = implant
+        return False
 
     def render_analysis(self): ...
 
@@ -118,7 +119,25 @@ class ModuleManager(Page):
     def get_description(self): ...
 
     # ========= UTILITIES METHODS =======
-    def save(self): ...
+    def save(self):
+        keep_mount_params = {}
+        if self.implant["mount"]["type"] == "FixedMount":
+            keep_mount_params = {"surface_tilt", "surface_azimuth"}
+        else:
+            keep_mount_params = {
+                "axis_tilt",
+                "axis_azimuth",
+                "max_angle",
+                "backtrack",
+                "gcr",
+                "cross_axis_tilt",
+            }
+        self.implant["mount"]["params"] = {
+            k: v
+            for k, v in self.implant["mount"]["params"].items()
+            if k in keep_mount_params
+        }
+        json.dump(self.implant, self.implant_file.open("w"), indent=4)
 
     # --------> SETUP <------
     def mount_setting(self, implant_mount):

@@ -287,14 +287,15 @@ class PlantPowerGrid:
         errors = self.runnet()
         from pandapower.plotting.generic_geodata import create_generic_coordinates
 
-        create_generic_coordinates(self.net, overwrite=True)
-
         # Usa plotly invece di matplotlib
-        fig = simple_plotly(self.net, respect_switches=True, auto_open=False)
+        fig = None
+        # if not errors:
+        #     create_generic_coordinates(self.net, overwrite=True)
+        #     fig = simple_plotly(self.net, respect_switches=True, auto_open=False)
 
         return fig, errors
 
-    def runnet(self):
+    def runnet(self) -> List[str]:
         errors = self.check_prerequisites()
         if not errors:
             pp.runpp(self.net)

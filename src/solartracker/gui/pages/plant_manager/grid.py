@@ -18,16 +18,15 @@ from bidict import bidict
 class GridManager(Page):
     def __init__(self, subfolder) -> None:
         super().__init__("grid_manager")
-        self.grid_file = subfolder / "grid.json"
-
-    # ========= RENDERS =======
-    def render_setup(self):
+        self.grid_file: Path = subfolder / "grid.json"
         if self.grid_file.exists():
             st.session_state["plant_grid"] = PlantPowerGrid(self.grid_file)
         else:
             st.session_state["plant_grid"] = PlantPowerGrid()
-        grid = self.grid
-        if grid.net.bus.empty:
+
+    # ========= RENDERS =======
+    def render_setup(self) -> bool:
+        if self.grid.net.bus.empty:
             from streamlit_elements import mui, elements
 
             with elements("grid_error"):
@@ -53,16 +52,26 @@ class GridManager(Page):
             use_container_width=True,
             return_index=True,
         )
+        changed = False
         if tab == 0:
-            self.bus_links_manager()
+            change = self.bus_links_manager()
+            if change:
+                changed = True
         elif tab == 1:
-            self.gens_manager()
+            change = self.gens_manager()
+            if change:
+                changed = True
         elif tab == 2:
-            self.passive_manager()
+            change = self.passive_manager()
+            if change:
+                changed = True
         elif tab == 3:
-            self.sensors_manager()
-
-        return self.grid
+            change = self.sensors_manager()
+            if change:
+                changed = True
+        # if changed:
+        #     st.rerun()
+        return changed
 
     def render_analysis(self): ...
 
@@ -81,8 +90,7 @@ class GridManager(Page):
 
     # ========= UTILITIES METHODS =======
     def save(self):
-        st.session_state["plant_grid"] = self.grid.save(self.grid_file)
-        st.rerun()
+        self.grid.save(self.grid_file)
 
     @property
     def grid(self) -> PlantPowerGrid:
@@ -96,7 +104,7 @@ class GridManager(Page):
 
     # ----> Buses and Links Manager <----
     # ---- Main Manager container ----
-    def bus_links_manager(self):
+    def bus_links_manager(self) -> bool:
         labels_root = "tabs.links"
         with st.expander(self.T(f"{labels_root}.new_item"), icon="➕"):
             items = self.T(f"{labels_root}.item")
@@ -108,12 +116,20 @@ class GridManager(Page):
                 variant="light",
                 return_index=True,
             )
+            changed = False
             if item == 0:
-                self.add_bus()
+                change = self.add_bus()
+                if change:
+                    changed = True
             elif item == 1:
-                self.add_line()
+                change = self.add_line()
+                if change:
+                    changed = True
             elif item == 2:
-                self.add_tranformer()
+                change = self.add_tranformer()
+                if change:
+                    changed = True
+        return changed
 
     # ---- Add containers ----
     def add_bus(self):
@@ -128,7 +144,8 @@ class GridManager(Page):
                         # st.info(f"{i}_{sgens}")
                         bus["name"] = f"{i}_{bus["name"]}"
                     st.session_state["plant_grid"].create_bus(bus)
-            st.rerun()
+            return True
+        return False
 
     def add_line(self):
         labels_root = "tabs.links.item.link"
@@ -140,9 +157,10 @@ class GridManager(Page):
                 if aviable_link:
                     for line in new_links:
                         st.session_state["plant_grid"].link_buses(line)
-                    st.rerun()
+                    return True
                 else:
                     st.error("Line Creation Failed")
+        return False
 
     def add_tranformer(self): ...
 
@@ -479,12 +497,20 @@ class GridManager(Page):
                 variant="light",
                 return_index=True,
             )
+            changed = False
             if item == 0:
-                self.add_sgen()
+                change = self.add_sgen()
+                if change:
+                    changed = True
             elif item == 1:
-                self.add_gen()
+                change = self.add_gen()
+                if change:
+                    changed = True
             elif item == 2:
-                self.add_storage()
+                change = self.add_storage()
+                if change:
+                    changed = True
+        return changed
 
     # ---- Add containers ----
     def add_sgen(self):
@@ -501,7 +527,8 @@ class GridManager(Page):
                     st.session_state["plant_grid"].add_active_element(
                         type="sgen", params=sgen
                     )
-            st.rerun()
+            return True
+        return False
 
     def add_gen(self):
         labels_root = "tabs.gens.item.gen"
@@ -516,7 +543,8 @@ class GridManager(Page):
                     st.session_state["plant_grid"].add_active_element(
                         type="gen", params=gen
                     )
-            st.rerun()
+            return True
+        return False
 
     # ---- Build Element containers ----
     def build_sgens(self, borders: bool = True) -> List[Tuple[int, SGenParams]]:
@@ -535,7 +563,7 @@ class GridManager(Page):
                     sgens_to_add.append((self.sgen_param(id=i)))
                 col += 1
             with cols[0]:
-                a, b, _ = st.columns([3, 2, 1])
+                a, b = st.columns([3, 2])
                 if a.button(self.T(labels_root)[0]):
                     st.session_state["new_sgen"]["n"] += 1
                     st.rerun()
@@ -563,7 +591,7 @@ class GridManager(Page):
                     gens_to_add.append((self.gen_param(id=i)))
                 col += 1
             with cols[0]:
-                a, b, _ = st.columns([3, 2, 1])
+                a, b = st.columns([3, 2])
                 if a.button(self.T(labels_root)[0]):
                     st.session_state["new_gen"]["n"] += 1
                     st.rerun()
@@ -606,6 +634,22 @@ class GridManager(Page):
             buttons_labels = self.T(f"{labels_root}.labels")
             a, b = st.columns(2)
             with a:
+                if quantity:
+                    sac.divider(
+                        buttons_labels[1],
+                        variant="dashed",
+                        size="sm",
+                        align="center",
+                        key=f"{id}_sgen_quantity_div",
+                    )
+                    n_new_sgen = st.number_input(
+                        buttons_labels[1],
+                        key=f"{id}_sgen_quantity",
+                        value=1,
+                        min_value=1,
+                        step=1,
+                        label_visibility="collapsed",
+                    )
                 sac.divider(
                     self.T(f"{labels_root}.titles")[0],
                     align="center",
@@ -618,14 +662,6 @@ class GridManager(Page):
                     key=f"{id}_sgen_type",
                     index=sgen_type,
                 )
-                if quantity:
-                    n_new_sgen = st.number_input(
-                        buttons_labels[1],
-                        key=f"{id}_sgen_quantity",
-                        value=1,
-                        min_value=1,
-                        step=1,
-                    )
                 sgen["name"] = st.text_input(
                     buttons_labels[0], key=f"{id}_sgen_name", value=sgen["name"]
                 )
@@ -705,20 +741,25 @@ class GridManager(Page):
                 bus_level = "NaN"
                 bus_on = "NaN"
 
+            segmenteds = {}
+            for voltage_label in ["LV", "MV", "HV", "EHV"]:
+                for level_label in [level_names[i] for i in level_names]:
+                    for i in ["ON", "OFF"]:
+                        key = (voltage_label, level_label, i)
+                        items = [sac.SegmentedItem(item) for item in key]
+                        segmenteds[key] = {
+                            "items": items,
+                            "color": "green" if i == "ON" else "red",
+                            "index": 2,
+                            "bg_color": "#043b41",
+                            # "disabled": True,
+                            "size": "sm",
+                            "key": f"{id}_gen_bus_prop_{key}",
+                            "align": "end",
+                            "readonly": True,
+                        }
             with bus_cols[1]:
-                sac.segmented(
-                    items=[
-                        sac.SegmentedItem(voltage),
-                        sac.SegmentedItem(bus_level),
-                        sac.SegmentedItem(bus_on),
-                    ],
-                    index=None,
-                    color="lime",
-                    disabled=True,
-                    size="sm",
-                    key=f"{id}_sgen_bus_prop",
-                    align="end",
-                )
+                sac.segmented(**segmenteds[(voltage, bus_level, bus_on)])
 
         return n_new_sgen, sgen
 
@@ -768,19 +809,27 @@ class GridManager(Page):
             buttons_labels = self.T(f"{labels_root}.labels")
             a, b = st.columns([3, 4])
             with a:
+                if quantity:
+                    sac.divider(
+                        buttons_labels[1],
+                        variant="dashed",
+                        size="sm",
+                        align="center",
+                        key=f"{id}_gen_quantity_div",
+                    )
+                    n_new_gen = st.number_input(
+                        "Quantity",
+                        key=f"{id}_gen_quantity",
+                        value=1,
+                        min_value=1,
+                        step=1,
+                        label_visibility="collapsed",
+                    )
                 sac.divider(
                     self.T(f"{labels_root}.titles")[0],
                     align="center",
                     key=f"{id}_gen_prop_div",
                 )
-                if quantity:
-                    n_new_gen = st.number_input(
-                        buttons_labels[1],
-                        key=f"{id}_gen_quantity",
-                        value=1,
-                        min_value=1,
-                        step=1,
-                    )
                 gen = default_gen["slack"]
                 slack = sac.switch(
                     buttons_labels[3], value=gen["slack"], key=f"{id}_gen_slack"
@@ -927,20 +976,25 @@ class GridManager(Page):
                 bus_level = "NaN"
                 bus_on = "NaN"
 
+            segmenteds = {}
+            for voltage_label in ["LV", "MV", "HV", "EHV"]:
+                for level_label in [level_names[i] for i in level_names]:
+                    for i in ["ON", "OFF"]:
+                        key = (voltage_label, level_label, i)
+                        items = [sac.SegmentedItem(item) for item in key]
+                        segmenteds[key] = {
+                            "items": items,
+                            "color": "green" if i == "ON" else "red",
+                            "index": 2,
+                            "bg_color": "#043b41",
+                            # "disabled": True,
+                            "size": "sm",
+                            "key": f"{id}_gen_bus_prop_{key}",
+                            "align": "end",
+                            "readonly": True,
+                        }
             with bus_cols[1]:
-                sac.segmented(
-                    items=[
-                        sac.SegmentedItem(voltage),
-                        sac.SegmentedItem(bus_level),
-                        sac.SegmentedItem(bus_on),
-                    ],
-                    index=None,
-                    color="lime",
-                    disabled=True,
-                    size="sm",
-                    key=f"{id}_gen_bus_prop",
-                    align="end",
-                )
+                sac.segmented(**segmenteds[(voltage, bus_level, bus_on)])
 
         return n_new_gen, gen
 

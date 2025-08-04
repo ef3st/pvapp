@@ -14,11 +14,11 @@ class SiteManager(Page):
     def __init__(self, subfolder) -> None:
         super().__init__("module_manager")
         self.site_file = subfolder / "site.json"
+        self.site = json.load(self.site_file.open())
 
     # ========= RENDERS =======
-    def render_setup(self):
-        site = json.load(self.site_file.open())
-
+    def render_setup(self) -> bool:
+        site = self.site
         site["name"] = st.text_input(self.T("buttons.site.name"), site["name"])
         with st.expander(f" 🏠 {self.T("subtitle.address")}"):
             site["address"] = st.text_input(
@@ -78,8 +78,9 @@ class SiteManager(Page):
             site["tz"] = st.text_input(
                 f"{self.T("buttons.site.timezone")}", site["tz"], icon="🕐"
             )
+        self.site = site
 
-        return site
+        return False
 
     def render_analysis(self):
         raise NotImplementedError
@@ -92,7 +93,8 @@ class SiteManager(Page):
         raise NotImplementedError
 
     # ========= UTILITIES METHODS =======
-    def save(self): ...
+    def save(self):
+        json.dump(self.site, self.site_file.open("w"), indent=4)
 
     # --------> SETUP <------
     # --------> ANALYSIS <------
