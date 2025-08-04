@@ -6,9 +6,9 @@ from pvlib.pvsystem import retrieve_sam
 from simulation.simulator import Simulate
 from analysis.implantanalyser import ImplantAnalyser
 import pydeck as pdk
-from ...utils.plots import plots
-from ...utils.translation.traslator import translate
-from ..page import Page
+from ....utils.plots import plots
+from ....utils.translation.traslator import translate
+from ...page import Page
 
 
 class ModuleManager(Page):

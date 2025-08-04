@@ -4,9 +4,9 @@ from pathlib import Path
 import streamlit as st
 import pandas as pd
 import streamlit_antd_components as sac
-from .module import ModuleManager
-from .grid import GridManager
-from .site import SiteManager
+from .module.module import ModuleManager
+from .grid.grid import GridManager
+from .site.site import SiteManager
 from typing import Union, Optional
 
 

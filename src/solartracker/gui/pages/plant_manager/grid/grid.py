@@ -1,4 +1,4 @@
-from ..page import Page
+from ...page import Page
 import streamlit as st
 import streamlit_antd_components as sac
 from pathlib import Path

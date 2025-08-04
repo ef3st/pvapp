@@ -1,0 +1,6 @@
+class GridTabSetup():
+    def __init__(self):
+        ...
+    def manager():
+        ...    
+    
