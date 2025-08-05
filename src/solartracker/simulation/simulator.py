@@ -19,21 +19,32 @@ class Simulator:
         self.logger = get_logger("solartracker")
         self.subfolder = subfolder
         self.site = None
-        self.implant = None
+        self.module = None
         self.modelchain = None
         self.database = Database()
 
     def run(self):
         try:
-            self.load_site()
-            self.load_implant()
+            try:
+                self.load_site()
+                self.load_implant()
+            except Exception as e:
+                self.logger.error(f"[Simulator] Loading error: {e}")
+            else:
+                self.logger.debug(
+                    f"[Simulator] Simulator ready to simulate {self.plant_name}"
+                )
             self.configure_implant()
             self.simulate()
             self.save_results()
         except (FileNotFoundError, KeyError, ValueError) as e:
-            self.logger.error(f"Simulator: Simulation failed: {e}")
+            self.logger.error(
+                f"[Simulator] Simulation failed for {self.plant_name}: {e}"
+            )
         except Exception as e:
-            self.logger.error(f"Simulator: [UNEXPECTED ERROR] {type(e).__name__}: {e}")
+            self.logger.error(
+                f"[Simulator] [UNEXPECTED ERROR] Simulator failed for {self.plant_name} -> {type(e).__name__}: {e}"
+            )
 
     def load_site(self):
         site_path = self.subfolder / "site.json"
@@ -63,7 +74,7 @@ class Simulator:
             self.data_implant = json.load(f)
 
         try:
-            self.implant = PVSystemManager(
+            self.module = PVSystemManager(
                 name=self.data_implant["name"],
                 location=self.site,
                 id=self.subfolder.name,
@@ -78,7 +89,7 @@ class Simulator:
         mount_type = self.data_implant["mount"]["type"]
         mount_params = self.data_implant["mount"]["params"]
 
-        self.implant.setimplant(
+        self.module.setimplant(
             module=module, inverter=inverter, mount_type=mount_type, params=mount_params
         )
 
@@ -101,7 +112,7 @@ class Simulator:
 
     def simulate(self):
         self.modelchain = BuildModelChain(
-            system=self.implant.system, site=self.site.site
+            system=self.module.system, site=self.site.site
         )
 
         times = pd.date_range(
@@ -111,15 +122,25 @@ class Simulator:
         nature = Nature(self.site.site, times)
         weather = nature.weather_simulation(temp_air=25, wind_speed=1)
         self.modelchain.run_model(weather)
+        self.logger.info(
+            f"[Simulator] Simulation for Plant {self.plant_name} has been EXECUTED"
+        )
 
     def save_results(self):
         self.database.add_modelchainresult(
-            self.implant.id,
-            self.implant.name,
+            self.module.id,
+            self.module.name,
             self.modelchain.results,
             "annual",
             mount=self.data_implant["mount"]["type"],
         )
         self.database.save(self.subfolder)
+        self.logger.info(
+            f"[Simulator] Simulation for Plant {self.plant_name} has been SAVED in /{self.subfolder}"
+        )
 
     def reckon_grid(): ...
+
+    @property
+    def plant_name(self):
+        return f"[{self.site["name"]} : {self.data_implant["name"]}]"

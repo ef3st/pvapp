@@ -376,3 +376,16 @@ class PlantPowerGrid:
                 return False
 
         return True
+
+    # Power from PV module
+    def update_sgen_power(self, type=None, power=None):
+        if power is None:
+            raise ValueError(
+                "The 'power' parameter must be a numeric value (not None)."
+            )
+        if not isinstance(power, (int, float)):
+            raise TypeError("The 'power' parameter must be a number (int or float).")
+
+        for idx, sgen in self.net.sgen.iterrows():
+            if type is None or type in sgen["name"]:
+                self.net.sgen.at[idx, "p_mw"] = power
