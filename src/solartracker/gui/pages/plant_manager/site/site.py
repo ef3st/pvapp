@@ -15,16 +15,21 @@ class SiteManager(Page):
         super().__init__("module_manager")
         self.site_file = subfolder / "site.json"
         self.site: dict = json.load(self.site_file.open())
+        self.change = False
 
     # ========= RENDERS =======
     def render_setup(self) -> bool:
         site = self.site.copy()
-        site["name"] = st.text_input(self.T("buttons.site.name"), site["name"])
+        site["name"] = st.text_input(
+            self.T("buttons.site.name"), site["name"], on_change=self.changed
+        )
         with st.expander(f" 🏠 {self.T("subtitle.address")}"):
             site["address"] = st.text_input(
-                self.T("buttons.site.address"), site["address"]
+                self.T("buttons.site.address"), site["address"], on_change=self.changed
             )
-            site["city"] = st.text_input(self.T("buttons.site.city"), site["city"])
+            site["city"] = st.text_input(
+                self.T("buttons.site.city"), site["city"], on_change=self.changed
+            )
 
         with st.expander(f" 🗺️ {self.T("subtitle.coordinates")}"):
             col1, col2 = st.columns(2)
@@ -33,12 +38,14 @@ class SiteManager(Page):
                 value=site["coordinates"]["lat"],
                 format="%.4f",
                 step=0.0001,
+                on_change=self.changed,
             )
             site["coordinates"]["lon"] = col2.number_input(
                 self.T("buttons.site.lon"),
                 value=site["coordinates"]["lon"],
                 format="%.4f",
                 step=0.0001,
+                on_change=self.changed,
             )
             df = pd.DataFrame(
                 [{"lat": site["coordinates"]["lat"], "lon": site["coordinates"]["lon"]}]
@@ -74,16 +81,19 @@ class SiteManager(Page):
                 value=site["altitude"],
                 min_value=0,
                 icon="🗻",
+                on_change=self.changed,
             )
             site["tz"] = st.text_input(
-                f"{self.T("buttons.site.timezone")}", site["tz"], icon="🕐"
+                f"{self.T("buttons.site.timezone")}",
+                site["tz"],
+                icon="🕐",
+                on_change=self.changed,
             )
 
         if not (self.site == site):
             self.site = site
-            return True
 
-        return False
+        return self.return_changed()
 
     def render_analysis(self):
         raise NotImplementedError
@@ -100,4 +110,13 @@ class SiteManager(Page):
         json.dump(self.site, self.site_file.open("w"), indent=4)
 
     # --------> SETUP <------
+    def changed(self):
+        self.change = True
+
+    def return_changed(self) -> bool:
+        if self.change:
+            self.change = False
+            return True
+        return False
+
     # --------> ANALYSIS <------

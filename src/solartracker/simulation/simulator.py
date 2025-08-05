@@ -121,3 +121,5 @@ class Simulator:
             mount=self.data_implant["mount"]["type"],
         )
         self.database.save(self.subfolder)
+
+    def reckon_grid(): ...

@@ -249,14 +249,10 @@ class PlantManager(Page):
 
         if display == 0:
             enable_change = manager.render_setup()
+
             if enable_change:
                 st.session_state["change"][tab] = True
-            # if tab == 0:
-            #     self.module_manager = new_manager
-            # elif tab == 1:
-            #     self.grid_manager = new_manager
-            # else:
-            #     self.site_manager = new_manager
+                # st.info(f"{tab} changed")
         elif display == 1:
             manager.render_analysis()
         else:

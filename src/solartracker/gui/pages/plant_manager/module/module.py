@@ -16,11 +16,14 @@ class ModuleManager(Page):
         super().__init__("module_manager")
         self.implant_file = subfolder / "implant.json"
         self.implant: dict = json.load(self.implant_file.open())
+        self.change = False
 
     # ========= RENDERS =======
     def render_setup(self) -> bool:
         implant = self.implant.copy()
-        implant["name"] = st.text_input(self.T("buttons.implant.name"), implant["name"])
+        implant["name"] = st.text_input(
+            self.T("buttons.implant.name"), implant["name"], on_change=self.changed
+        )
 
         # Module configuration
         with st.expander(f"***{self.T("buttons.implant.module.title")}***", icon="⚡"):
@@ -31,6 +34,7 @@ class ModuleManager(Page):
                 self.T("buttons.implant.module.origin"),
                 module_origins,
                 index=origin_index,
+                on_change=self.changed,
             )
 
             if implant["module"]["origin"] in ["CECMod", "SandiaMod"]:
@@ -43,6 +47,7 @@ class ModuleManager(Page):
                     self.T("buttons.implant.module.model"),
                     module_names,
                     index=module_index,
+                    on_change=self.changed,
                 )
 
                 if st.checkbox(self.T("buttons.implant.module.details")):
@@ -50,18 +55,22 @@ class ModuleManager(Page):
 
             else:
                 implant["module"]["name"] = col2.text_input(
-                    self.T("buttons.implant.module.name"), implant["module"]["name"]
+                    self.T("buttons.implant.module.name"),
+                    implant["module"]["name"],
+                    on_change=self.changed,
                 )
                 sub1, sub2 = st.columns(2)
                 implant["module"]["model"]["pdc0"] = sub1.number_input(
                     "pdc0 (W)",
                     value=float(implant["module"]["model"]["pdc0"]),
                     min_value=0.0,
+                    on_change=self.changed,
                 )
                 implant["module"]["model"]["gamma_pdc"] = sub2.number_input(
                     "γ_pdc (%/C)",
                     value=float(implant["module"]["model"]["gamma_pdc"]),
                     min_value=0.0,
+                    on_change=self.changed,
                 )
 
             implant["module"]["dc_module"] = {"CECMod": "cec", "SandiaMod": "sapm"}.get(
@@ -79,6 +88,7 @@ class ModuleManager(Page):
                 self.T("buttons.implant.inverter.origin"),
                 inverter_origins,
                 index=inv_index,
+                on_change=self.changed,
             )
 
             if implant["inverter"]["origin"] == "cecinverter":
@@ -91,18 +101,22 @@ class ModuleManager(Page):
                     self.T("buttons.implant.inverter.model"),
                     inv_names,
                     index=inv_name_index,
+                    on_change=self.changed,
                 )
 
                 if st.checkbox(self.T("buttons.implant.inverter.details")):
                     st.code(inverters[implant["inverter"]["name"]], language="json")
             else:
                 implant["inverter"]["name"] = col2.text_input(
-                    self.T("buttons.implant.inverter.name"), implant["inverter"]["name"]
+                    self.T("buttons.implant.inverter.name"),
+                    implant["inverter"]["name"],
+                    on_change=self.changed,
                 )
                 implant["inverter"]["model"]["pdc0"] = st.number_input(
                     "pdc0 (W)",
                     value=float(implant["inverter"]["model"]["pdc0"]),
                     min_value=0.0,
+                    on_change=self.changed,
                 )
 
             implant["inverter"]["ac_model"] = (
@@ -111,9 +125,8 @@ class ModuleManager(Page):
         self.mount_setting(implant["mount"])
         if not (self.implant == implant):
             self.implant = implant
-            return True
 
-        return False
+        return self.return_changed()
 
     def render_analysis(self): ...
 
@@ -143,6 +156,15 @@ class ModuleManager(Page):
         json.dump(self.implant, self.implant_file.open("w"), indent=4)
 
     # --------> SETUP <------
+    def changed(self):
+        self.change = True
+
+    def return_changed(self) -> bool:
+        if self.change:
+            self.change = False
+            return True
+        return False
+
     def mount_setting(self, implant_mount):
         mount_opts = [
             "SingleAxisTrackerMount",
@@ -156,19 +178,24 @@ class ModuleManager(Page):
             col1, col2 = st.columns([2, 1])
             with col1:
                 implant_mount["type"] = st.selectbox(
-                    self.T("buttons.implant.mount.type"), mount_opts, index=mount_index
+                    self.T("buttons.implant.mount.type"),
+                    mount_opts,
+                    index=mount_index,
+                    on_change=self.changed,
                 )
                 if implant_mount["type"] == "FixedMount":
                     l, r = st.columns(2)
                     value = 30
                     if "surface_tilt" in implant_mount["params"]:
                         value = implant_mount["params"]["surface_tilt"]
-                    tilt = l.number_input("Tilt", value=value)
+                    tilt = l.number_input("Tilt", value=value, on_change=self.changed)
                     implant_mount["params"]["surface_tilt"] = tilt
                     value = 270
                     if "surface_azimuth" in implant_mount["params"]:
                         value = implant_mount["params"]["surface_azimuth"]
-                    azimuth = r.number_input("Azimuth", value=value)
+                    azimuth = r.number_input(
+                        "Azimuth", value=value, on_change=self.changed
+                    )
                     implant_mount["params"]["surface_azimuth"] = azimuth
                 else:
                     # implant_mount["type"] == "SingleAxisTrackerMount":
@@ -176,12 +203,14 @@ class ModuleManager(Page):
                     value = 0
                     if "axis_tilt" in implant_mount["params"]:
                         value = implant_mount["params"]["axis_tilt"]
-                    tilt = l.number_input("Tilt", value=value)
+                    tilt = l.number_input("Tilt", value=value, on_change=self.changed)
                     implant_mount["params"]["axis_tilt"] = tilt
                     value = 270
                     if "axis_azimuth" in implant_mount["params"]:
                         value = implant_mount["params"]["axis_azimuth"]
-                    azimuth = c.number_input("Azimuth", value=value)
+                    azimuth = c.number_input(
+                        "Azimuth", value=value, on_change=self.changed
+                    )
                     implant_mount["params"]["axis_azimuth"] = azimuth
                     value = 45
                     if "max_angle" in implant_mount["params"]:
@@ -191,6 +220,7 @@ class ModuleManager(Page):
                         value=float(value),
                         min_value=0.0,
                         max_value=90.0,
+                        on_change=self.changed,
                     )
                     implant_mount["params"]["max_angle"] = max_angle
                     value = 0
@@ -201,6 +231,7 @@ class ModuleManager(Page):
                         value=float(value),
                         min_value=0.0,
                         max_value=90.0,
+                        on_change=self.changed,
                     )
                     implant_mount["params"]["cross_axis_tilt"] = cross_axis_tilt
                     q, _, _, _, _ = st.columns([5, 2, 5, 2, 1])
@@ -213,6 +244,7 @@ class ModuleManager(Page):
                         value=value,
                         min_value=0.0,
                         max_value=1.0,
+                        on_change=self.changed,
                     )
                     implant_mount["params"]["gcr"] = gcr
                     value = True
