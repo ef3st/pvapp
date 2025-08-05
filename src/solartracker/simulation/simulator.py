@@ -29,18 +29,24 @@ class Simulator:
         try:
             try:
                 self.load_site()
-                self.load_implant() 
+                self.load_implant()
             except Exception as e:
                 self.logger.error(f"[Simulator] Loading error: {e}")
             else:
-                self.logger.debug(f"[Simulator] Simulator ready to simulate {self.plant_name}")
+                self.logger.debug(
+                    f"[Simulator] Simulator ready to simulate {self.plant_name}"
+                )
             self.configure_implant()
             self.simulate()
             self.save_results()
         except (FileNotFoundError, KeyError, ValueError) as e:
-            self.logger.error(f"[Simulator] Simulation failed for {self.plant_name}: {e}")
+            self.logger.error(
+                f"[Simulator] Simulation failed for {self.plant_name}: {e}"
+            )
         except Exception as e:
-            self.logger.error(f"[Simulator] [UNEXPECTED ERROR] Simulator failed for {self.plant_name} -> {type(e).__name__}: {e}")
+            self.logger.error(
+                f"[Simulator] [UNEXPECTED ERROR] Simulator failed for {self.plant_name} -> {type(e).__name__}: {e}"
+            )
 
     def load_site(self):
         site_path = self.subfolder / "site.json"
@@ -77,15 +83,14 @@ class Simulator:
             )
         except KeyError as e:
             raise KeyError(f"Missing implant key: {e}")
-    
+
     def load_grid(self):
-        grid_path:Path = self.subfolder /"grid.json"
+        grid_path: Path = self.subfolder / "grid.json"
         if grid_path.exists():
             try:
                 self.grid = PlantPowerGrid(grid_path)
             except Exception as e:
                 raise Exception(f"Error in uploading grid file: {e}")
-            
 
     def configure_implant(self):
         module = self.load_component("module")
@@ -127,8 +132,10 @@ class Simulator:
         nature = Nature(self.site.site, times)
         weather = nature.weather_simulation(temp_air=25, wind_speed=1)
         self.modelchain.run_model(weather)
-        self.logger.info(f"[Simulator] Simulation for Plant {self.plant_name} has been EXECUTED")
-    
+        self.logger.info(
+            f"[Simulator] Simulation for Plant {self.plant_name} has been EXECUTED"
+        )
+
     def save_results(self):
         self.database.add_modelchainresult(
             self.module.id,
@@ -138,12 +145,13 @@ class Simulator:
             mount=self.data_implant["mount"]["type"],
         )
         self.database.save(self.subfolder)
-        self.logger.info(f"[Simulator] Simulation for Plant {self.plant_name} has been SAVED in /{self.subfolder}")
+        self.logger.info(
+            f"[Simulator] Simulation for Plant {self.plant_name} has been SAVED in /{self.subfolder}"
+        )
 
-    def reckon_grid(self): 
+    def reckon_grid(self):
         if not self.grid is None:
             self.modelchain.results
-        
 
     @property
     def plant_name(self):
