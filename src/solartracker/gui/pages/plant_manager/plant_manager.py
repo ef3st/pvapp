@@ -13,6 +13,8 @@ from typing import Union, Optional
 class PlantManager(Page):
     def __init__(self) -> None:
         super().__init__("plant_manager")
+        if "change" not in st.session_state:
+            st.session_state["change"] = [False, False, False]
 
     def load_all_implants(self, folder: Path = Path("data/")) -> pd.DataFrame:
         data = []
@@ -55,7 +57,7 @@ class PlantManager(Page):
 
     def render(self):
         st.title("🖥️ " + self.T("title"))
-        ll, rr = st.columns([7, 4])
+        ll, rr = st.columns([7, 5])
         # Select Plant
         with ll:
             with st.container(border=True):
@@ -75,11 +77,8 @@ class PlantManager(Page):
                     st.session_state["subfolder"] = subfolder
                 self.grid_manager = st.session_state["plant_manager"]["grid"]
                 self.module_manager = st.session_state["plant_manager"]["module"]
-                self.site_manager = st.session_state["plant_manager"]["grid"]
+                self.site_manager = st.session_state["plant_manager"]["site"]
                 st.session_state["subfolder"] = subfolder
-
-        with rr.container(border=True):
-            self.top_buttons()
 
         sac.divider(
             "Display",
@@ -128,53 +127,110 @@ class PlantManager(Page):
                 )
 
         self.show_display(tab, tab_display)
+        with rr.container(border=True):
+            self.top_buttons()
 
+    @st.fragment
     def top_buttons(self):
+        rerun = False
+
         buttons_labels = self.T("buttons")
-        icons = [
-            sac.BsIcon("download"),
-            sac.BsIcon("diagram-3"),
-            sac.BsIcon("compass"),
-            sac.BsIcon("sun"),
-        ]
-        a, b = st.columns(2)
-        b.button(f"🔥{buttons_labels[0]}")
-        with a:
-            save = {
-                0: [
-                    self.site_manager,
-                    self.grid_manager,
-                    self.module_manager,
-                ],
-                2: [self.site_manager],
-                1: [self.grid_manager],
-                3: [self.module_manager],
-            }
+        save = {
+            0: [
+                self.site_manager,
+                self.grid_manager,
+                self.module_manager,
+            ],
+            1: [self.module_manager],
+            2: [self.module_manager],
+            3: [self.site_manager],
+        }
+
+        l, r = st.columns([1, 5])
+        with l:
+            sac.divider(f"{buttons_labels[1]}", icon=sac.BsIcon("floppy"))
+        with r:
+            icons = [
+                sac.BsIcon("download"),
+                sac.BsIcon("sun"),
+                sac.BsIcon("diagram-3"),
+                sac.BsIcon("compass"),
+            ]
+            st.session_state["enable_change"] = [
+                True if True in st.session_state["change"] else False
+            ] + st.session_state["change"]
+            colors = [
+                "red" if i else "green" for i in st.session_state["enable_change"]
+            ]
             to_save = sac.buttons(
                 items=[
-                    sac.ButtonsItem(label=label, icon=icon)
-                    for label, icon in zip(buttons_labels[2:], icons)
+                    sac.ButtonsItem(label=label, icon=icon, color=color)
+                    for label, icon, color in zip(buttons_labels[2:], icons, colors)
                 ],
                 index=None,
                 color="green",
-                align="center",
                 description=f"💾{buttons_labels[1]}",
                 variant="dashed",
                 gap="md",
                 return_index=True,
+                radius="lg",
+                use_container_width=True,
             )
-        if "to_save" not in st.session_state:
-            st.session_state["to_save"] = to_save
-        if to_save != st.session_state["to_save"] and not (to_save == None):
-            with b:
-                import time
 
-                with st.spinner("Saving", show_time=True):
-                    for i, element in enumerate(save[to_save]):
-                        element.save()
-                        time.sleep(1)
-                st.session_state["to_save"] = to_save
-                st.rerun()
+        d, a, b = st.columns([2, 2, 3])
+        with d:
+            sac.divider(f"{buttons_labels[6]}", icon=sac.BsIcon("fire"))
+
+        if not (to_save == None):
+            if st.session_state["enable_change"][to_save]:
+                with b:
+                    import time
+
+                    with st.spinner("Saving", show_time=True):
+                        for i, element in enumerate(save[to_save]):
+                            element.save()
+                            time.sleep(1)
+                    if to_save > 0:
+                        st.session_state["change"][to_save - 1] = False
+                    else:
+                        st.session_state["change"] = [False, False, False]
+                    st.session_state["enable_sim"] = True
+                    rerun = True
+        with a:
+            sim_file: Path = st.session_state["subfolder"] / "simulation.csv"
+            if "enable_sim" not in st.session_state:
+                st.session_state["enable_sim"] = not sim_file.exists()
+
+            if st.session_state["enable_sim"]:
+                color = "blue"
+                variant = "outline"
+            else:
+                color = "blue"
+                variant = "dashed"
+            execute_sim = sac.buttons(
+                items=[
+                    sac.ButtonsItem(
+                        f" {buttons_labels[0]}", icon=sac.BsIcon("collection-play")
+                    )
+                ],
+                index=None,
+                color=color,
+                variant=variant,
+                return_index=True,
+                radius="lg",
+                use_container_width=True,
+            )
+
+            if execute_sim == 0 and st.session_state["enable_sim"]:
+                with b:
+                    with st.spinner("Simulating", show_time=True):
+                        from simulation.simulator import Simulator
+
+                        Simulator(st.session_state["subfolder"]).run()
+                st.session_state["enable_sim"] = False
+                rerun = True
+        if rerun:
+            st.rerun()
 
     def show_sumup(self, tab: int, scheme: bool, description: bool) -> None:
         if tab == 1 and description:
@@ -192,7 +248,9 @@ class PlantManager(Page):
             raise ValueError(f"Invalid tab index: {tab}")
 
         if display == 0:
-            change = manager.render_setup()
+            enable_change = manager.render_setup()
+            if enable_change:
+                st.session_state["change"][tab] = True
             # if tab == 0:
             #     self.module_manager = new_manager
             # elif tab == 1:

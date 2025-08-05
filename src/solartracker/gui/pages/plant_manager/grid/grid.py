@@ -54,21 +54,13 @@ class GridManager(Page):
         )
         changed = False
         if tab == 0:
-            change = self.bus_links_manager()
-            if change:
-                changed = True
+            changed |= self.bus_links_manager()
         elif tab == 1:
-            change = self.gens_manager()
-            if change:
-                changed = True
+            changed |= self.gens_manager()
         elif tab == 2:
-            change = self.passive_manager()
-            if change:
-                changed = True
+            changed |= self.passive_manager()
         elif tab == 3:
-            change = self.sensors_manager()
-            if change:
-                changed = True
+            changed |= self.sensors_manager()
         # if changed:
         #     st.rerun()
         return changed
@@ -118,17 +110,11 @@ class GridManager(Page):
             )
             changed = False
             if item == 0:
-                change = self.add_bus()
-                if change:
-                    changed = True
+                changed |= self.add_bus()
             elif item == 1:
-                change = self.add_line()
-                if change:
-                    changed = True
+                changed |= self.add_line()
             elif item == 2:
-                change = self.add_tranformer()
-                if change:
-                    changed = True
+                changed |= self.add_tranformer()
         return changed
 
     # ---- Add containers ----
@@ -499,17 +485,11 @@ class GridManager(Page):
             )
             changed = False
             if item == 0:
-                change = self.add_sgen()
-                if change:
-                    changed = True
+                changed |= self.add_sgen()
             elif item == 1:
-                change = self.add_gen()
-                if change:
-                    changed = True
+                changed |= self.add_gen()
             elif item == 2:
-                change = self.add_storage()
-                if change:
-                    changed = True
+                changed |= self.add_storage()
         return changed
 
     # ---- Add containers ----

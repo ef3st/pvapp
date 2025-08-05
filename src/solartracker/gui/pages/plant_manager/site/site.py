@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
-from simulation.simulator import Simulate
+from simulation.simulator import Simulator
 from analysis.implantanalyser import ImplantAnalyser
 import pydeck as pdk
 from ....utils.plots import plots
@@ -14,11 +14,11 @@ class SiteManager(Page):
     def __init__(self, subfolder) -> None:
         super().__init__("module_manager")
         self.site_file = subfolder / "site.json"
-        self.site = json.load(self.site_file.open())
+        self.site: dict = json.load(self.site_file.open())
 
     # ========= RENDERS =======
     def render_setup(self) -> bool:
-        site = self.site
+        site = self.site.copy()
         site["name"] = st.text_input(self.T("buttons.site.name"), site["name"])
         with st.expander(f" 🏠 {self.T("subtitle.address")}"):
             site["address"] = st.text_input(
@@ -78,7 +78,10 @@ class SiteManager(Page):
             site["tz"] = st.text_input(
                 f"{self.T("buttons.site.timezone")}", site["tz"], icon="🕐"
             )
-        self.site = site
+
+        if not (self.site == site):
+            self.site = site
+            return True
 
         return False
 

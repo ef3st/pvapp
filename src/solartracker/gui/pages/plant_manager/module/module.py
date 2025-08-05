@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
-from simulation.simulator import Simulate
+from simulation.simulator import Simulator
 from analysis.implantanalyser import ImplantAnalyser
 import pydeck as pdk
 from ....utils.plots import plots
@@ -15,11 +15,11 @@ class ModuleManager(Page):
     def __init__(self, subfolder) -> None:
         super().__init__("module_manager")
         self.implant_file = subfolder / "implant.json"
-        self.implant = json.load(self.implant_file.open())
+        self.implant: dict = json.load(self.implant_file.open())
 
     # ========= RENDERS =======
     def render_setup(self) -> bool:
-        implant = self.implant
+        implant = self.implant.copy()
         implant["name"] = st.text_input(self.T("buttons.implant.name"), implant["name"])
 
         # Module configuration
@@ -109,7 +109,10 @@ class ModuleManager(Page):
                 "cec" if implant["inverter"]["origin"] == "cecinverter" else "pvwatts"
             )
         self.mount_setting(implant["mount"])
-        self.implant = implant
+        if not (self.implant == implant):
+            self.implant = implant
+            return True
+
         return False
 
     def render_analysis(self): ...

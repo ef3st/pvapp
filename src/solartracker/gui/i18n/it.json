@@ -317,7 +317,7 @@
     "plant_manager":{
         "title": "Gestione e analisi Impianto",
         "selection": ["Seleziona impianto","Sito","Impianto"],
-        "buttons": ["Esegui simulazione","Salva","Tutto","Rete", "Sito","Modulo"],
+        "buttons": ["Esegui","Salva","Tutto","Modulo","Rete", "Sito","Simulazione"],
         "display_setup": ["Modulo FV","Rete","Sito","Schema","Descrizione","Setup","Analisi"]
     }
 

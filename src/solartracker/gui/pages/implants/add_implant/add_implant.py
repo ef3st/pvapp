@@ -5,7 +5,7 @@ import pydeck as pdk
 from geopy.geocoders import Nominatim
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
-from simulation.simulator import Simulate
+from simulation.simulator import Simulator
 from ....utils.plots.plots import pv3d
 
 
@@ -110,7 +110,7 @@ def save_and_simulate(path=Path("data/")):
     st.session_state.new_implant = {"site": {}, "implant": {}}
     st.session_state.adding_implant = False
     st.success(f"✅ Nuovo impianto salvato in {folder}.")
-    Simulate(folder)
+    Simulator(folder).run()
 
     st.rerun()
 

@@ -7,60 +7,117 @@ from pvlib.pvsystem import retrieve_sam
 from analysis.database import Database
 import json
 from pathlib import Path
+from utils.logger import get_logger
+
+import json
+from pathlib import Path
+import pandas as pd
 
 
-def Simulate(subfolder: Path):
-    site_path = subfolder / "site.json"
-    with site_path.open() as f:
-        data_site = json.load(f)
+class Simulator:
+    def __init__(self, subfolder: Path):
+        self.logger = get_logger("solartracker")
+        self.subfolder = subfolder
+        self.site = None
+        self.implant = None
+        self.modelchain = None
+        self.database = Database()
 
-    site = Site(
-        name=data_site["name"],
-        coordinates=(data_site["coordinates"]["lat"], data_site["coordinates"]["lon"]),
-        altitude=data_site["altitude"],
-        tz=data_site["tz"],
-    )
+    def run(self):
+        try:
+            self.load_site()
+            self.load_implant()
+            self.configure_implant()
+            self.simulate()
+            self.save_results()
+        except (FileNotFoundError, KeyError, ValueError) as e:
+            self.logger.error(f"Simulator: Simulation failed: {e}")
+        except Exception as e:
+            self.logger.error(f"Simulator: [UNEXPECTED ERROR] {type(e).__name__}: {e}")
 
-    implant_path = subfolder / "implant.json"
-    with implant_path.open() as f:
-        data_implant = json.load(f)
-    implant = PVSystemManager(
-        name=data_implant["name"], location=site, id=subfolder.name
-    )
-    module = None
-    if data_implant["module"]["origin"] == "Custom":
-        module = data_implant["module"]["model"]
-    else:
-        module = retrieve_sam(data_implant["module"]["origin"].lower())[
-            data_implant["module"]["name"]
-        ]
+    def load_site(self):
+        site_path = self.subfolder / "site.json"
+        if not site_path.exists():
+            raise FileNotFoundError(f"Missing site.json in {self.subfolder}")
+        with site_path.open() as f:
+            data_site = json.load(f)
 
-    inverter = None
-    if data_implant["inverter"]["origin"] in ["Custom", "pvwatts"]:
-        inverter = data_implant["inverter"]["model"]
-    else:
-        inverter = retrieve_sam(data_implant["inverter"]["origin"].lower())[
-            data_implant["inverter"]["name"]
-        ]
+        try:
+            self.site = Site(
+                name=data_site["name"],
+                coordinates=(
+                    data_site["coordinates"]["lat"],
+                    data_site["coordinates"]["lon"],
+                ),
+                altitude=data_site["altitude"],
+                tz=data_site["tz"],
+            )
+        except KeyError as e:
+            raise KeyError(f"Missing site key: {e}")
 
-    mount_type = data_implant["mount"]["type"]
-    mount_params = data_implant["mount"]["params"]
+    def load_implant(self):
+        implant_path = self.subfolder / "implant.json"
+        if not implant_path.exists():
+            raise FileNotFoundError(f"Missing implant.json in {self.subfolder}")
+        with implant_path.open() as f:
+            self.data_implant = json.load(f)
 
-    implant.setimplant(
-        module=module, inverter=inverter, mount_type=mount_type, params=mount_params
-    )
+        try:
+            self.implant = PVSystemManager(
+                name=self.data_implant["name"],
+                location=self.site,
+                id=self.subfolder.name,
+            )
+        except KeyError as e:
+            raise KeyError(f"Missing implant key: {e}")
 
-    modelchain = BuildModelChain(system=implant.system, site=site.site)
-    database: Database = Database()
-    times = pd.date_range(
-        start="2024-03-01",
-        end="2025-02-28",
-        freq="1h",
-        tz=site.site.tz,
-    )
-    nature = Nature(site.site, times)
-    modelchain.run_model(nature.weather_simulation(temp_air=25, wind_speed=1))
-    database.add_modelchainresult(
-        implant.id, implant.name, modelchain.results, "annual", mount=mount_type
-    )
-    database.save(subfolder)
+    def configure_implant(self):
+        module = self.load_component("module")
+        inverter = self.load_component("inverter")
+
+        mount_type = self.data_implant["mount"]["type"]
+        mount_params = self.data_implant["mount"]["params"]
+
+        self.implant.setimplant(
+            module=module, inverter=inverter, mount_type=mount_type, params=mount_params
+        )
+
+    def load_component(self, component: str):
+        comp_data = self.data_implant[component]
+        origin = comp_data.get("origin")
+        if not origin:
+            raise KeyError(f"Missing origin for {component}")
+
+        if origin == "Custom" or (component == "inverter" and origin == "pvwatts"):
+            return comp_data.get("model")
+        else:
+            try:
+                sam_data = retrieve_sam(origin.lower())
+                return sam_data[comp_data["name"]]
+            except KeyError:
+                raise ValueError(
+                    f"{component.capitalize()} '{comp_data['name']}' not found in {origin} database."
+                )
+
+    def simulate(self):
+        self.modelchain = BuildModelChain(
+            system=self.implant.system, site=self.site.site
+        )
+
+        times = pd.date_range(
+            start="2024-03-01", end="2025-02-28", freq="1h", tz=self.site.site.tz
+        )
+
+        nature = Nature(self.site.site, times)
+        weather = nature.weather_simulation(temp_air=25, wind_speed=1)
+        self.modelchain.run_model(weather)
+
+    def save_results(self):
+        self.database.add_modelchainresult(
+            self.implant.id,
+            self.implant.name,
+            self.modelchain.results,
+            "annual",
+            mount=self.data_implant["mount"]["type"],
+        )
+        self.database.save(self.subfolder)

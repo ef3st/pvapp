@@ -47,3 +47,6 @@ streamlit:
 
 developer:
 	poetry run python src/solartracker/main.py dev
+
+count_lines:
+	cloc . --include-ext=py

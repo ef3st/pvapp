@@ -22,7 +22,7 @@ def simulate_all(folder: Path = Path("data/")):
     l = len(sorted(folder.iterdir()))
     for i, subfolder in enumerate(sorted(folder.iterdir())):
         if subfolder.is_dir():
-            simulator.Simulate(subfolder)
+            simulator.Simulator(subfolder).run()
 
 
 def load_translation(lang):

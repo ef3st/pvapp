@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
-from simulation.simulator import Simulate
+from simulation.simulator import Simulator
 from analysis.implantanalyser import ImplantAnalyser
 import pydeck as pdk
 from ...utils.plots import plots
@@ -340,7 +340,7 @@ def render():
 
         if b.button(f"{T("buttons.simulate")}", icon="🔥"):
             st.toast("🚀Simulation running ✅")
-            Simulate(subfolder)
+            Simulator(subfolder).run()
             st.toast("Simulation completed ✅")
 
     import streamlit_antd_components as sac
