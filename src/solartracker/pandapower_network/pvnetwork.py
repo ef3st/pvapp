@@ -298,7 +298,10 @@ class PlantPowerGrid:
     def runnet(self) -> List[str]:
         errors = self.check_prerequisites()
         if not errors:
-            pp.runpp(self.net)
+            try:
+                pp.runpp(self.net)
+            except pp.LoadflowNotConverged:
+                self.logger.warning("[PlantPowerGrid] Power flow did not converge!")
         return errors
 
     def check_prerequisites(self) -> bool:

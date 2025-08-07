@@ -54,3 +54,10 @@ class Database:
 
     def save(self, path):
         self.database.to_csv(f"{path}/simulation.csv")
+
+    @property
+    def max_ac_power(self) -> pd.Series:
+        return self.database["ac_p_mp"]
+        
+        
+        

@@ -135,7 +135,7 @@ def step_site():
 
     df = load_sites_df()
 
-    with open("src/solartracker/gui/pages/support/districts.json") as f:
+    with open("src/solartracker/gui/pages/implants/add_implant/districts.json") as f:
         districts_json = json.load(f)
     districts = list(districts_json.keys())
 

@@ -12,13 +12,14 @@ class PVSystemManager:
 
     def __init__(
         self,
-        name: str = None,
-        location: Site = None,
+        name: str = "",
+        location: Optional[Site] = None,
         owner: Optional[str] = None,
         description: Optional[str] = None,
-        id: int = None,
+        id: Optional[int] = None,
     ):
-        if not id:
+        self.logger = get_logger("solartracker")
+        if id is None:
             self.id = PVSystemManager.implants_counter
             PVSystemManager.implants_counter += 1
         else:
@@ -30,14 +31,13 @@ class PVSystemManager:
         self.description = description
 
         self.system = None
-        self.logger = get_logger("solartracker")
 
     def setimplant(
         self,
         module=None,
         inverter=None,
         mount_type: str = "FixedMount",
-        params: dict = [],
+        params: dict = {},
     ):
         if self.system:
             self.logger.warning(
@@ -87,7 +87,7 @@ class PVSystemManager:
             module_parameters=module,
             temperature_model_parameters=pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS[
                 "sapm"
-            ]["open_rack_glass_glass"],
+            ]["open_rack_glass_glass"],modules_per_string=5
         )
 
         self.system = PVSystem(
@@ -95,6 +95,13 @@ class PVSystemManager:
             module_parameters=module,
             inverter_parameters=inverter,
         )
+    def getimplant(self) -> Optional[PVSystem]:
+        """Returns the implant if it exists, otherwise None"""
+        if self.system:
+            return self.system
+        else:
+            self.logger.warning(f"{self.name}: Implant not setted")
+            return None
 
     def delete_inplant(self):
         self.system = None

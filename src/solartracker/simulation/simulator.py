@@ -9,7 +9,6 @@ from analysis.database import Database
 import json
 from pathlib import Path
 from utils.logger import get_logger
-
 import json
 from pathlib import Path
 import pandas as pd
@@ -79,10 +78,11 @@ class Simulator:
             self.module = PVSystemManager(
                 name=self.data_implant["name"],
                 location=self.site,
-                id=self.subfolder.name,
+                # You can set owner, descriprion, or id if needed
+                # id=self.subfolder.name,
             )
         except KeyError as e:
-            raise KeyError(f"Missing implant key: {e}")
+            raise KeyError(f"[Simulator] Error in defining PVSystemManager: {e}")
 
     def load_grid(self):
         grid_path: Path = self.subfolder / "grid.json"
@@ -99,9 +99,12 @@ class Simulator:
         mount_type = self.data_implant["mount"]["type"]
         mount_params = self.data_implant["mount"]["params"]
 
-        self.module.setimplant(
-            module=module, inverter=inverter, mount_type=mount_type, params=mount_params
-        )
+        if not self.module is None:
+            self.module.setimplant(
+                module=module, inverter=inverter, mount_type=mount_type, params=mount_params
+            )
+        else:
+            raise ValueError("Module is not defined. Cannot set implant.")
 
     def load_component(self, component: str):
         comp_data = self.data_implant[component]
@@ -121,38 +124,62 @@ class Simulator:
                 )
 
     def simulate(self):
-        self.modelchain = BuildModelChain(
-            system=self.module.system, site=self.site.site
-        )
+            if self.module is None or self.site is None:
+                self.logger.warning("[Simulator] Module or site is not defined. Cannot simulate.")
+                return
+            else: 
+                try:
+                    self.modelchain = BuildModelChain(
+                                system=self.module.getimplant(), site=self.site.location
+                        )
+                except Exception as e:
+                    self.logger.warning("[Simulator] Simulation not performed due to following modelchain errors(s): {e}")
+                    return
+                times = pd.date_range(
+                    start="2024-03-01", end="2025-02-28", freq="1h", tz=self.site.site.tz
+                )
 
-        times = pd.date_range(
-            start="2024-03-01", end="2025-02-28", freq="1h", tz=self.site.site.tz
-        )
 
-        nature = Nature(self.site.site, times)
-        weather = nature.weather_simulation(temp_air=25, wind_speed=1)
-        self.modelchain.run_model(weather)
-        self.logger.info(
-            f"[Simulator] Simulation for Plant {self.plant_name} has been EXECUTED"
-        )
+                nature = Nature(self.site.site, times)
+                weather = nature.weather_simulation(temp_air=25, wind_speed=1)
+                self.modelchain.run_model(weather)
+                self.logger.info(
+                    f"[Simulator] Simulation for Plant {self.plant_name} has been EXECUTED"
+                )
 
     def save_results(self):
-        self.database.add_modelchainresult(
-            self.module.id,
-            self.module.name,
-            self.modelchain.results,
-            "annual",
-            mount=self.data_implant["mount"]["type"],
-        )
-        self.database.save(self.subfolder)
-        self.logger.info(
-            f"[Simulator] Simulation for Plant {self.plant_name} has been SAVED in /{self.subfolder}"
-        )
+        if self.modelchain is None:
+            self.logger.warning("[Simulator] Modelchain is not defined. Cannot save results.")
+            return
+        else:
+            assert self.module is not None, "Module must be defined to save results."
+            self.database.add_modelchainresult(
+                self.module.id,
+                self.module.name,
+                self.modelchain.results,
+                "annual",
+                mount=self.data_implant["mount"]["type"],
+            )
+            self.database.save(self.subfolder)
+            self.logger.info(
+                f"[Simulator] Simulation for Plant {self.plant_name} has been SAVED in /{self.subfolder}"
+            )
 
     def reckon_grid(self):
         if not self.grid is None:
-            self.modelchain.results
+            ac_power_values = self.database.max_ac_power / 1e6 # NOTE coversion from Watt to MegaWatt
+            grid_data = {}
+            for ac_power in ac_power_values:
+                self.grid.update_sgen_power("PV", ac_power)
+                errors = self.grid.runnet()
+                if errors:
+                    string = "\n" + "\n".join(errors)
+                    self.logger.warning(f"[Simulator] Simulation failed in reckoning grid values due to the following errors:{string}")
+                    
 
+            
     @property
     def plant_name(self):
-        return f"[{self.site["name"]} : {self.data_implant["name"]}]"
+        assert self.site is not None, "Site must be defined to get plant name."
+        assert self.data_implant is not None, "Implant data must be defined to get"
+        return f"[{self.site.name} : {self.data_implant["name"]}]"

@@ -1,13 +1,14 @@
 from pvlib.location import Location
 import pandas as pd
 import numpy as np
+from numpy.typing import NDArray
 import pvlib
-from typing import Dict
+from typing import Dict,Union
 from utils.logger import get_logger
-
+from typing import Optional
 
 class Nature:
-    def __init__(self, site: Location, times: pd.DataFrame) -> None:
+    def __init__(self, site: Location, times:  Union[pd.DataFrame, pd.Series, pd.DatetimeIndex]) -> None:
         self.site = site
         self.times = times
         self._compute()
@@ -22,7 +23,7 @@ class Nature:
 
         self.aviable_energy = self._aviableenergy()
 
-    def _aviableenergy(self) -> Dict[str, float]:
+    def _aviableenergy(self) -> Dict[str, NDArray[np.float64]]:
         """
         Compute GHI, DNI, DHI values using a semi-empirical model based on solar elevation.
         - GHI (Global Horizontal Irradiance): modeled as 1000 * sin(elevation), max 1000
@@ -83,7 +84,10 @@ class Nature:
             model="haydavies",
         )
 
-    def weather_simulation(self, temp_air, wind_speed) -> pd.DataFrame:
+    def weather_simulation(self, temp_air, wind_speed, seed: Optional[int] = None) -> pd.DataFrame:
+        if seed is not None:
+            np.random.seed(seed)
+
 
         # Seasonal temp_variation
         temp_air = 20 + 10 * np.sin(2 * np.pi * (self.times.dayofyear - 80) / 365)
