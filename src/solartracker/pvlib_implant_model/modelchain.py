@@ -3,8 +3,12 @@ from pvlib.location import Location
 from pvlib.pvsystem import PVSystem
 from typing import Optional
 
+
 def BuildModelChain(
-    system: Optional[PVSystem], site: Optional[Location], dc_model: str = "cec", ac_model: str = "pvwatts"
+    system: Optional[PVSystem],
+    site: Optional[Location],
+    dc_model: str = "cec",
+    ac_model: str = "pvwatts",
 ):
     """Returns a model chain with the system and the site
 

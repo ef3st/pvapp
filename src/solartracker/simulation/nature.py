@@ -3,12 +3,15 @@ import pandas as pd
 import numpy as np
 from numpy.typing import NDArray
 import pvlib
-from typing import Dict,Union
+from typing import Dict, Union
 from utils.logger import get_logger
 from typing import Optional
 
+
 class Nature:
-    def __init__(self, site: Location, times:  Union[pd.DataFrame, pd.Series, pd.DatetimeIndex]) -> None:
+    def __init__(
+        self, site: Location, times: Union[pd.DataFrame, pd.Series, pd.DatetimeIndex]
+    ) -> None:
         self.site = site
         self.times = times
         self._compute()
@@ -84,10 +87,11 @@ class Nature:
             model="haydavies",
         )
 
-    def weather_simulation(self, temp_air, wind_speed, seed: Optional[int] = None) -> pd.DataFrame:
+    def weather_simulation(
+        self, temp_air, wind_speed, seed: Optional[int] = None
+    ) -> pd.DataFrame:
         if seed is not None:
             np.random.seed(seed)
-
 
         # Seasonal temp_variation
         temp_air = 20 + 10 * np.sin(2 * np.pi * (self.times.dayofyear - 80) / 365)

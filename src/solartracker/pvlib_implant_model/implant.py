@@ -87,7 +87,8 @@ class PVSystemManager:
             module_parameters=module,
             temperature_model_parameters=pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS[
                 "sapm"
-            ]["open_rack_glass_glass"],modules_per_string=5
+            ]["open_rack_glass_glass"],
+            modules_per_string=5,
         )
 
         self.system = PVSystem(
@@ -95,6 +96,7 @@ class PVSystemManager:
             module_parameters=module,
             inverter_parameters=inverter,
         )
+
     def getimplant(self) -> Optional[PVSystem]:
         """Returns the implant if it exists, otherwise None"""
         if self.system:

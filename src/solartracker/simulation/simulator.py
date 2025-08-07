@@ -101,7 +101,10 @@ class Simulator:
 
         if not self.module is None:
             self.module.setimplant(
-                module=module, inverter=inverter, mount_type=mount_type, params=mount_params
+                module=module,
+                inverter=inverter,
+                mount_type=mount_type,
+                params=mount_params,
             )
         else:
             raise ValueError("Module is not defined. Cannot set implant.")
@@ -124,32 +127,37 @@ class Simulator:
                 )
 
     def simulate(self):
-            if self.module is None or self.site is None:
-                self.logger.warning("[Simulator] Module or site is not defined. Cannot simulate.")
+        if self.module is None or self.site is None:
+            self.logger.warning(
+                "[Simulator] Module or site is not defined. Cannot simulate."
+            )
+            return
+        else:
+            try:
+                self.modelchain = BuildModelChain(
+                    system=self.module.getimplant(), site=self.site.location
+                )
+            except Exception as e:
+                self.logger.warning(
+                    "[Simulator] Simulation not performed due to following modelchain errors(s): {e}"
+                )
                 return
-            else: 
-                try:
-                    self.modelchain = BuildModelChain(
-                                system=self.module.getimplant(), site=self.site.location
-                        )
-                except Exception as e:
-                    self.logger.warning("[Simulator] Simulation not performed due to following modelchain errors(s): {e}")
-                    return
-                times = pd.date_range(
-                    start="2024-03-01", end="2025-02-28", freq="1h", tz=self.site.site.tz
-                )
+            times = pd.date_range(
+                start="2024-03-01", end="2025-02-28", freq="1h", tz=self.site.site.tz
+            )
 
-
-                nature = Nature(self.site.site, times)
-                weather = nature.weather_simulation(temp_air=25, wind_speed=1)
-                self.modelchain.run_model(weather)
-                self.logger.info(
-                    f"[Simulator] Simulation for Plant {self.plant_name} has been EXECUTED"
-                )
+            nature = Nature(self.site.site, times)
+            weather = nature.weather_simulation(temp_air=25, wind_speed=1)
+            self.modelchain.run_model(weather)
+            self.logger.info(
+                f"[Simulator] Simulation for Plant {self.plant_name} has been EXECUTED"
+            )
 
     def save_results(self):
         if self.modelchain is None:
-            self.logger.warning("[Simulator] Modelchain is not defined. Cannot save results.")
+            self.logger.warning(
+                "[Simulator] Modelchain is not defined. Cannot save results."
+            )
             return
         else:
             assert self.module is not None, "Module must be defined to save results."
@@ -167,17 +175,19 @@ class Simulator:
 
     def reckon_grid(self):
         if not self.grid is None:
-            ac_power_values = self.database.max_ac_power / 1e6 # NOTE coversion from Watt to MegaWatt
+            ac_power_values = (
+                self.database.max_ac_power / 1e6
+            )  # NOTE coversion from Watt to MegaWatt
             grid_data = {}
             for ac_power in ac_power_values:
                 self.grid.update_sgen_power("PV", ac_power)
                 errors = self.grid.runnet()
                 if errors:
                     string = "\n" + "\n".join(errors)
-                    self.logger.warning(f"[Simulator] Simulation failed in reckoning grid values due to the following errors:{string}")
-                    
+                    self.logger.warning(
+                        f"[Simulator] Simulation failed in reckoning grid values due to the following errors:{string}"
+                    )
 
-            
     @property
     def plant_name(self):
         assert self.site is not None, "Site must be defined to get plant name."
