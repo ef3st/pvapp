@@ -66,3 +66,13 @@ class SimulationResults:
     @property
     def is_empty(self) -> bool:
         return self.database.empty
+
+    
+    def get_acPowers_perTime_perArray(self) -> pd.DataFrame:
+        """
+        Returns a DataFrame with the AC power values.
+        """
+        if self.is_empty:
+            self.logger.warning("[SimulationResults] No results to get powers from.")
+            return pd.DataFrame()
+        return self.database.pivot(index="timestamp",columns="sgen_id",values="ac_p_mp")

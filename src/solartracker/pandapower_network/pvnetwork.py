@@ -12,7 +12,7 @@ from typing import (
     Tuple,
     Literal,
     TypedDict,
-    List,
+    List
 )
 import pandas as pd
 from utils.logger import get_logger
@@ -295,13 +295,19 @@ class PlantPowerGrid:
 
         return fig, errors
 
-    def runnet(self) -> List[str]:
+    def runnet(self, timeseries:bool = False) -> List[str]:
         errors = self.check_prerequisites()
         if not errors:
             try:
-                pp.runpp(self.net)
+                if timeseries:
+                    from pandapower.timeseries import run_timeseries
+                    run_timeseries(self.net)
+                else:
+                    pp.runpp(self.net)
             except pp.LoadflowNotConverged:
                 self.logger.warning("[PlantPowerGrid] Power flow did not converge!")
+            except Exception as e:
+                self.logger.error(f"[PlantPowerGrid] Error running power flow: {e}")
         return errors
 
     def check_prerequisites(self) -> bool:
@@ -392,3 +398,17 @@ class PlantPowerGrid:
         for idx, sgen in self.net.sgen.iterrows():
             if type is None or type in sgen["name"]:
                 self.net.sgen.at[idx, "p_mw"] = power
+
+    def create_controllers(self,element:Literal["sgen"], data_source:pd.DataFrame) -> None:
+        """
+        Create controllers for the grid elements.
+        """
+        from pandapower.control import ConstControl
+        ConstControl(
+            self.net,
+            element=element,
+            variable="p_mw",
+            element_index=data_source.columns,
+            profile_name=data_source.columns,
+            drop_same_existing_ctrl=True,
+        )

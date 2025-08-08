@@ -38,7 +38,7 @@ class Simulator:
             tz=self.site.site.tz,
             name="annual_01_03_24",
         )
-        self.results: SimulationResults = SimulationResults()
+        self.simresults: SimulationResults = SimulationResults()
 
     def run(self, times: Optional[pd.DatetimeIndex] = None):
         try:
@@ -195,7 +195,7 @@ class Simulator:
                         f"[Simulator] Simulation for pvArray {array_idx} in plant {self.plant_name} not performed due to following errors(s) during simulation: {e}"
                     )
                     pass
-                self.results.add_modelchainresult(
+                self.simresults.add_modelchainresult(
                     pvSystemId=array_idx,
                     results=modelchain.results,
                     period=self.times.name,
@@ -204,8 +204,7 @@ class Simulator:
                     f"[Simulator] Simulation for pvArray {array_idx} of Plant {self.plant_name} has been EXECUTED"
                 )
 
-            if self.grid is not None:
-                self.reckon_grid()
+            self.reckon_grid()
 
             self.logger.info(
                 f"[Simulator] Simulation for Plant {self.plant_name} has been EXECUTED"
@@ -221,30 +220,23 @@ class Simulator:
         modelchain.run_model(weather)
 
     def save_results(self):
-        if self.results.is_empty:
+        if self.simresults.is_empty:
             self.logger.warning("[Simulator] Nothing to save. No results found.")
             return
         else:
-            self.results.save(self.subfolder)
+            self.simresults.save(self.subfolder)
             self.logger.info(
                 f"[Simulator] Simulation results for Plant {self.plant_name} has been SAVED in /{self.subfolder}/simulation.csv"
             )
 
     def reckon_grid(self):
         if not self.grid is None:
-            ac_power_values = (
-                self.simResults.max_ac_power / 1e6
-            )  # NOTE coversion from Watt to MegaWatt
-            grid_data = {}
-            for ac_power in ac_power_values:
-                self.grid.update_sgen_power("PV", ac_power)
-                errors = self.grid.runnet()
-                if errors:
-                    string = "\n" + "\n".join(errors)
-                    self.logger.warning(
-                        f"[Simulator] Simulation failed in reckoning grid values due to the following errors:{string}"
-                    )
-
+            ac_power_values = self.simresults.get_acPowers_perTime_perArray() / 1e6
+            self.grid.create_controllers(
+                element="sgen", data_source=ac_power_values)
+            self.grid.runnet(timeseries=True)
+        # TO ADD RESUTLS TO simulation results
+            
     @property
     def plant_name(self):
         assert self.site is not None, "Site must be defined to get plant name."
