@@ -2,26 +2,30 @@ import pandas as pd
 from pvlib.modelchain import ModelChainResult
 from IPython.display import display
 from utils.logger import get_logger
+from typing import Optional
 
 
-class Database:
+class SimulationResults:
     def __init__(self):
         self.database: pd.DataFrame = pd.DataFrame()
         self.logger = get_logger("solartracker")
 
     def add_modelchainresult(
         self,
-        implant_id: int,
-        implant_name: str,
-        results: ModelChainResult,
-        period: str,
-        mount: str,
+        pvSystemId: int = 0,
+        # implant_name: str,
+        results: Optional[ModelChainResult] = None,
+        period: Optional[str] = None,
+        # mount: str,
     ) -> None:
+        if results is None:
+            self.logger.warning("[SimulationResults] No modelchain to add")
+            return
         new_results = self.gather_modelchain_results(results)
-        new_results["Implant_id"] = implant_id
-        new_results["Implant_name"] = implant_name
+        new_results["sgen_id"] = pvSystemId
+        # new_results["Implant_name"] = implant_name
         new_results["period"] = period
-        new_results["mount"] = mount
+        # new_results["mount"] = mount
         new_results.index.name = "timestamp"
         new_results = new_results.reset_index()
         self.database: pd.DataFrame = pd.concat([self.database, new_results])
@@ -58,3 +62,7 @@ class Database:
     @property
     def max_ac_power(self) -> pd.Series:
         return self.database["ac_p_mp"]
+
+    @property
+    def is_empty(self) -> bool:
+        return self.database.empty

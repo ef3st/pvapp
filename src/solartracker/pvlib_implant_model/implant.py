@@ -32,12 +32,14 @@ class PVSystemManager:
 
         self.system = None
 
-    def setimplant(
+    def set_pv_components(
         self,
         module=None,
         inverter=None,
         mount_type: str = "FixedMount",
         params: dict = {},
+        modules_per_string: int = 1,
+        strings: int = 1,
     ):
         if self.system:
             self.logger.warning(
@@ -88,7 +90,8 @@ class PVSystemManager:
             temperature_model_parameters=pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS[
                 "sapm"
             ]["open_rack_glass_glass"],
-            modules_per_string=5,
+            modules_per_string=modules_per_string,
+            strings=strings,
         )
 
         self.system = PVSystem(
