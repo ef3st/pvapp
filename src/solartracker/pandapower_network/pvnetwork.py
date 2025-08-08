@@ -12,7 +12,7 @@ from typing import (
     Tuple,
     Literal,
     TypedDict,
-    List
+    List,
 )
 import pandas as pd
 from utils.logger import get_logger
@@ -295,12 +295,13 @@ class PlantPowerGrid:
 
         return fig, errors
 
-    def runnet(self, timeseries:bool = False) -> List[str]:
+    def runnet(self, timeseries: bool = False) -> List[str]:
         errors = self.check_prerequisites()
         if not errors:
             try:
                 if timeseries:
                     from pandapower.timeseries import run_timeseries
+
                     run_timeseries(self.net)
                 else:
                     pp.runpp(self.net)
@@ -399,11 +400,14 @@ class PlantPowerGrid:
             if type is None or type in sgen["name"]:
                 self.net.sgen.at[idx, "p_mw"] = power
 
-    def create_controllers(self,element:Literal["sgen"], data_source:pd.DataFrame) -> None:
+    def create_controllers(
+        self, element: Literal["sgen"], data_source: pd.DataFrame
+    ) -> None:
         """
         Create controllers for the grid elements.
         """
         from pandapower.control import ConstControl
+
         ConstControl(
             self.net,
             element=element,

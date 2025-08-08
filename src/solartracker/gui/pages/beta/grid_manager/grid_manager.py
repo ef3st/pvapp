@@ -656,8 +656,8 @@ class GridManager(Page):
         with st.container(border=borders):
             buttons_labels = self.T(f"{labels_root}.labels")
             a, b = st.columns(2)
-    # MAIN PROPERTIES
-            with a: 
+            # MAIN PROPERTIES
+            with a:
                 sac.divider(
                     self.T(f"{labels_root}.titles")[0],
                     align="center",
@@ -684,8 +684,8 @@ class GridManager(Page):
                 sgen["in_service"] = sac.switch(
                     buttons_labels[2], value=sgen["in_service"], key=f"{id}_sgen_on"
                 )
-    # VOLTAGE PROPERTIES
-            with b: 
+            # VOLTAGE PROPERTIES
+            with b:
                 sac.divider(
                     self.T(f"{labels_root}.titles")[1],
                     align="center",
@@ -709,7 +709,7 @@ class GridManager(Page):
                     value=inputs["q_mvar"][1],
                     disabled=inputs["q_mvar"][0],
                 )
-    # PV SETUP
+            # PV SETUP
             with st.expander("⚡ PV Setup"):
                 left, right = st.columns(2)
                 fr = left.number_input(
@@ -722,7 +722,7 @@ class GridManager(Page):
                     key=f"{id}_sgen_vm_input",
                     value=sgen["vm_pu"],
                 )
-    # BUS SELECTION
+            # BUS SELECTION
             sac.divider(
                 self.T(f"{labels_root}.titles")[2],
                 align="center",

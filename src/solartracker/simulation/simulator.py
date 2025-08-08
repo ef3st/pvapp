@@ -232,11 +232,10 @@ class Simulator:
     def reckon_grid(self):
         if not self.grid is None:
             ac_power_values = self.simresults.get_acPowers_perTime_perArray() / 1e6
-            self.grid.create_controllers(
-                element="sgen", data_source=ac_power_values)
+            self.grid.create_controllers(element="sgen", data_source=ac_power_values)
             self.grid.runnet(timeseries=True)
         # TO ADD RESUTLS TO simulation results
-            
+
     @property
     def plant_name(self):
         assert self.site is not None, "Site must be defined to get plant name."
