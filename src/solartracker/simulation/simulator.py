@@ -32,13 +32,6 @@ class Simulator:
         self.mount: dict = None
         self.pv_setup_data: dict = None
         self.sims: Union[dict[int, Simulation], Simulation, None] = None
-        self.times: pd.DatetimeIndex = pd.date_range(
-            start="2024-03-01",
-            end="2025-02-28",
-            freq="1h",
-            tz=self.site.site.tz,
-            name="annual_01_03_24",
-        )
         self.simresults: SimulationResults = SimulationResults()
 
     def run(self, times: Optional[pd.DatetimeIndex] = None):
@@ -55,7 +48,15 @@ class Simulator:
                     f"[Simulator] Simulator ready to simulate {self.plant_name}"
                 )
             # self.configure_pvsystem()
-            if times is not None:
+            if times is None:
+                self.times: pd.DatetimeIndex = pd.date_range(
+                    start="2024-03-01",
+                    end="2025-02-28",
+                    freq="1h",
+                    tz=self.site.site.tz,
+                    name="annual_01_03_24",
+                )
+            else:
                 self.times = times
             self.build_simulation()
             self.save_results()

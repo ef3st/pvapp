@@ -12,6 +12,8 @@ from .pages.implants_comparison.implants_comparison import ImplantsComparisonPag
 from .pages.beta.real_time_monitor.implant_distribution import implant_distribution
 from .pages.beta.grid_manager.grid_manager import GridManager
 from .pages.plant_manager.plant_manager import PlantManager
+from .pages.logs.logs import LogsPage
+import pandas as pd
 
 sys.dont_write_bytecode = True
 
@@ -54,11 +56,14 @@ def T(key: str):
 
 
 def streamlit():
+    if "start_time" not in st.session_state:
+        st.session_state.start_time = pd.Timestamp.now()
     pages = {
         "implants": ImplantsPage(),
         "implants_comparison": ImplantsComparisonPage(),
         "grid_manager": GridManager(),
         "plant_manager": PlantManager(),
+        "logs": LogsPage(),
     }
     if "T" not in st.session_state:
         st.session_state.T = load_translation("it")
@@ -84,7 +89,7 @@ def streamlit():
             st.rerun()
 
         if not "beta_tools" in st.session_state:
-            st.session_state.beta_tools = True
+            st.session_state.beta_tools = False
         st.markdown(" ")
         if "menu" not in st.session_state:
             st.session_state.menu = 4
@@ -98,7 +103,9 @@ def streamlit():
         selected = option_menu(
             None,
             options=options,
-            icons=["house", "tools", "bar-chart", "graph-up"][: len(options)],
+            icons=["house", "tools", "bar-chart", "graph-up", "toggles", "bell"][
+                : len(options)
+            ],
             menu_icon="cast",
             default_index=(
                 st.session_state.menu if st.session_state.menu < len(options) else 0
@@ -132,6 +139,8 @@ def streamlit():
         implant_performance.render()
     elif selected == options[4]:  # "Implant manager"
         pages["plant_manager"].render()
+    elif selected == options[5]:  # "Logs"
+        pages["logs"].render()
     elif selected == options[-2]:
         implant_distribution()
     elif selected == options[-1]:

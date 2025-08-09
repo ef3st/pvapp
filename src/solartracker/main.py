@@ -24,12 +24,14 @@ def main():
     mode = args.mode
 
     if mode == "gui":
+        log_level = args.log_level if args.log_level else "DEBUG"
+        logger = set_logger(log_level)
         from gui.maingui import streamlit
 
         streamlit()
     elif mode == "dev":
         log_level = args.log_level if args.log_level else "INFO"
-        set_logger(log_level)
+        logger = set_logger(log_level)
 
 
 if __name__ == "__main__":

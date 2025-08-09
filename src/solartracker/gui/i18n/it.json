@@ -1,10 +1,21 @@
 {
     "main": {
-      "menu": ["Home", "Impianti", "Confronta Impianti", "Performance Impianto", "Gestione Impianto"],
+      "menu": ["Home", "Impianti", "Confronta Impianti", "Performance Impianto", "Gestione Impianto","Logs"],
       "buttons": {
         "simulate": "Simula tutto",
         "language": "Lingua"
       }
+    },
+    "log": {
+        "title": "Log",
+        "subtitle": "Visualizza i log del sistema",
+        "buttons": {
+            "clear_log": "Pulisci log"
+        },
+        "messages": {
+            "log_cleared": "Log pulito con successo",
+            "log_not_found": "Nessun log trovato"
+        }
     },
     "plots":{
         "variable_description": {

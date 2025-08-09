@@ -43,7 +43,8 @@ lab:
 	poetry run jupyter lab
 
 streamlit:
-	poetry run streamlit run src/solartracker/main.py gui
+	poetry run streamlit run src/solartracker/main.py --logger.level=debug gui
+
 
 developer:
 	poetry run python src/solartracker/main.py dev
