@@ -1,3 +1,8 @@
+#! DEPRECAETED
+# This file is deprecated and will be removed in future versions.
+# Use the new grid manager implementation instead.
+
+
 from ....pages.page import Page
 import streamlit as st
 import streamlit_antd_components as sac

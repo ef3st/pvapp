@@ -11,10 +11,30 @@ from pandapower_network.pvnetwork import (
     GenParams,
     SGenParams,
 )
-from typing import Optional, Tuple, List, Union
+from typing import Optional, Tuple, List, Union, TypedDict
 from bidict import bidict
 
 
+## SGEN Types Definitions
+class PVParams(TypedDict):
+    module_per_string: int
+    strings_per_inverter: int
+
+
+def sgen_type_detection(obj: Union[PVParams, None]) -> int:
+    """Detect the type of SGen based on its name."""
+    if obj is None:
+        return 1  # Generic SGen
+    if (
+        isinstance(obj, dict)
+        and ("module_per_string" in obj)
+        and ("strings_per_inverter" in obj)
+    ):
+        return 0  # PV SGen
+    raise ValueError("Invalid SGen type or parameters provided.")
+
+
+##################################
 class GridManager(Page):
     def __init__(self, subfolder) -> None:
         super().__init__("grid_manager")
@@ -23,6 +43,8 @@ class GridManager(Page):
             st.session_state["plant_grid"] = PlantPowerGrid(self.grid_file)
         else:
             st.session_state["plant_grid"] = PlantPowerGrid()
+        if "arrays_to_add" not in st.session_state:
+            st.session_state["arrays_to_add"] = {}
 
     # ========= RENDERS =======
     def render_setup(self) -> bool:
@@ -84,13 +106,31 @@ class GridManager(Page):
     def save(self):
         self.grid.save(self.grid_file)
 
+        if self.pv_arrays:
+            arrays = {}
+            path: Path = Path(self.grid_file.parent, "arrays.json")
+            if path.exists():
+                with open(path, "r", encoding="utf-8") as f:
+                    arrays = json.load(f)
+            arrays.update(self.pv_arrays)
+            with open(
+                Path(self.grid_file.parent, "implant.json"), "w", encoding="utf-8"
+            ) as f:
+                json.dump(arrays, f, indent=4, ensure_ascii=False)
+            st.session_state["arrays_to_add"] = {}
+
     @property
     def grid(self) -> PlantPowerGrid:
         return (
-            st.session_state.plant_grid
+            st.session_state["plant_grid"]
             if "plant_grid" in st.session_state
             else PlantPowerGrid()
         )
+
+    @property
+    def pv_arrays(self) -> dict[int, PVParams]:
+        """Get the PV arrays from the grid."""
+        return st.session_state.get("arrays_to_add", {})
 
     # --------> SETUP <------
 
@@ -493,7 +533,7 @@ class GridManager(Page):
         return changed
 
     # ---- Add containers ----
-    def add_sgen(self):
+    def add_sgen(self):  #! TO CHECK WHEN I'LL WILL WAKE UP
         labels_root = "tabs.gens.item.sgen"
         new_sgens = self.build_sgens()
         if st.button(self.T(f"{labels_root}.buttons")[2]):
@@ -504,9 +544,11 @@ class GridManager(Page):
                     if change_name:
                         # st.info(f"{i}_{sgens}")
                         sgen["name"] = f"{i}_{sgen["name"]}"
-                    st.session_state["plant_grid"].add_active_element(
+                    idx = st.session_state["plant_grid"].add_active_element(
                         type="sgen", params=sgen
                     )
+                    if sgens[2] is not None:
+                        st.session_state["arrays_to_add"][int(idx)] = sgens[2]
             return True
         return False
 
@@ -589,30 +631,35 @@ class GridManager(Page):
         borders: bool = True,
         id: int = 1,
         sgen: Optional[SGenParams] = None,
+        specficProps: Union[PVParams, None] = None,
         quantity=True,
-    ) -> Tuple[int, SGenParams]:
+    ) -> Tuple[int, SGenParams, Union[PVParams, None]]:
         labels_root = "tabs.gens.item.sgen"
         aviable_buses_name = list(self.grid.net.get("bus")["name"])
-        sgen_type = 1
+        # Default SGen Params
         n_new_sgen = None
-        if sgen == None:
+        defaultSpecProp = [PVParams(module_per_string=1, strings_per_inverter=1), None]
+        if sgen == None:  # Default Params
             bus = aviable_buses_name[0] if aviable_buses_name else None
             sgen: SGenParams = SGenParams(
                 bus=bus, p_mw=0.4, q_mvar=0, name="New_PV", scaling=1, in_service=True
             )
-
+            assert specficProps is None, "specficProps should be None when sgen is None"
+            specficProps = defaultSpecProp[0]  # PV specific properties
         inputs = {
             "p_mv": [False, sgen["p_mw"]],
             "q_mvar": [False, sgen["q_mvar"]],
             "scaling": [False, sgen["scaling"]],
         }
-        if "PV" in sgen["name"]:
+        # Set Sgen
+        if sgen_type_detection(specficProps) == 0:  # PV
             sgen_type = 0
             inputs["q_mvar"][0] = True
 
         with st.container(border=borders):
             buttons_labels = self.T(f"{labels_root}.labels")
             a, b = st.columns(2)
+            # SGEN GENERAL PROPERTIES SETUP
             with a:
                 if quantity:
                     sac.divider(
@@ -641,6 +688,7 @@ class GridManager(Page):
                     size="sm",
                     key=f"{id}_sgen_type",
                     index=sgen_type,
+                    return_index=True,
                 )
                 sgen["name"] = st.text_input(
                     buttons_labels[0], key=f"{id}_sgen_name", value=sgen["name"]
@@ -648,6 +696,7 @@ class GridManager(Page):
                 sgen["in_service"] = sac.switch(
                     buttons_labels[2], value=sgen["in_service"], key=f"{id}_sgen_on"
                 )
+            # SGEN VOLTAGE SETUP
             with b:
                 sac.divider(
                     self.T(f"{labels_root}.titles")[1],
@@ -672,7 +721,33 @@ class GridManager(Page):
                     value=inputs["q_mvar"][1],
                     disabled=inputs["q_mvar"][0],
                 )
-
+            # SPECIFIC SGEN SETUP
+            if not sgen_type == sgen_type_detection(specficProps):
+                specficProps = defaultSpecProp[
+                    sgen_type
+                ]  # Set default specific properties
+                st.warning(
+                    "⚠️ Specific properties have been reset to default for the selected SGen type."
+                )
+            # -> PV SETUP
+            if sgen_type == 0:  # PV
+                with st.expander("⚡ PV Setup"):
+                    left, right = st.columns(2)
+                    specficProps["module_per_string"] = left.number_input(
+                        "module_per_string (Series)",
+                        step=1,
+                        min_value=1,
+                        value=specficProps["module_per_string"],
+                        key=f"{id}_sgen_module_per_string",
+                    )
+                    specficProps["strings_per_inverter"] = right.number_input(
+                        "module_per_string (Parallel)",
+                        step=1,
+                        min_value=1,
+                        value=specficProps["strings_per_inverter"],
+                        key=f"{id}_sgen_strings",
+                    )
+            # BUS SELECTION
             sac.divider(
                 self.T(f"{labels_root}.titles")[2],
                 align="center",
@@ -741,7 +816,7 @@ class GridManager(Page):
             with bus_cols[1]:
                 sac.segmented(**segmenteds[(voltage, bus_level, bus_on)])
 
-        return n_new_sgen, sgen
+        return n_new_sgen, sgen, specficProps
 
     def gen_param(
         self,

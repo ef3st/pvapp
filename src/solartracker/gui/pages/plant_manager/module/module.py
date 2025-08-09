@@ -14,7 +14,7 @@ from ...page import Page
 class ModuleManager(Page):
     def __init__(self, subfolder) -> None:
         super().__init__("module_manager")
-        self.implant_file = subfolder / "implant.json"
+        self.implant_file: Path = subfolder / "implant.json"
         self.implant: dict = json.load(self.implant_file.open())
         self.change = False
 
@@ -136,6 +136,8 @@ class ModuleManager(Page):
 
     # ========= UTILITIES METHODS =======
     def save(self):
+        with open(self.implant_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
         keep_mount_params = {}
         if self.implant["mount"]["type"] == "FixedMount":
             keep_mount_params = {"surface_tilt", "surface_azimuth"}
@@ -153,7 +155,8 @@ class ModuleManager(Page):
             for k, v in self.implant["mount"]["params"].items()
             if k in keep_mount_params
         }
-        json.dump(self.implant, self.implant_file.open("w"), indent=4)
+        upload = self.implant.copy()
+        json.dump(upload, self.implant_file.open("w"), indent=4)
 
     # --------> SETUP <------
     def changed(self):

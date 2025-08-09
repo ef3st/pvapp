@@ -28,6 +28,7 @@ class Simulator:
         self.site: Site = None
         self.module = None
         self.grid: PlantPowerGrid = None
+        self.arrays = {"": {"": None}}  # Default empty dict to avoid KeyError
         self.mount: dict = None
         self.pv_setup_data: dict = None
         self.sims: Union[dict[int, Simulation], Simulation, None] = None
@@ -46,6 +47,7 @@ class Simulator:
                 self.load_site()
                 self.load_pvsetup()
                 self.load_grid()
+                self.load_arrays()
             except Exception as e:
                 self.logger.error(f"[Simulator] Loading error: {e}")
             else:
@@ -110,6 +112,15 @@ class Simulator:
             except Exception as e:
                 raise Exception(f" Error in loading grid: {e}")
 
+    def load_arrays(self):
+        arrays_path: Path = self.subfolder / "arrays.json"
+
+        if arrays_path.exists():
+            try:
+                self.arrays: dict[int, dict[str, int]] = json.load(arrays_path.open())
+            except Exception as e:
+                raise Exception(f" Error in loading arrays: {e}")
+
     def configure_pvsystem(
         self, modules_per_string: int = 1, strings: int = 1
     ) -> PVSystemManager:
@@ -163,18 +174,20 @@ class Simulator:
                 "Module or site or Mount are not defined. Cannot simulate."
             )
         else:
-            arrays = {"": {"": None}}  # Default empty dict to avoid KeyError
 
             if self.grid is not None:
-                if "arrays" not in self.pv_setup_data:
-                    raise KeyError("Missing 'arrays' in pv_setup_data")
-                arrays: dict[int, dict[str, int]] = self.pv_setup_data["arrays"]
+                if self.arrays == {"": {"": None}}:
+                    self.logger.warning(
+                        "Missing pv 'arrays' data, but grid is defined."
+                    )
 
             # Simulate each array in the plant
-            for array_idx in arrays:
+            for array_idx in self.arrays:
                 try:
-                    module_per_string = arrays[array_idx].get("modules_per_string", 1)
-                    strings = arrays[array_idx].get("strings", 1)
+                    module_per_string = self.arrays[array_idx].get(
+                        "modules_per_string", 1
+                    )
+                    strings = self.arrays[array_idx].get("strings_per_inverter", 1)
                     pvsydsystem = self.configure_pvsystem(module_per_string, strings)
                     modelchain = BuildModelChain(
                         system=pvsydsystem.getimplant(), site=self.site.location

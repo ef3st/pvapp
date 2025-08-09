@@ -137,12 +137,12 @@ class PlantManager(Page):
         buttons_labels = self.T("buttons")
         save = {
             0: [
-                self.site_manager,
-                self.grid_manager,
                 self.module_manager,
+                self.grid_manager,
+                self.site_manager,
             ],
             1: [self.module_manager],
-            2: [self.module_manager],
+            2: [self.grid_manager],
             3: [self.site_manager],
         }
 
