@@ -7,12 +7,14 @@ from simulation import simulator
 from pathlib import Path
 import json
 from typing import List
+import streamlit_antd_components as sac
+
 from .pages.implants.implants import ImplantsPage
 from .pages.implants_comparison.implants_comparison import ImplantsComparisonPage
 from .pages.beta.real_time_monitor.implant_distribution import implant_distribution
 from .pages.beta.grid_manager.grid_manager import GridManager
 from .pages.plant_manager.plant_manager import PlantManager
-from .pages.logs.logs import LogsPage
+from .pages.logs.logs import LogsPage, _SEV_ICON
 import pandas as pd
 
 sys.dont_write_bytecode = True
@@ -99,19 +101,60 @@ def streamlit():
             if st.session_state.get("beta_tools")
             else []
         )
+        notification_icon = [
+            "bell",
+            "bell-fill",
+            "exclamation-triangle-fill",
+            "exclamation-circle-fill",
+            "x-circle-fill",
+        ]
 
-        selected = option_menu(
+        status, n_logs = LogsPage().app_status
+        icons = [
+            "house",
+            "tools",
+            "bar-chart",
+            "graph-up",
+            "toggles",
+            notification_icon[status],
+        ][: len(options)]
+        tags = [
             None,
-            options=options,
-            icons=["house", "tools", "bar-chart", "graph-up", "toggles", "bell"][
-                : len(options)
+            None,
+            None,
+            None,
+            None,
+        ]
+        log_tag = []
+        for i in n_logs:
+            if n_logs[i] > 0:
+                color, icon_name = _SEV_ICON[i]
+                log_tag.append(
+                    sac.Tag("", color=color, size="sm", icon=sac.BsIcon(icon_name))
+                )
+        if not log_tag:
+            log_tag = None
+        tags = tags + [log_tag] + [None, None]
+        selected = sac.menu(
+            [
+                sac.MenuItem(option, icon, tag=tag)
+                for option, icon, tag in zip(options, icons, tags)
             ],
-            menu_icon="cast",
-            default_index=(
-                st.session_state.menu if st.session_state.menu < len(options) else 0
-            ),
+            variant="left-bar",
             key="option_menu",
         )
+        # selected = option_menu(
+        #     None,
+        #     options=options,
+        #     icons=["house", "tools", "bar-chart", "graph-up", "toggles", notification_icon[LogsPage().app_status]][
+        #         : len(options)
+        #     ],
+        #     menu_icon="cast",
+        #     default_index=(
+        #         st.session_state.menu if st.session_state.menu < len(options) else 0
+        #     ),
+        #     key="option_menu",
+        # )
         if (
             selected
             != options[

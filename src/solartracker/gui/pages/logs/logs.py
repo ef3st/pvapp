@@ -6,7 +6,7 @@ from typing import List, Optional, Union
 import pandas as pd
 import streamlit as st
 import streamlit_antd_components as sac
-
+from enum import IntEnum
 from ..page import Page
 
 
@@ -49,6 +49,18 @@ _SEV_ICON = {
     "ERROR": ("red", "x-circle-fill"),
     "CRITICAL": ("red", "exclamation-circle-fill"),
 }
+
+
+class Status(IntEnum):
+    """
+    Enum to represent the status of a log record.
+    """
+
+    OK = 0
+    INFO = 1
+    WARNING = 2
+    ERROR = 3
+    CRITICAL = 4
 
 
 # ============================================================
@@ -676,3 +688,58 @@ class LogsPage(Page):
             fdf.sort_values("date-time", ascending=False, inplace=True)
             st.caption(f"{len(fdf)} records out of {len(log_df)} total")
             st.dataframe(fdf, use_container_width=True)
+
+    @property
+    def app_status(self) -> tuple[Status, dict[str, int]]:
+        import pandas as pd
+
+        self.load_logs()
+        log_df = self.parse_logs_to_dataframe(self.logs, from_path=False).copy()
+        log_df["date-time"] = pd.to_datetime(log_df["date-time"], errors="coerce")
+        log_df = log_df.dropna(subset=["date-time"])
+
+        # start può essere stringa o datetime: uniforma
+        start = pd.to_datetime(st.session_state.start_time, errors="coerce")
+
+        last_logs = log_df[log_df["date-time"] >= start].copy()
+
+        # 2) Normalizza la severità: rimuovi emoji/spazi e tieni solo il livello
+        #    Esempi possibili: "❌ ERROR", "⚠️ WARNING", "🔷 DEBUG"
+        last_logs["level"] = (
+            last_logs["severity"]
+            .astype(str)
+            .str.extract(r"(CRITICAL|ERROR|WARNING|INFO|DEBUG)", expand=False)
+            .str.upper()
+            .fillna("DEBUG")  # fallback prudente
+        )
+        counts = (
+            last_logs["level"]
+            .value_counts()
+            .reindex(["CRITICAL", "ERROR", "WARNING"], fill_value=0)
+        )
+        n_logs = {
+            "CRITICAL": int(counts["CRITICAL"]),
+            "ERROR": int(counts["ERROR"]),
+            "WARNING": int(counts["WARNING"]),
+        }
+        # 3) Scegli il peggiore
+        priority = {"CRITICAL": 4, "ERROR": 3, "WARNING": 2, "INFO": 1, "DEBUG": 0}
+        worst = last_logs["level"].map(priority).max()
+        last_logs["level"] = (
+            last_logs["severity"]
+            .astype(str)
+            .apply(lambda s: re.search(r"(CRITICAL|ERROR|WARNING)", s.upper()))
+            .apply(lambda m: m.group(1) if m else None)
+        )
+
+        # Conta solo quelli che ti interessano
+
+        if worst >= priority["CRITICAL"]:
+            return Status.CRITICAL, n_logs
+        if worst >= priority["ERROR"]:
+            return Status.ERROR, n_logs
+        if worst >= priority["WARNING"]:
+            return Status.WARNING, n_logs
+        if worst >= priority["INFO"]:
+            return Status.INFO, n_logs
+        return Status.OK, n_logs
