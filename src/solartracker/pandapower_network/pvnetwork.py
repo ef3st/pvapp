@@ -416,3 +416,93 @@ class PlantPowerGrid:
             profile_name=data_source.columns,
             drop_same_existing_ctrl=True,
         )
+
+    def summarize_buses(self) -> pd.DataFrame:
+        """
+        Build a DataFrame with one row per bus and useful metadata + connected elements.
+
+        Columns returned:
+          - index (bus index as DataFrame index)
+          - name
+          - type
+          - voltage_kv  (bus nominal voltage vn_kv)
+          - in_service
+          - elements    (list of names of connected elements)
+
+        Notes:
+          - Element names come from their 'name' column if available; otherwise fallback to '<element_type> <index>'.
+          - The function scans common pandapower elements and multi-bus components.
+          - It safely skips missing tables/columns and works even if some elements don't have 'name'.
+        """
+        # ---- Base bus frame ----
+        buses = self.net.bus.copy()
+        out = pd.DataFrame(index=buses.index)
+        out["name"] = buses["name"] if "name" in buses.columns else ""
+        out["type"] = buses["type"] if "type" in buses.columns else ""
+        out["voltage_kv"] = buses["vn_kv"] if "vn_kv" in buses.columns else pd.NA
+        out["in_service"] = (
+            buses["in_service"] if "in_service" in buses.columns else True
+        )
+
+        # Prepare connections collector
+        connections = {int(b): [] for b in buses.index}
+
+        def add_conn(bus_idx, label):
+            # Guard + avoid duplicates while preserving order
+            if pd.isna(bus_idx):
+                return
+            b = int(bus_idx)
+            if b in connections and label not in connections[b]:
+                connections[b].append(label)
+
+        # ---- What to scan: {element_table: [bus_columns]} ----
+        mapping = {
+            "line": ["from_bus", "to_bus"],
+            "trafo": ["hv_bus", "lv_bus"],
+            "trafo3w": ["hv_bus", "mv_bus", "lv_bus"],
+            "impedance": ["from_bus", "to_bus"],
+            "dcline": ["from_bus", "to_bus"],
+            "load": ["bus"],
+            "sgen": ["bus"],
+            "gen": ["bus"],
+            "storage": ["bus"],
+            "shunt": ["bus"],
+            "ward": ["bus"],
+            "xward": ["bus"],
+            "motor": ["bus"],
+            "ext_grid": ["bus"],
+            # Uncomment if you also want to list switches as elements:
+            # "switch": ["bus"]
+        }
+
+        # ---- Scan each element table ----
+        for et, bus_cols in mapping.items():
+            if not hasattr(self.net, et):
+                continue
+            df = getattr(self.net, et)
+            if df is None or len(df) == 0:
+                continue
+
+            # Ensure we only use columns that actually exist in this net
+            cols_present = [c for c in bus_cols if c in df.columns]
+            if not cols_present:
+                continue
+
+            # Iterate rows once and attach to all relevant bus columns
+            for idx, row in df.iterrows():
+                # Choose a readable label
+                name = (
+                    row["name"]
+                    if "name" in df.columns
+                    and pd.notna(row["name"])
+                    and str(row["name"]).strip() != ""
+                    else None
+                )
+                label = str(name) if name else f"{et} {idx}"
+
+                for c in cols_present:
+                    add_conn(row[c], label)
+
+        # ---- Assemble result ----
+        out["elements"] = out.index.map(lambda b: connections.get(int(b), []))
+        return out
