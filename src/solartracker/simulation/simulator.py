@@ -31,7 +31,7 @@ class Simulator:
         self.arrays = {"": {"": None}}  # Default empty dict to avoid KeyError
         self.mount: dict = None
         self.pv_setup_data: dict = None
-        self.sims: Union[dict[int, Simulation], Simulation, None] = None
+        self.sims: Union[dict[int, Simulation], Simulation] = {}
         self.simresults: SimulationResults = SimulationResults()
 
     def run(self, times: Optional[pd.DatetimeIndex] = None):
@@ -146,6 +146,7 @@ class Simulator:
             )
         else:
             raise ValueError("Module is not defined. Cannot set PV Array.")
+        return pvsystem
 
     def load_component(self, component: Literal["module", "inverter"]):
         #! CHECK WHAT HAPPENS HERE

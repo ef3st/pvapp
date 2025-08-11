@@ -131,6 +131,9 @@ class PlantPowerGrid:
         for k, v in bus.items():
             self.net.bus.at[bus_index, k] = v
 
+    def delete_bus(self, bus_idx, drop_elements=True):
+        pp.drop_buses(self.net, buses=[bus_idx], drop_elements=drop_elements)
+
     def link_buses(self, line: LineParams):
         # NOTE use pp.available_std_types(net)["line"] to get aviable line tipe (e.g, for LV "NAYY 4x50 SE")
         pp.create_line(self.net, **line)

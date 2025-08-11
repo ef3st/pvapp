@@ -438,7 +438,13 @@ class LogsPage(Page):
 
         # keep same open_all, checkbox, size, and index list (31)
         selected = sac.tree(
-            items, open_all=True, checkbox=True, size="xs", index=[i for i in range(31)]
+            items,
+            open_all=True,
+            checkbox=True,
+            size="xs",
+            index=[i for i in range(31)],
+            on_change=self.load_logs,
+            key="gui_tree",
         )
         return selected
 
@@ -554,7 +560,13 @@ class LogsPage(Page):
 
         # keep same open_all, checkbox, size, and index list (17)
         selected = sac.tree(
-            items, open_all=True, checkbox=True, size="xs", index=[i for i in range(17)]
+            items,
+            open_all=True,
+            checkbox=True,
+            size="xs",
+            index=[i for i in range(17)],
+            on_change=self.load_logs,
+            key="back_end_tree",
         )
         return selected
 
@@ -593,7 +605,7 @@ class LogsPage(Page):
         )
 
         if use_last_run:
-            start_guess = st.session_state.start_time
+            start_guess = st.session_state.notification_time
             if start_guess is None:
                 start_guess = min_dt
         else:
@@ -614,11 +626,13 @@ class LogsPage(Page):
                 options=severities,
                 default=severities,
                 selection_mode="multi",
+                on_change=self.load_logs,
+                key="log_severity",
             )
 
             # Time filter expander (unchanged logic)
             with r.expander("Time Filter", icon="🕐", expanded=True):
-                c1, c2, c3 = st.columns([1.2, 1, 1])
+                c1, c2 = st.columns([1.2, 1])
 
                 with c1:
                     date_range = st.date_input(
@@ -627,6 +641,8 @@ class LogsPage(Page):
                         min_value=min_dt.date(),
                         max_value=max_dt.date(),
                         format="DD/MM/YYYY",
+                        on_change=self.load_logs,
+                        key="log_date_range",
                     )
                     if isinstance(date_range, tuple):
                         start_date, end_date = date_range
@@ -646,22 +662,27 @@ class LogsPage(Page):
                 )
 
                 with c2:
-                    t_start = st.time_input("Start Time", value=default_t_start)
-                with c3:
-                    t_end = st.time_input("End Time", value=default_t_end)
+                    t_start = st.time_input(
+                        "Start Time",
+                        value=default_t_start,
+                        on_change=self.load_logs,
+                        key="log_start_time_filter",
+                    )
+                # with c3:
+                # t_end = st.time_input("End Time", value=default_t_end,on_change=self.load_logs, key="log_end_time_filter")
 
-                # Keep placeholder for origins (commented as in original)
-                origins = list(sorted(log_df["origin file"].dropna().unique()))
+                # origins = list(sorted(log_df["origin file"].dropna().unique()))
                 # sel_orig = st.multiselect("File di origine", options=origins, default=origins)
 
             start_dt = pd.to_datetime(dtmod.combine(start_date, t_start))
-            end_dt = pd.to_datetime(dtmod.combine(end_date, t_end))
+            # end_dt = pd.to_datetime(dtmod.combine(end_date,t_end))
+            end_dt = None
 
         # Trees (GUI / BACK-END)
         with a:
             backend_tab, gui_tab = st.tabs(["BACK-END", "GUI"], width="stretch")
 
-            start = st.session_state.start_time
+            start = st.session_state.notification_time
             if start is None:
                 start = min_dt
 
@@ -674,9 +695,32 @@ class LogsPage(Page):
                 backend_selected_files = self.backend_tree(last_logs)
 
         # Apply filters
-        fdf = log_df[
+        if "log_filters" not in st.session_state:
+            st.session_state["log_filters"] = (
+                start_dt,
+                end_dt,
+                sel_sev,
+                gui_selected_files,
+                backend_selected_files,
+            )
+        if (
+            start_dt,
+            end_dt,
+            sel_sev,
+            gui_selected_files,
+            backend_selected_files,
+        ) != st.session_state["log_filters"]:
+            st.session_state["log_filters"] = (
+                start_dt,
+                end_dt,
+                sel_sev,
+                gui_selected_files,
+                backend_selected_files,
+            )
+            st.rerun()
+        filered_logs_df = log_df[
             (log_df["date-time"] >= start_dt)
-            & (log_df["date-time"] <= end_dt)
+            # & (log_df["date-time"] <= end_dt)
             & (log_df["severity"].isin(sel_sev))
             & (log_df["origin file"].isin(gui_selected_files + backend_selected_files))
         ].copy()
@@ -685,9 +729,15 @@ class LogsPage(Page):
         # Display
         # -----------------------------
         with b:
-            fdf.sort_values("date-time", ascending=False, inplace=True)
-            st.caption(f"{len(fdf)} records out of {len(log_df)} total")
-            st.dataframe(fdf, use_container_width=True)
+            filered_logs_df.sort_values("date-time", ascending=False, inplace=True)
+            st.caption(f"{len(filered_logs_df)} records out of {len(log_df)} total")
+            st.dataframe(filered_logs_df, use_container_width=True)
+            if st.button("Clean logs"):
+                st.session_state.notification_time = pd.Timestamp.now()
+                st.rerun()
+            # if st.button("Restore logs"):
+            #     st.session_state.notification_time = st.session_state.start_time
+            #     st.rerun()
 
     @property
     def app_status(self) -> tuple[Status, dict[str, int]]:
@@ -699,7 +749,7 @@ class LogsPage(Page):
         log_df = log_df.dropna(subset=["date-time"])
 
         # start può essere stringa o datetime: uniforma
-        start = pd.to_datetime(st.session_state.start_time, errors="coerce")
+        start = pd.to_datetime(st.session_state.notification_time, errors="coerce")
 
         last_logs = log_df[log_df["date-time"] >= start].copy()
 

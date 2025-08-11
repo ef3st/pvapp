@@ -145,6 +145,7 @@ def build_sac_tree_from_bus_df(
     open_all: bool = True,
     show_line: bool = True,
     checkbox: bool = False,
+    show_connectors: bool = True,
 ) -> Dict[str, Any]:
     """
     Create sac.tree kwargs (items + sensible defaults) from a bus DataFrame that
@@ -183,6 +184,16 @@ def build_sac_tree_from_bus_df(
             etype, eid, name_hint = _normalize_element_spec(el)
             if not etype:
                 continue
+            if not show_connectors:
+                if etype in [
+                    "line",
+                    "trafo",
+                    "trafo3w",
+                    "dcline",
+                    "impedance",
+                    "switch",
+                ]:
+                    continue
             role = (
                 _element_role_for_bus(net, etype, eid, bus_idx)
                 if net is not None
@@ -216,6 +227,7 @@ def build_sac_tree_from_bus_df(
         checkbox=checkbox,
         format_func=None,
         return_index=False,
+        index=None,
     )
 
 
@@ -496,19 +508,14 @@ class GridManager(Page):
             changed |= st.session_state["modified"]
             if st.session_state["modified"]:
                 st.session_state["modified"] = False
-            self.manage()
+            self.bus_manager()
         return changed
 
     # ---- manage elements ----
-    def manage(self):
+    def bus_manager(self):
         df = self.grid.summarize_buses().copy()
         st.dataframe(df.drop(columns=["elements"]))
-        kwargs = build_sac_tree_from_bus_df(
-            self.grid.summarize_buses(),
-            bus_name_col="name",
-            elements_col="elements",
-            net=self.grid.net,
-        )
+
         # st.markdown("### Rete elettrica (bus → elementi)")
         with st.expander("Rete elettrica (bus → elementi)"):
             icon_cols = st.columns(8)
@@ -529,9 +536,18 @@ class GridManager(Page):
                         bg_color="#043b41",
                     )
                 col += 1
-
         tree_bus, connection = st.columns([2, 5])
         with tree_bus:
+            show_connectors = st.toggle(
+                "Show connectors", key="bus_tree_show_connectors"
+            )
+            kwargs = build_sac_tree_from_bus_df(
+                self.grid.summarize_buses(),
+                bus_name_col="name",
+                elements_col="elements",
+                net=self.grid.net,
+                show_connectors=show_connectors,
+            )
             selected = sac.tree(**kwargs)
             if selected:
                 match = re.match(r"\[(\d+)\]", selected)
@@ -549,61 +565,81 @@ class GridManager(Page):
             self.connection_manager()
 
     def connection_manager(self):
-        start_bus, connection, end_bus = st.columns([1, 2, 1])
+        connection_df = self.grid.bus_connections()
         connection_df = self.grid.bus_connections()
         open_dialog = None
+        values_contraints = {
+            "LV": (0.0, 1.0),
+            "MV": (1.0, 35.0),
+            "HV": (36.0, 220.0),
+            "EHV": (220.0, 800.0),
+        }
+        colors = {"LV": "#6E6E6E", "MV": "#2E7D32", "HV": "#1565C0", "EHV": "#C62828"}
+        legend = st.columns([1, 1, 1, 1, 5])
+        for col, i in enumerate(colors):
+            with legend[col]:
+                sac.divider(i, color=colors[i])
+        sac.divider(
+            variant="dotted",
+        )
+
+        def get_color(bus_idx):
+            try:
+                v = self.grid.net.bus["vn_kv"].iloc[bus_idx]
+            except Exception as e:
+                st.error(f"Error in uploading connections: {e}")
+            for i in values_contraints:
+                if v > values_contraints[i][0] and v < values_contraints[i][1]:
+                    return colors[i]
+
         for row in connection_df.itertuples(index=False):
-            with start_bus:
-                sac.divider(
-                    row.start[0],
-                    variant="dashed",
-                    align="start",
-                    color="green",
-                    key=f"left_div_{row.id}_{row.type}_{row.name}",
-                )
-            with connection:
-                cols = st.columns([1, 2, 1])
-                with cols[0]:
-                    sac.buttons(
-                        [
-                            sac.ButtonsItem(
-                                icon=sac.BsIcon(name=ICON_MAP[row.type], size="sm"),
-                                disabled=True,
-                            )
-                        ],
-                        align="center",
-                        variant="text",
-                        index=None,
+            cols = st.columns([2, 1.3, 2])
+            with cols[0]:
+                a, b = st.columns([1.5, 2])
+                color = (get_color(row.start[1]),)
+                with a:
+                    sac.divider(
+                        row.start[0],
+                        variant="dashed",
+                        align="start",
+                        color=color,
+                        key=f"left_div_{row.id}_{row.type}_{row.name}",
+                    )
+                with b:
+                    sac.divider(
+                        " ",
+                        icon=sac.BsIcon(name=ICON_MAP[row.type], size="sm"),
+                        color=color,
                         key=f"start_connection_{row.id}_{row.type}_{row.name}",
                     )
-                if cols[1].button(
-                    row.name,
-                    type="tertiary",
-                    key=f"connection_{row.type}_{row.name}_{row.id}",
-                ):
-                    connector = self.grid.net[row.type].loc[row.id].to_dict()
-                    open_dialog = connector
-                with cols[2]:
-                    sac.buttons(
-                        [
-                            sac.ButtonsItem(
-                                icon=sac.BsIcon(name=ICON_MAP[row.type], size="sm"),
-                                disabled=True,
-                            )
-                        ],
-                        align="center",
-                        variant="text",
-                        index=None,
+
+            if cols[1].button(
+                row.name,
+                type="tertiary",
+                key=f"connection_{row.type}_{row.name}_{row.id}",
+                use_container_width=True,
+            ):
+                connector = self.grid.net[row.type].loc[row.id].to_dict()
+                open_dialog = connector
+            with cols[2]:
+                a, b = st.columns([2, 1.5])
+                color = get_color(row.end[1])
+                with a:
+                    sac.divider(
+                        " ",
+                        icon=sac.BsIcon(name=ICON_MAP[row.type], size="sm"),
+                        color=color,
+                        align="end",
                         key=f"end_connection_{row.id}_{row.type}_{row.name}",
                     )
-            with end_bus:
-                sac.divider(
-                    row.end[0],
-                    variant="dashed",
-                    align="end",
-                    color="green",
-                    key=f"right_div_{row.id}_{row.type}_{row.name}",
-                )
+                with b:
+                    sac.divider(
+                        row.end[0],
+                        variant="dashed",
+                        align="end",
+                        color=color,
+                        key=f"right_div_{row.id}_{row.type}_{row.name}",
+                    )
 
         if open_dialog:
             self.change_connection(LineParams(**open_dialog))
@@ -628,8 +664,9 @@ class GridManager(Page):
             elements["type"] = etype
             elements["element ID"] = eid
             elements["name"] = name_hint
-        df_elements = pd.DataFrame([elements]).set_index("element ID")
+        df_elements = pd.DataFrame([elements])
         if "element ID" in df_elements.columns:
+            df_elements = pd.DataFrame([elements]).set_index("element ID")
             sac.divider(
                 "Connected elements", icon=sac.BsIcon("diagram-3"), align="center"
             )
@@ -640,10 +677,15 @@ class GridManager(Page):
                 self.grid.update_bus(bus_id, new_bus)
             except Exception as e:
                 self.logger.error(f"[GridManagerPage] Error updating bus: {e}")
-                raise ConnectionAbortedError(f"Error updating bus {bus_id}: {e}")
+                raise Exception(f"Error updating bus {bus_id}: {e}")
             st.session_state["modified"] = True
             st.toast(f"Bus {bus_id} updated successfully.", icon="✅")
             st.rerun()
+        # if st.button("Delete"):
+        #     self.grid.delete_bus(bus_id)
+        #     st.session_state["modified"] = True
+        #     st.toast(f"Bus {bus_id} eliminated successfully.", icon="✅")
+        #     st.rerun()
 
     # ---- add elements ----
 

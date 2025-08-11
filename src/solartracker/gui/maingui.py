@@ -35,11 +35,6 @@ from .pages.implants_comparison.implants_comparison import ImplantsComparisonPag
 from .pages.plant_manager.plant_manager import PlantManager
 from .pages.logs.logs import LogsPage, _SEV_ICON
 
-# Optional / future pages
-# from .pages.implant_performance import implant_performance
-# from .pages.beta.real_time_monitor.implant_distribution import implant_distribution
-# from .pages.beta.grid_manager.grid_manager import GridManager
-
 
 # -----------------------------------------------------------------------------
 # Global configuration
@@ -142,6 +137,8 @@ def _init_session_state() -> None:
     """Initialize default values in `st.session_state` exactly once."""
     if "start_time" not in st.session_state:
         st.session_state.start_time = pd.Timestamp.now()
+    if "notification_time" not in st.session_state:
+        st.session_state.notification_time = st.session_state.start_time
 
     if "T" not in st.session_state:
         st.session_state.T = load_translation(DEFAULT_LANG)
