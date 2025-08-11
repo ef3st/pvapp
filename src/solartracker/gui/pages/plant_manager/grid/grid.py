@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Union, TypedDict, Dict, Any
 
 import json
+import re
 import streamlit as st
 import streamlit_antd_components as sac
 from bidict import bidict
@@ -18,6 +19,207 @@ from pandapower_network.pvnetwork import (
 )
 
 
+# --------
+from typing import Any, Dict, List, Optional, Tuple, Union
+import pandas as pd
+
+# Map of element types -> bus reference fields in pandapower
+EL_BUS_FIELDS: Dict[str, List[str]] = {
+    "line": ["from_bus", "to_bus"],
+    "trafo": ["hv_bus", "lv_bus"],
+    "trafo3w": ["hv_bus", "mv_bus", "lv_bus"],
+    "impedance": ["from_bus", "to_bus"],
+    "dcline": ["from_bus", "to_bus"],
+    "load": ["bus"],
+    "sgen": ["bus"],
+    "gen": ["bus"],
+    "storage": ["bus"],
+    "shunt": ["bus"],
+    "ward": ["bus"],
+    "xward": ["bus"],
+    "motor": ["bus"],
+    "ext_grid": ["bus"],
+    "switch": ["bus"],
+}
+
+# Choose Bootstrap icons for each element (sac uses Bootstrap Icons names)
+ICON_MAP: Dict[str, str] = {
+    "bus": "diagram-3",
+    "line": "arrow-left-right",
+    "trafo": "cpu",
+    "trafo3w": "cpu-fill",
+    "impedance": "slash-circle",
+    "dcline": "arrows-fullscreen",
+    "load": "download",
+    "sgen": "lightning-charge",
+    "gen": "lightning-charge",
+    "storage": "battery-charging",
+    "shunt": "node-plus",
+    "ward": "collection",
+    "xward": "collection-fill",
+    "motor": "gear",
+    "ext_grid": "plug-fill",
+    "switch": "toggle2-on",
+}
+
+# ---- Helpers ---------------------------------------------------------------
+
+
+def _normalize_element_spec(
+    el: Union[Tuple[str, int], Dict[str, Any], str],
+) -> Tuple[str, Optional[int], Optional[str]]:
+    """
+    Normalize different element spec shapes to (etype, eid, label_hint).
+
+    Accepted input per element in `elements` list:
+    - ('line', 5)
+    - {'type': 'line', 'index': 5, 'name': 'L5'}
+    - {'table': 'line', 'idx': 5}
+    - 'line:5'  (etype:index)
+    - 'line'    (no id)
+    """
+    if isinstance(el, tuple) and len(el) >= 2:
+        return str(el[0]), int(el[1]), None
+    if isinstance(el, dict):
+        etype = str(el.get("type") or el.get("table") or el.get("elem_type") or "")
+        eid = el.get("index", el.get("idx", el.get("id")))
+        name = el.get("name")
+        return etype, (int(eid) if eid is not None else None), name
+    if isinstance(el, str):
+        if ":" in el:
+            etype, eid = el.split(":", 1)
+            try:
+                return etype.strip(), int(eid.strip()), None
+            except ValueError:
+                return etype.strip(), None, eid.strip()
+        return el.strip(), None, None
+    # Fallback
+    return "", None, None
+
+
+def _element_role_for_bus(
+    net: Any, etype: str, eid: Optional[int], bus_idx: int
+) -> Optional[str]:
+    """
+    If `net` is provided and eid is known, return which bus field(s)
+    of the element match this bus (e.g., 'from_bus', 'lv_bus').
+    """
+    try:
+        fields = EL_BUS_FIELDS.get(etype, [])
+        if not fields or eid is None:
+            return None
+        table = getattr(net, etype, None)
+        if table is None or len(table) <= eid:
+            return None
+        row = table.loc[eid]
+        hits = [f for f in fields if f in row.index and int(row[f]) == int(bus_idx)]
+        if not hits:
+            return None
+        return "/".join(hits)
+    except Exception:
+        return None
+
+
+def _label_for_element(
+    etype: str, eid: Optional[int], name_hint: Optional[str], role: Optional[str]
+) -> str:
+    """
+    Build a readable label like: 'line 5 (from_bus)' or 'L5 (lv_bus)'.
+    """
+    base = name_hint or (f"{etype} {eid}" if eid is not None else etype)
+    if role:
+        return f"{base} ({role})"
+    return base
+
+
+# ---- Public API ------------------------------------------------------------
+
+
+def build_sac_tree_from_bus_df(
+    bus_df: pd.DataFrame,
+    *,
+    bus_name_col: str = "name",
+    bus_index_col: str = None,  # if None, use DataFrame index as bus index
+    elements_col: str = "elements",
+    net: Any = None,  # optional pandapower net to annotate roles
+    open_all: bool = True,
+    show_line: bool = True,
+    checkbox: bool = False,
+) -> Dict[str, Any]:
+    """
+    Create sac.tree kwargs (items + sensible defaults) from a bus DataFrame that
+    includes an 'elements' column (each cell: list of connected elements).
+
+    Returns a dict ready to be unpacked into sac.tree(**result).
+
+    Expected DataFrame columns:
+      - bus_name_col: display name of the bus
+      - bus_index_col: (optional) numeric bus index; if None, use row index
+      - elements_col: list of element specs per bus. Each spec can be:
+          ('line', 5)
+          {'type':'line','index':5,'name':'L5'}
+          {'table':'line','idx':5}
+          'line:5'
+          'line'
+
+    Icons are assigned based on ICON_MAP. Unknown types fall back to a generic icon.
+    If `net` is provided, the element label includes the matching bus role(s).
+    """
+    # Validate presence
+    if bus_name_col not in bus_df.columns:
+        raise ValueError(f"'{bus_name_col}' column not found in bus_df")
+    if elements_col not in bus_df.columns:
+        raise ValueError(f"'{elements_col}' column not found in bus_df")
+
+    items: List[sac.TreeItem] = []
+
+    for ridx, row in bus_df.reset_index(drop=True).iterrows():
+        bus_idx = int(row[bus_index_col]) if bus_index_col else int(row.name)
+        bus_name = f"[{bus_idx}]  -  " + row[bus_name_col]
+        icon_bus = ICON_MAP.get("bus", "diagram-3")
+
+        children: List[sac.TreeItem] = []
+        for el in row[elements_col] or []:
+            etype, eid, name_hint = _normalize_element_spec(el)
+            if not etype:
+                continue
+            role = (
+                _element_role_for_bus(net, etype, eid, bus_idx)
+                if net is not None
+                else None
+            )
+            label = _label_for_element(etype, eid, name_hint, role)
+            icon = ICON_MAP.get(etype, "box")
+            children.append(
+                sac.TreeItem(
+                    label,
+                    icon=sac.BsIcon(icon),
+                    disabled=True,
+                )
+            )
+
+        # Build one TreeItem per bus with element children
+        items.append(
+            sac.TreeItem(
+                str(bus_name),
+                icon=sac.BsIcon(icon_bus),
+                children=children,
+                disabled=False,
+            )
+        )
+
+    # Return kwargs ready for sac.tree(...)
+    return dict(
+        items=items,
+        open_all=open_all,
+        show_line=show_line,
+        checkbox=checkbox,
+        format_func=None,
+        return_index=False,
+    )
+
+
+# --------
 # =============================
 #   SGen Types & Utilities
 # =============================
@@ -288,13 +490,162 @@ class GridManager(Page):
             elif item == 2:
                 changed |= self.add_transformer()
         with st.container():
+            if "modified" not in st.session_state:
+                st.session_state["modified"] = False
+            changed |= st.session_state["modified"]
+            if st.session_state["modified"]:
+                st.session_state["modified"] = False
             self.manage()
         return changed
 
     # ---- manage elements ----
-    def manage(self): ...
+    def manage(self):
+        df = self.grid.summarize_buses().copy()
+        st.dataframe(df.drop(columns=["elements"]))
+        kwargs = build_sac_tree_from_bus_df(
+            self.grid.summarize_buses(),
+            bus_name_col="name",
+            elements_col="elements",
+            net=self.grid.net,
+        )
+        # st.markdown("### Rete elettrica (bus → elementi)")
+        with st.expander("Rete elettrica (bus → elementi)"):
+            icon_cols = st.columns(8)
+            col = 0
+            for i, icon in enumerate(ICON_MAP):
+                if col == 8:
+                    col = 0
+                with icon_cols[col]:
+                    sac.segmented(
+                        items=[
+                            sac.SegmentedItem(icon=ICON_MAP[icon]),
+                            sac.SegmentedItem(icon),
+                        ],
+                        index=None,
+                        color="grey",
+                        readonly=True,
+                        size="sm",
+                        bg_color="#043b41",
+                    )
+                col += 1
+
+        tree_bus, connection = st.columns([2, 5])
+        with tree_bus:
+            selected = sac.tree(**kwargs)
+            if selected:
+                match = re.match(r"\[(\d+)\]", selected)
+                if match:
+                    bus_id = int(match.group(1))
+                    bus = self.grid.net.bus.loc[bus_id].to_dict()
+                    try:
+                        self.change_bus(
+                            bus_id, BusParams(**bus), df.loc[bus_id, "elements"]
+                        )
+                    except Exception as e:
+                        self.logger.error(f"[GridManagerPage] Error in changing bus")
+                        st.toast(f"Error in changing bus: \n {e}", icon="❌")
+        with connection:
+            self.connection_manager()
+
+    def connection_manager(self):
+        start_bus, connection, end_bus = st.columns([1, 2, 1])
+        connection_df = self.grid.bus_connections()
+        open_dialog = None
+        for row in connection_df.itertuples(index=False):
+            with start_bus:
+                sac.divider(
+                    row.start[0],
+                    variant="dashed",
+                    align="start",
+                    color="green",
+                    key=f"left_div_{row.id}_{row.type}_{row.name}",
+                )
+            with connection:
+                cols = st.columns([1, 2, 1])
+                with cols[0]:
+                    sac.buttons(
+                        [
+                            sac.ButtonsItem(
+                                icon=sac.BsIcon(name=ICON_MAP[row.type], size="sm"),
+                                disabled=True,
+                            )
+                        ],
+                        align="center",
+                        variant="text",
+                        index=None,
+                        key=f"start_connection_{row.id}_{row.type}_{row.name}",
+                    )
+                if cols[1].button(
+                    row.name,
+                    type="tertiary",
+                    key=f"connection_{row.type}_{row.name}_{row.id}",
+                ):
+                    connector = self.grid.net[row.type].loc[row.id].to_dict()
+                    open_dialog = connector
+                with cols[2]:
+                    sac.buttons(
+                        [
+                            sac.ButtonsItem(
+                                icon=sac.BsIcon(name=ICON_MAP[row.type], size="sm"),
+                                disabled=True,
+                            )
+                        ],
+                        align="center",
+                        variant="text",
+                        index=None,
+                        key=f"end_connection_{row.id}_{row.type}_{row.name}",
+                    )
+            with end_bus:
+                sac.divider(
+                    row.end[0],
+                    variant="dashed",
+                    align="end",
+                    color="green",
+                    key=f"right_div_{row.id}_{row.type}_{row.name}",
+                )
+
+        if open_dialog:
+            self.change_connection(LineParams(**open_dialog))
+
+    @st.dialog("Change connection", width="large")
+    def change_connection(self, conn_params: BusParams):
+        self.line_params(line=conn_params, horizontal=False)
+
+    @st.dialog(
+        "Change bus",
+    )
+    def change_bus(
+        self, bus_id: int, bus_params: BusParams, connected_elements
+    ) -> bool:
+        """Change the parameters of a bus in the grid."""
+        _, new_bus = self.bus_params(
+            id=f"manager_{bus_id}", quantity=False, bus=bus_params, borders=False
+        )
+        elements = {}
+        for el in connected_elements:
+            etype, eid, name_hint = _normalize_element_spec(el)
+            elements["type"] = etype
+            elements["element ID"] = eid
+            elements["name"] = name_hint
+        df_elements = pd.DataFrame([elements]).set_index("element ID")
+        if "element ID" in df_elements.columns:
+            sac.divider(
+                "Connected elements", icon=sac.BsIcon("diagram-3"), align="center"
+            )
+            st.dataframe(df_elements)
+        if st.button("Save changes"):
+            # Update the bus in the grid
+            try:
+                self.grid.update_bus(bus_id, new_bus)
+            except Exception as e:
+                self.logger.error(f"[GridManagerPage] Error updating bus: {e}")
+                raise ConnectionAbortedError(f"Error updating bus {bus_id}: {e}")
+            st.session_state["modified"] = True
+            st.toast(f"Bus {bus_id} updated successfully.", icon="✅")
+            st.rerun()
 
     # ---- add elements ----
+
     def add_bus(self) -> bool:
         labels_root = "tabs.links.item.bus"
         new_buses = self.build_buses()
@@ -408,8 +759,8 @@ class GridManager(Page):
                     key=f"{id}_bus_on",
                 )
 
-                sac.divider("Quantity", key=f"{id}_bus_quantity_div")
                 if quantity:
+                    sac.divider("Quantity", key=f"{id}_bus_quantity_div")
                     n_new_bus = st.number_input(
                         "Quantity",
                         label_visibility="collapsed",
@@ -423,7 +774,23 @@ class GridManager(Page):
                 sac.divider(label=titles[1], align="center", key=f"{id}_bus_volt_div")
                 left2, right2 = st.columns(2)
 
+                values_contraints = {
+                    "LV": (0.0, 1.0),
+                    "MV": (1.0, 35.0),
+                    "HV": (36.0, 220.0),
+                    "EHV": (220.0, 800.0),
+                }
+                voltage_type = bidict({"LV": 0, "MV": 1, "HV": 2, "EHV": 3})
+                voltages = {"LV": 0.250, "MV": 15.0, "HV": 150.0, "EHV": 380.0}
                 with left2:
+                    idx = 0
+                    for i in values_contraints:
+                        if (
+                            bus["vn_kv"] >= values_contraints[i][0]
+                            and bus["vn_kv"] <= values_contraints[i][1]
+                        ):
+                            idx = voltage_type[i]
+                            break
                     voltage_idx = sac.segmented(
                         items=[
                             sac.SegmentedItem(label)
@@ -431,29 +798,22 @@ class GridManager(Page):
                         ],
                         direction="vertical",
                         color="grey",
+                        index=idx,
                         align="center",
                         return_index=True,
                         key=f"{id}_bus_voltage_str",
                     )
-                    voltage_type = bidict({"LV": 0, "MV": 1, "HV": 2, "EHV": 3})
-                    voltages = {"LV": 0.250, "MV": 15.0, "HV": 150.0, "EHV": 380.0}
                     labels = self.T(f"{labels_root}.constraints")
                     enable_limits = st.checkbox(labels[0], key=f"{id}_bus_set_limits")
 
                 with right2:
+                    constraints = values_contraints[voltage_type.inv[voltage_idx]]
                     bus["vn_kv"] = st.number_input(
                         labels[1],
                         disabled=True,
                         value=voltages[voltage_type.inv[voltage_idx]],
                         key=f"{id}_bus_volt_int",
                     )
-
-                    constraints = {
-                        "LV": (0.0, 1.0),
-                        "MV": (1.0, 35.0),
-                        "HV": (36.0, 220.0),
-                        "EHV": (220.0, 800.0),
-                    }[voltage_type.inv[voltage_idx]]
 
                     min_vm = st.number_input(
                         labels[2],
@@ -478,6 +838,7 @@ class GridManager(Page):
         borders: bool = True,
         id: Union[int, str] = 1,
         line: Optional[LineParams] = None,
+        horizontal: bool = True,
     ) -> Tuple[bool, LineParams]:
         labels_root = "tabs.links.item.link"
         line_types = self.grid.get_aviable_lines()
@@ -491,14 +852,16 @@ class GridManager(Page):
                 std_type=line_types[0] if line_types else "",
             )
 
-        def select_bus(align: str = "start") -> int:
+        def select_bus(align: str = "start", bus_id: Optional[int] = None) -> int:
             """Render a bus selector and return the chosen index."""
-            if align == "start":
-                a, b = st.columns([1, 10])  # noqa: F841 - reserved
-                c, d = st.columns(2)
-            else:
-                b, a = st.columns([10, 1])  # noqa: F841 - reserved
-                d, c = st.columns(2)
+            a = b = c = d = st.container()
+            if horizontal:
+                if align == "start":
+                    a, b = st.columns([1, 10])  # noqa: F841 - reserved
+                    c, d = st.columns(2)
+                else:
+                    b, a = st.columns([10, 1])  # noqa: F841 - reserved
+                    d, c = st.columns(2)
 
             with c:
                 sac.divider(
@@ -506,10 +869,14 @@ class GridManager(Page):
                     align=align,
                     key=f"{id}_line_{align}_bus_name_div",
                 )
+                opts = list(self.grid.net.get("bus")["name"])
+                if bus_id is None:
+                    bus_id = 0
                 name = st.selectbox(
                     label="Bus name",
                     label_visibility="collapsed",
                     options=list(self.grid.net.get("bus")["name"]),
+                    index=bus_id,
                     key=f"{id}_line_{align}_bus_name",
                 )
             with d:
@@ -541,6 +908,7 @@ class GridManager(Page):
                     key=f"{id}_line_{align}_bus_level",
                     disabled=True,
                     index=level_idx,
+                    direction=("horizontal" if horizontal else "vertical"),
                 )
             return int(index)
 
@@ -554,7 +922,7 @@ class GridManager(Page):
                     variant="dashed",
                     key=f"{id}_line_startbus_div",
                 )
-                start_bus = select_bus("start")
+                start_bus = select_bus("start", line["from_bus"])
 
             with second:
                 sac.divider(
@@ -563,11 +931,13 @@ class GridManager(Page):
                     variant="dashed",
                     key=f"{id}_line_endbus_div",
                 )
-                end_bus = select_bus("end")
+                end_bus = select_bus("end", line["to_bus"])
 
             with link_box:
                 labels = self.T(f"{labels_root}.line_params")
-                a, b, c = st.columns([2, 1, 2])
+                a = b = c = st.container()
+                if horizontal:
+                    a, b, c = st.columns([2, 1, 2])
                 std_type = a.selectbox(
                     labels[0], options=line_types, key=f"{id}_line_type"
                 )

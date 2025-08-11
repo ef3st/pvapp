@@ -143,18 +143,6 @@ def streamlit():
             variant="left-bar",
             key="option_menu",
         )
-        # selected = option_menu(
-        #     None,
-        #     options=options,
-        #     icons=["house", "tools", "bar-chart", "graph-up", "toggles", notification_icon[LogsPage().app_status]][
-        #         : len(options)
-        #     ],
-        #     menu_icon="cast",
-        #     default_index=(
-        #         st.session_state.menu if st.session_state.menu < len(options) else 0
-        #     ),
-        #     key="option_menu",
-        # )
         if (
             selected
             != options[
@@ -166,11 +154,12 @@ def streamlit():
             )
 
         with st.popover("🧰 Tools"):
-            a, b = st.columns(2)
+            a, b = st.columns([1.5, 2])
             if a.button(f"{T('buttons.simulate')}", icon="🔥"):
                 simulate_all()
-            b.toggle("🧬 β tools", key="beta_tools", on_change=st.rerun)
-
+            # b.toggle("🧬 β tools", key="beta_tools", on_change=st.rerun)
+            b.toggle("💾 Auto-save", value=True, key="auto_save")
+            b.toggle("🔥 Auto-Simulate", value=True, key="auto_sim")
     # Page routing
     if selected == options[0]:  # "Home"
         home.render()

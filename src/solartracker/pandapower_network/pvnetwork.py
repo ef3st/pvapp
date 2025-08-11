@@ -122,12 +122,14 @@ class PlantPowerGrid:
     def create_bus(self, bus: BusParams) -> None:
         # TODO Create a logical method of indexing
         bus_index = pp.create_bus(self.net, **bus)
+        return bus_index
 
-        # for k in bus.keys():
-        #     if k not in self.buses_df.columns:
-        #         self.buses_df[k] = None
-
-        # self.buses_df.loc[bus_index] = pd.Series(bus)
+    def update_bus(self, bus_index: int, bus: BusParams) -> None:
+        """Update a bus in the network."""
+        if bus_index not in self.net.bus.index:
+            raise ValueError(f"Bus index {bus_index} does not exist in the network.")
+        for k, v in bus.items():
+            self.net.bus.at[bus_index, k] = v
 
     def link_buses(self, line: LineParams):
         # NOTE use pp.available_std_types(net)["line"] to get aviable line tipe (e.g, for LV "NAYY 4x50 SE")
@@ -427,13 +429,15 @@ class PlantPowerGrid:
           - type
           - voltage_kv  (bus nominal voltage vn_kv)
           - in_service
-          - elements    (list of names of connected elements)
+          - elements    (list[dict] of connected elements, each with:
+                         {"name": <str>, "type": <str>, "index": <int>})
 
         Notes:
           - Element names come from their 'name' column if available; otherwise fallback to '<element_type> <index>'.
           - The function scans common pandapower elements and multi-bus components.
           - It safely skips missing tables/columns and works even if some elements don't have 'name'.
         """
+
         # ---- Base bus frame ----
         buses = self.net.bus.copy()
         out = pd.DataFrame(index=buses.index)
@@ -443,17 +447,31 @@ class PlantPowerGrid:
         out["in_service"] = (
             buses["in_service"] if "in_service" in buses.columns else True
         )
+        out["min_vm_pu"] = buses["min_vm_pu"] if "min_vm_pu" in buses.columns else None
+        out["max_vm_pu"] = buses["max_vm_pu"] if "max_vm_pu" in buses.columns else None
 
-        # Prepare connections collector
+        # Prepare connections collector (ordered, no duplicates per (type, index))
         connections = {int(b): [] for b in buses.index}
+        seen_keys = {int(b): set() for b in buses.index}
 
-        def add_conn(bus_idx, label):
+        def add_conn(bus_idx, etype: str, eindex: int, ename: str | None):
             # Guard + avoid duplicates while preserving order
             if pd.isna(bus_idx):
                 return
             b = int(bus_idx)
-            if b in connections and label not in connections[b]:
-                connections[b].append(label)
+            key = (etype, int(eindex))
+            if b not in connections:
+                connections[b] = []
+                seen_keys[b] = set()
+            if key in seen_keys[b]:
+                return
+            label = (
+                ename if (ename and str(ename).strip() != "") else f"{etype} {eindex}"
+            )
+            connections[b].append(
+                {"name": str(label), "type": str(etype), "index": int(eindex)}
+            )
+            seen_keys[b].add(key)
 
         # ---- What to scan: {element_table: [bus_columns]} ----
         mapping = {
@@ -471,38 +489,230 @@ class PlantPowerGrid:
             "xward": ["bus"],
             "motor": ["bus"],
             "ext_grid": ["bus"],
-            # Uncomment if you also want to list switches as elements:
-            # "switch": ["bus"]
+            "switch": ["bus"],
         }
 
         # ---- Scan each element table ----
-        for et, bus_cols in mapping.items():
-            if not hasattr(self.net, et):
+        for etype, bus_cols in mapping.items():
+            if not hasattr(self.net, etype):
                 continue
-            df = getattr(self.net, et)
+            df = getattr(self.net, etype)
             if df is None or len(df) == 0:
                 continue
 
-            # Ensure we only use columns that actually exist in this net
+            # Use only columns that actually exist in this net
             cols_present = [c for c in bus_cols if c in df.columns]
             if not cols_present:
                 continue
 
             # Iterate rows once and attach to all relevant bus columns
-            for idx, row in df.iterrows():
-                # Choose a readable label
-                name = (
-                    row["name"]
-                    if "name" in df.columns
+            for eindex, row in df.iterrows():
+                # Pick a readable name if present
+                ename = None
+                if (
+                    "name" in df.columns
                     and pd.notna(row["name"])
                     and str(row["name"]).strip() != ""
-                    else None
-                )
-                label = str(name) if name else f"{et} {idx}"
+                ):
+                    ename = str(row["name"])
 
                 for c in cols_present:
-                    add_conn(row[c], label)
+                    add_conn(row[c], etype, eindex, ename)
 
         # ---- Assemble result ----
         out["elements"] = out.index.map(lambda b: connections.get(int(b), []))
         return out
+
+    def bus_connections(
+        self,
+        *,
+        include_out_of_service: bool = True,
+        trafo3w_pairs: tuple[str, ...] = ("hv-mv", "hv-lv"),
+        include_bus_bus_switches: bool = True,
+        role_suffix_for_trafo3w: bool = True,
+    ) -> pd.DataFrame:
+        """
+        Restituisce un DataFrame normalizzato delle connessioni bus-bus.
+
+        Colonne:
+          - type  : 'line' | 'trafo' | 'trafo3w' | 'dcline' | 'impedance' | 'switch'
+          - id    : indice dell'elemento nella tabella pandapower corrispondente
+          - name  : nome dell'elemento (se assente -> '<type> <id>')
+          - start : (bus_name, bus_index)
+          - end   : (bus_name, bus_index)
+        """
+
+        def bus_tuple(bi: int) -> tuple[str, int]:
+            bi = int(bi)
+            if (
+                "name" in self.net.bus.columns
+                and pd.notna(self.net.bus.at[bi, "name"])
+                and str(self.net.bus.at[bi, "name"]).strip()
+            ):
+                nm = str(self.net.bus.at[bi, "name"])
+            else:
+                nm = f"bus {bi}"
+            return (nm, bi)
+
+        def get_elem_name(df: pd.DataFrame, idx: int, etype: str) -> str:
+            if "name" in df.columns:
+                val = df.at[idx, "name"]
+                if pd.notna(val) and str(val).strip():
+                    return str(val)
+            return f"{etype} {idx}"
+
+        rows: list[dict] = []
+
+        # ---- Lines ----
+        if hasattr(self.net, "line") and len(self.net.line):
+            df = self.net.line
+            if not include_out_of_service and "in_service" in df.columns:
+                df = df[df["in_service"] == True]
+            for idx, r in df.iterrows():
+                if "from_bus" in r and "to_bus" in r:
+                    rows.append(
+                        {
+                            "type": "line",
+                            "id": int(idx),
+                            "name": get_elem_name(self.net.line, idx, "line"),
+                            "start": bus_tuple(r["from_bus"]),
+                            "end": bus_tuple(r["to_bus"]),
+                        }
+                    )
+
+        # ---- DC lines ----
+        if hasattr(self.net, "dcline") and len(self.net.dcline):
+            df = self.net.dcline
+            if not include_out_of_service and "in_service" in df.columns:
+                df = df[df["in_service"] == True]
+            for idx, r in df.iterrows():
+                if "from_bus" in r and "to_bus" in r:
+                    rows.append(
+                        {
+                            "type": "dcline",
+                            "id": int(idx),
+                            "name": get_elem_name(self.net.dcline, idx, "dcline"),
+                            "start": bus_tuple(r["from_bus"]),
+                            "end": bus_tuple(r["to_bus"]),
+                        }
+                    )
+
+        # ---- Series impedance ----
+        if hasattr(self.net, "impedance") and len(self.net.impedance):
+            df = self.net.impedance
+            if not include_out_of_service and "in_service" in df.columns:
+                df = df[df["in_service"] == True]
+            for idx, r in df.iterrows():
+                if "from_bus" in r and "to_bus" in r:
+                    rows.append(
+                        {
+                            "type": "impedance",
+                            "id": int(idx),
+                            "name": get_elem_name(self.net.impedance, idx, "impedance"),
+                            "start": bus_tuple(r["from_bus"]),
+                            "end": bus_tuple(r["to_bus"]),
+                        }
+                    )
+
+        # ---- 2-winding transformers ----
+        if hasattr(self.net, "trafo") and len(self.net.trafo):
+            df = self.net.trafo
+            if not include_out_of_service and "in_service" in df.columns:
+                df = df[df["in_service"] == True]
+            for idx, r in df.iterrows():
+                if "hv_bus" in r and "lv_bus" in r:
+                    rows.append(
+                        {
+                            "type": "trafo",
+                            "id": int(idx),
+                            "name": get_elem_name(self.net.trafo, idx, "trafo"),
+                            "start": bus_tuple(r["hv_bus"]),
+                            "end": bus_tuple(r["lv_bus"]),
+                        }
+                    )
+
+        # ---- 3-winding transformers ----
+        if hasattr(self.net, "trafo3w") and len(self.net.trafo3w):
+            df = self.net.trafo3w
+            if not include_out_of_service and "in_service" in df.columns:
+                df = df[df["in_service"] == True]
+            for idx, r in df.iterrows():
+                if all(k in r for k in ("hv_bus", "mv_bus", "lv_bus")):
+                    base_name = get_elem_name(self.net.trafo3w, idx, "trafo3w")
+                    hv, mv, lv = int(r["hv_bus"]), int(r["mv_bus"]), int(r["lv_bus"])
+
+                    if "hv-mv" in trafo3w_pairs:
+                        nm = (
+                            f"{base_name} (hv-mv)"
+                            if role_suffix_for_trafo3w
+                            else base_name
+                        )
+                        rows.append(
+                            {
+                                "type": "trafo3w",
+                                "id": int(idx),
+                                "name": nm,
+                                "start": bus_tuple(hv),
+                                "end": bus_tuple(mv),
+                            }
+                        )
+                    if "hv-lv" in trafo3w_pairs:
+                        nm = (
+                            f"{base_name} (hv-lv)"
+                            if role_suffix_for_trafo3w
+                            else base_name
+                        )
+                        rows.append(
+                            {
+                                "type": "trafo3w",
+                                "id": int(idx),
+                                "name": nm,
+                                "start": bus_tuple(hv),
+                                "end": bus_tuple(lv),
+                            }
+                        )
+                    if "mv-lv" in trafo3w_pairs:
+                        nm = (
+                            f"{base_name} (mv-lv)"
+                            if role_suffix_for_trafo3w
+                            else base_name
+                        )
+                        rows.append(
+                            {
+                                "type": "trafo3w",
+                                "id": int(idx),
+                                "name": nm,
+                                "start": bus_tuple(mv),
+                                "end": bus_tuple(lv),
+                            }
+                        )
+
+        # ---- Bus-bus switches (opzionale) ----
+        if (
+            include_bus_bus_switches
+            and hasattr(self.net, "switch")
+            and len(self.net.switch)
+        ):
+            df = self.net.switch
+            # et == 'b' => bus-bus switch; 'element' è l'altro bus
+            mask = (
+                (df["et"] == "b")
+                if "et" in df.columns
+                else pd.Series(False, index=df.index)
+            )
+            if not include_out_of_service and "closed" in df.columns:
+                mask = mask & (df["closed"] == True)
+            df = df[mask]
+            if "bus" in df.columns and "element" in df.columns:
+                for idx, r in df.iterrows():
+                    rows.append(
+                        {
+                            "type": "switch",
+                            "id": int(idx),
+                            "name": get_elem_name(self.net.switch, idx, "switch"),
+                            "start": bus_tuple(r["bus"]),
+                            "end": bus_tuple(r["element"]),
+                        }
+                    )
+
+        return pd.DataFrame(rows, columns=["type", "id", "name", "start", "end"])
