@@ -136,7 +136,7 @@ class PlantManager(Page):
     # ---------------------------------------------------------------------
     # Top-level page rendering
     # ---------------------------------------------------------------------
-    def render(self) -> None:
+    def render(self, tab_index: int = 0) -> None:
         """Render the full Plant Manager page."""
         st.title("🖥️ " + self.T("title"))
 
@@ -189,6 +189,7 @@ class PlantManager(Page):
                 variant="outline",
                 return_index=True,
                 key="display_tab",
+                index=tab_index,
             )
 
         # Sum-up switches: show scheme / show description

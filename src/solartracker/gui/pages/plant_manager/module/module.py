@@ -128,7 +128,14 @@ class ModuleManager(Page):
 
         return self.return_changed()
 
-    def render_analysis(self): ...
+    def render_analysis(self):
+        path: Path = self.implant_file.parent / "simulation.csv"
+        if path.exists():
+            analyser = ImplantAnalyser(self.implant_file.parent)
+            plots.seasonal_plot(analyser.periodic_report(), "implant_performance")
+            plots.time_plot(analyser.numeric_dataframe(), page="implant_performance")
+        else:
+            st.warning("⚠️ Simulation not perfermed")
 
     # ========= SUMUPS =======
     def get_scheme(self): ...

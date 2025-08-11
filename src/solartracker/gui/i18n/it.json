@@ -1,6 +1,6 @@
 {
     "main": {
-      "menu": ["Home", "Impianti", "Confronta Impianti", "Performance Impianto", "Gestione Impianto","Logs"],
+      "menu": ["Home", "Impianti", "Confronta Impianti", "Gestione Impianto","Logs"],
       "buttons": {
         "simulate": "Simula tutto",
         "language": "Lingua"
