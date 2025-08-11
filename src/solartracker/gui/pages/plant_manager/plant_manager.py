@@ -217,9 +217,10 @@ class PlantManager(Page):
                         ),
                         sac.TabsItem(labels_display[6], icon=sac.BsIcon("graph-up")),
                     ],
-                    size="xs",
+                    size="sm",
                     align="center",
                     return_index=True,
+                    color="orange",
                 )
 
         # Main content region

@@ -321,9 +321,9 @@ class GridManager(Page):
 
         with st.container(border=borders):
             cols = st.columns(n_cols)
-            st.session_state[state_key] = {"n": 1}
+            if state_key not in st.session_state:
+                st.session_state[state_key] = {"n": 1}
             n = int(st.session_state[state_key]["n"])  # number of editors
-
             for i in range(n):
                 with cols[i % n_cols]:
                     out = render_param_fn(i)
@@ -415,6 +415,7 @@ class GridManager(Page):
             align="center",
             use_container_width=True,
             return_index=True,
+            color="orange",
         )
 
         changed = False
@@ -903,12 +904,12 @@ class GridManager(Page):
                         for lbl in self.T(f"{labels_root}.bus_level")
                     ],
                     align="center",
-                    color="green",
+                    color="cyan",
                     size="sm",
                     key=f"{id}_line_{align}_bus_level",
-                    disabled=True,
                     index=level_idx,
                     direction=("horizontal" if horizontal else "vertical"),
+                    readonly=True,
                 )
             return int(index)
 
