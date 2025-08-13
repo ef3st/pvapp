@@ -7,6 +7,7 @@ import json
 import re
 import streamlit as st
 import streamlit_antd_components as sac
+from streamlit.errors import StreamlitAPIException
 from bidict import bidict
 
 from ...page import Page
@@ -44,10 +45,10 @@ EL_BUS_FIELDS: Dict[str, List[str]] = {
 
 # Choose Bootstrap icons for each element (sac uses Bootstrap Icons names)
 ICON_MAP: Dict[str, str] = {
-    "bus": "diagram-3",
+    "bus": "crosshair",
     "line": "arrow-left-right",
-    "trafo": "cpu",
-    "trafo3w": "cpu-fill",
+    "trafo": "bezier2",
+    "trafo3w": "bezier",
     "impedance": "slash-circle",
     "dcline": "arrows-fullscreen",
     "load": "download",
@@ -512,6 +513,7 @@ class GridManager(Page):
         return changed
 
     # ---- manage elements ----
+    @st.fragment
     def bus_manager(self):
         df = self.grid.summarize_buses().copy()
         st.dataframe(df.drop(columns=["elements"]))
@@ -558,6 +560,11 @@ class GridManager(Page):
                         self.change_bus(
                             bus_id, BusParams(**bus), df.loc[bus_id, "elements"]
                         )
+                    except StreamlitAPIException as e:
+                        self.logger.error(
+                            f"[GridManagerPage] Streamlit error in bus change dialog: {e}"
+                        )
+                        st.toast(f"Error in streamlit: {e}")
                     except Exception as e:
                         self.logger.error(f"[GridManagerPage] Error in changing bus")
                         st.toast(f"Error in changing bus: \n {e}", icon="❌")
@@ -565,8 +572,7 @@ class GridManager(Page):
             self.connection_manager()
 
     def connection_manager(self):
-        connection_df = self.grid.bus_connections()
-        connection_df = self.grid.bus_connections()
+        # connection_df = self.grid.bus_connections()
         open_dialog = None
         values_contraints = {
             "LV": (0.0, 1.0),
@@ -592,7 +598,7 @@ class GridManager(Page):
                 if v > values_contraints[i][0] and v < values_contraints[i][1]:
                     return colors[i]
 
-        for row in connection_df.itertuples(index=False):
+        for row in self.grid.bus_connections().itertuples(index=False):
             cols = st.columns([2, 1.3, 2])
             with cols[0]:
                 a, b = st.columns([1.5, 2])
@@ -642,11 +648,20 @@ class GridManager(Page):
                     )
 
         if open_dialog:
-            self.change_connection(LineParams(**open_dialog))
+            try:
+                self.change_connection(LineParams(**open_dialog))
+            except StreamlitAPIException as e:
+                self.logger.error(
+                    f"[GridManagerPage] Streamlit error in connection change dialog: {e}"
+                )
+                st.toast(f"Error in streamlit: {e}")
 
     @st.dialog("Change connection", width="large")
     def change_connection(self, conn_params: BusParams):
-        self.line_params(line=conn_params, horizontal=False)
+        link_aviable, line = self.line_params(line=conn_params, horizontal=False)
+        if st.button("Save changes"):
+            # Update the line in the grid
+            ...
 
     @st.dialog(
         "Change bus",
@@ -680,12 +695,16 @@ class GridManager(Page):
                 raise Exception(f"Error updating bus {bus_id}: {e}")
             st.session_state["modified"] = True
             st.toast(f"Bus {bus_id} updated successfully.", icon="✅")
-            st.rerun()
+            st.rerun(scope="fragment")
         # if st.button("Delete"):
-        #     self.grid.delete_bus(bus_id)
+        #     try:
+        #         self.grid.safe_remove_bus(bus_to_remove=3, drop_connected=True)
+        #     except Exception as e:
+        #         self.logger.error(f"[GridManagerPage] Error in deleting bus: {e}")
+        #         st.error(f"Error in deleting bus: {e}")
         #     st.session_state["modified"] = True
         #     st.toast(f"Bus {bus_id} eliminated successfully.", icon="✅")
-        #     st.rerun()
+        # st.rerun()
 
     # ---- add elements ----
 

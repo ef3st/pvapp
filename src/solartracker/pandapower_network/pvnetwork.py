@@ -1,5 +1,6 @@
 import pandapower as pp
 import json
+from pandapower import toolbox as tb
 
 # import pandapower.plotting as plot
 # import matplotlib.pyplot as plt
@@ -130,9 +131,6 @@ class PlantPowerGrid:
             raise ValueError(f"Bus index {bus_index} does not exist in the network.")
         for k, v in bus.items():
             self.net.bus.at[bus_index, k] = v
-
-    def delete_bus(self, bus_idx, drop_elements=True):
-        pp.drop_buses(self.net, buses=[bus_idx], drop_elements=drop_elements)
 
     def link_buses(self, line: LineParams):
         # NOTE use pp.available_std_types(net)["line"] to get aviable line tipe (e.g, for LV "NAYY 4x50 SE")
