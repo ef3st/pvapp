@@ -1,8 +1,18 @@
-
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Tuple, List, Union, TypedDict, Dict, Any, Literal, Callable, Iterable
+from typing import (
+    Optional,
+    Tuple,
+    List,
+    Union,
+    TypedDict,
+    Dict,
+    Any,
+    Literal,
+    Callable,
+    Iterable,
+)
 
 import json
 import re
@@ -72,15 +82,16 @@ ICON_MAP: Dict[str, str] = {
     "switch": "toggle2-on",
 }
 CONNECTION_ELEMENTS = [
-                    "line",
-                    "trafo",
-                    "trafo3w",
-                    "dcline",
-                    "impedance",
-                    "switch",
-                ]
+    "line",
+    "trafo",
+    "trafo3w",
+    "dcline",
+    "impedance",
+    "switch",
+]
 
 # ---- Helpers ---------------------------------------------------------------
+
 
 def _normalize_element_spec(
     el: Union[Tuple[str, int], Dict[str, Any], str],
@@ -91,19 +102,19 @@ def _normalize_element_spec(
     Args:
         el (tuple[str,int] | dict[str,Any] | str): element parameters in an accepted format
     Returns:
-        Tuple[str,Optional[int],Optional[str]]: 
+        Tuple[str,Optional[int],Optional[str]]:
             - element type (e.g. "line", "bus"...)
             - element index in the relative pd.Dataframe from pandapower (e.g. from net.bus if it is a bus)
             - element name
     ----
-    Note: 
+    Note:
     Accepted input per element in `elements` list:
     - ('line', 5)
     - {'type': 'line', 'index': 5, 'name': 'L5'}
     - {'table': 'line', 'idx': 5}
     - 'line:5'  (etype:index)
     - 'line'    (no id)
-    
+
     """
     if isinstance(el, tuple) and len(el) >= 2:
         return str(el[0]), int(el[1]), None
@@ -130,7 +141,7 @@ def _element_role_for_bus(
     """
     If `net` is provided and element ID (eid) is known, this returns which bus field(s)
     of the element match this bus (e.g., 'from_bus', 'lv_bus').
-    
+
     """
     try:
         fields = EL_BUS_FIELDS.get(etype, [])
@@ -147,7 +158,9 @@ def _element_role_for_bus(
     except Exception:
         return None
 
+
 # ---- Public API ------------------------------------------------------------
+
 
 def build_sac_tree_from_bus_df(
     bus_df: pd.DataFrame,
@@ -160,8 +173,8 @@ def build_sac_tree_from_bus_df(
     show_line: bool = True,
     checkbox: bool = False,
     show_connectors: bool = True,
-    index:Optional[int] = None,
-    return_index:bool = False,
+    index: Optional[int] = None,
+    return_index: bool = False,
 ) -> Dict[str, Any]:
     """
     Create `sac.tree` kwargs (items + sensible defaults) from a bus DataFrame
@@ -191,7 +204,7 @@ def build_sac_tree_from_bus_df(
         dict: Dictionary ready to be unpacked into `sac.tree(**result)`.
     ------
     Note:
-    
+
         Expected DataFrame columns:
             - `bus_name_col`: Display name of the bus.
             - `bus_index_col`: (optional) Numeric bus index; if None, use row index.
@@ -214,6 +227,7 @@ def build_sac_tree_from_bus_df(
         raise ValueError(f"'{elements_col}' column not found in bus_df")
 
     items: List[sac.TreeItem] = []
+
     def _label_for_element(
         etype: str, eid: Optional[int], name_hint: Optional[str], role: Optional[str]
     ) -> str:
@@ -280,6 +294,7 @@ def build_sac_tree_from_bus_df(
 #    Utilities
 # =============================
 
+
 # ================  SGEN TYPES =================
 class PVParams(TypedDict):
     module_per_string: int
@@ -314,7 +329,6 @@ def sgen_type_detection(obj: Union[PVParams, None]) -> int:
 # --------------------------------------------------------------------------------------
 
 
-
 ValidateFn = Callable[[dict[str, Any]], tuple[bool, Optional[str]]]
 SaveFn = Callable[[dict[str, Any]], None]
 DeleteFn = Callable[[dict[str, Any]], None]
@@ -336,6 +350,7 @@ class DialogManager:
             state_key="edit_line",
         )
     """
+
     def open(self, state_key: str):
         """Open the dialog by setting the state flag."""
         st.session_state[state_key] = True
@@ -364,16 +379,17 @@ class DialogManager:
         if not st.session_state.get(state_key):
             return
         logger = get_logger("solartracker")
+
         # Define the modal dialog with Streamlit's decorator.
         @st.dialog(title, width=width)
         def _dialog():
             # We use a form so Save triggers a single rerun.
             try:
-                new_element = corefn                
+                new_element = corefn
             except Exception as e:
                 logger.error(f"[DialogManager] Something wrong with grid dialog : {e}")
                 st.toast(f"Something wrong with grid dialog : {e}")
-                
+
             # Inline validation (optional)
             error_box = st.empty()
             # Action buttons
@@ -385,11 +401,13 @@ class DialogManager:
                     errors = validate(new_element)
                 if not errors:
                     ...
-                    
 
         # Render the dialog now
         _dialog()
+
+
 # TODO END ---------------------------------------------------------------------
+
 
 # =============================
 #!        Grid Manager UI
@@ -416,7 +434,7 @@ class GridManager(Page):
 
     """
 
-# ========== LIFECYCLE ==========
+    # ========== LIFECYCLE ==========
     def __init__(self, subfolder: Path) -> None:
         super().__init__("grid_manager")
 
@@ -428,7 +446,7 @@ class GridManager(Page):
 
         st.session_state["arrays_to_add"] = {}  # PV arrays pending persistence
 
-# ========== PROPERTIES ==========
+    # ========== PROPERTIES ==========
     @property
     def grid(self) -> PlantPowerGrid:
         return st.session_state.get("plant_grid", PlantPowerGrid())
@@ -438,7 +456,7 @@ class GridManager(Page):
         """PV arrays staged for persistence (keyed by SGen index)."""
         return st.session_state.get("arrays_to_add", {})
 
-# =============== RENDERS ============
+    # =============== RENDERS ============
     def render_setup(self) -> bool:
         """Render setup/management UI and return True if the grid changed."""
         if self.grid.net.bus.empty:
@@ -486,7 +504,8 @@ class GridManager(Page):
     def render_analysis(self) -> None:
         # Placeholder for future analysis UI.
         ...
-# =========== SUMMARIES ==========
+
+    # =========== SUMMARIES ==========
     def get_scheme(self):
         # Placeholder for future schematic export.
         ...
@@ -502,7 +521,7 @@ class GridManager(Page):
             height=153,
         )
 
-# ============ GENERIC COMMANDS ===========
+    # ============ GENERIC COMMANDS ===========
     def save(self) -> None:
         """Persist the grid and any staged PV arrays to disk."""
         self.grid.save(self.grid_file)
@@ -519,12 +538,12 @@ class GridManager(Page):
                 json.dump(arrays, f, indent=4, ensure_ascii=False)
             st.session_state["arrays_to_add"] = {}
 
-# =========================================================
-#                         TABS
-# =========================================================
+    # =========================================================
+    #                         TABS
+    # =========================================================
 
-# ============= LINKS (BUSES / LINES / TX) TAB ===============
-# -------------> Tab Content <--------
+    # ============= LINKS (BUSES / LINES / TX) TAB ===============
+    # -------------> Tab Content <--------
     def render_bus_links_tab(self) -> bool:
         labels_root = "tabs.links"
         changed = False
@@ -553,7 +572,8 @@ class GridManager(Page):
                 st.session_state["modified"] = False
             self.bus_links_manager()
         return changed
-# -------------> Parameter editors <-------------
+
+    # -------------> Parameter editors <-------------
     def bus_params(
         self,
         borders: bool = True,
@@ -839,7 +859,7 @@ class GridManager(Page):
 
         return link_available, new_line
 
-# -------------> Manager <--------
+    # -------------> Manager <--------
     # ----  Manage elements ----
     @st.fragment
     def bus_links_manager(self):
@@ -874,9 +894,7 @@ class GridManager(Page):
 
     def manager_buses(self):
         df = self.grid.summarize_buses().copy()
-        show_connectors = st.toggle(
-            "Show connectors", key="bus_tree_show_connectors"
-        )
+        show_connectors = st.toggle("Show connectors", key="bus_tree_show_connectors")
         with st.empty():
             if "original_tree" not in st.session_state:
                 st.session_state.original_tree = None
@@ -886,26 +904,30 @@ class GridManager(Page):
                 bus_name_col="name",
                 elements_col="elements",
                 net=self.grid.net,
-                show_connectors= show_connectors,
+                show_connectors=show_connectors,
             )
+
             def update_tree():
                 st.session_state.original_tree = None
 
-            selected = sac.tree(on_change=update_tree,key = "original_tree",**kwargs)
-            
+            selected = sac.tree(on_change=update_tree, key="original_tree", **kwargs)
+
             if "tree_selected_bus" not in st.session_state:
                 st.session_state["tree_selected_bus"] = selected
-            
+
             if selected and st.session_state["tree_selected_bus"] != selected:
                 st.session_state["tree_selected_bus"] = selected
-                    # for check in [not show_connectors, show_connectors]:
+                # for check in [not show_connectors, show_connectors]:
                 match = re.match(r"\[(\d+)\]", selected)
                 if match:
                     bus_id = int(match.group(1))
                     bus = self.grid.net.bus.loc[bus_id].to_dict()
                     try:
                         self.change_element(
-                            bus_id=bus_id, params=BusParams(**bus), connected_elements=df.loc[bus_id, "elements"],type="bus"
+                            bus_id=bus_id,
+                            params=BusParams(**bus),
+                            connected_elements=df.loc[bus_id, "elements"],
+                            type="bus",
                         )
                     except StreamlitAPIException as e:
                         self.logger.error(
@@ -915,7 +937,7 @@ class GridManager(Page):
                     except Exception as e:
                         self.logger.error(f"[GridManagerPage] Error in changing bus")
                         st.toast(f"❌ Error in changing bus: \n {e}", icon="❌")
-    
+
     def manager_connections(self):
         # connection_df = self.grid.bus_connections()
         open_dialog = None
@@ -994,20 +1016,23 @@ class GridManager(Page):
 
         if open_dialog:
             try:
-                self.change_element(params=LineParams(**open_dialog),line_id=None,type="line")
+                self.change_element(
+                    params=LineParams(**open_dialog), line_id=None, type="line"
+                )
             except StreamlitAPIException as e:
                 self.logger.error(
                     f"[GridManagerPage] Streamlit error in connection change dialog: {e}"
                 )
                 st.toast(f" ❌ Error in streamlit for connection dialog: {e}")
-                
-    def _change_element_dialog(self, core_dialog,save_button,delete_button,width:Literal["small","large"]):
+
+    def _change_element_dialog(
+        self, core_dialog, save_button, delete_button, width: Literal["small", "large"]
+    ):
         @st.dialog(width=width)
-        def dialog(core_dialog,save_button,delete_button):
-            ...
-        
-        return dialog(core_dialog,save_button,delete_button)
-        
+        def dialog(core_dialog, save_button, delete_button): ...
+
+        return dialog(core_dialog, save_button, delete_button)
+
     @st.dialog("Edit grid element", width="large")
     def change_element(
         self,
@@ -1016,7 +1041,7 @@ class GridManager(Page):
         # opzionali: per aggiornare nel grid model se ti servono gli ID
         bus_id: Optional[int] = None,
         line_id: Optional[int] = None,
-        connected_elements = None,
+        connected_elements=None,
         # in caso di dubbio sulle chiavi puoi forzare:
         type: Optional[Literal["bus", "line"]] = None,
     ) -> bool:
@@ -1039,9 +1064,14 @@ class GridManager(Page):
                     self.grid.update_line(new_line)  # <-- adatta al tuo metodo reale
                 except Exception as e:
                     self.logger.error(f"[GridManagerPage] Error updating line: {e}")
-                    raise Exception(f"Error updating line{' ' + str(line_id) if line_id is not None else ''}: {e}")
+                    raise Exception(
+                        f"Error updating line{' ' + str(line_id) if line_id is not None else ''}: {e}"
+                    )
                 st.session_state["modified"] = True
-                st.toast(f"Line{f' {line_id}' if line_id is not None else ''} updated successfully.", icon="✅")
+                st.toast(
+                    f"Line{f' {line_id}' if line_id is not None else ''} updated successfully.",
+                    icon="✅",
+                )
                 updated = True
                 st.rerun(scope="fragment")
 
@@ -1059,11 +1089,15 @@ class GridManager(Page):
             elements_rows = []
             for el in connected_elements:
                 etype, eid, name_hint = _normalize_element_spec(el)
-                elements_rows.append({"type": etype, "element ID": eid, "name": name_hint})
+                elements_rows.append(
+                    {"type": etype, "element ID": eid, "name": name_hint}
+                )
 
             if elements_rows and any("element ID" in r for r in elements_rows):
                 df_elements = pd.DataFrame(elements_rows).set_index("element ID")
-                sac.divider("Connected elements", icon=sac.BsIcon("diagram-3"), align="center")
+                sac.divider(
+                    "Connected elements", icon=sac.BsIcon("diagram-3"), align="center"
+                )
                 st.dataframe(df_elements)
             else:
                 sac.alert(
@@ -1081,7 +1115,9 @@ class GridManager(Page):
                     self.grid.update_bus(bus_id, new_bus)
                 except Exception as e:
                     self.logger.error(f"[GridManagerPage] Error updating bus: {e}")
-                    raise Exception(f"Error updating bus {bus_id if bus_id is not None else ''}: {e}")
+                    raise Exception(
+                        f"Error updating bus {bus_id if bus_id is not None else ''}: {e}"
+                    )
                 st.session_state["modified"] = True
                 st.toast(f"Bus {bus_id} updated successfully.", icon="✅")
                 updated = True
@@ -1089,7 +1125,7 @@ class GridManager(Page):
 
         return updated
 
-# -------------> Adders <-------------
+    # -------------> Adders <-------------
     def add_bus(self) -> bool:
         labels_root = "tabs.links.item.bus"
         new_buses = self.build_buses()
@@ -1151,9 +1187,8 @@ class GridManager(Page):
         lines_to_add: List[LineParams] = [lp for ok, lp in items if ok]
         return all_valid, lines_to_add
 
-
-# ============= GENERATORS (ACTIVE) TAB ===============
-# -------------> Tab Content <--------
+    # ============= GENERATORS (ACTIVE) TAB ===============
+    # -------------> Tab Content <--------
     def active_elements_manager(self) -> bool:
         labels_root = "tabs.gens"
         with st.expander(self.T(f"{labels_root}.new_item"), icon="➕"):
@@ -1175,7 +1210,8 @@ class GridManager(Page):
             elif item == 2:
                 changed |= self.add_storage()
             return changed
-# -------------> Parameter editors <-------------
+
+    # -------------> Parameter editors <-------------
     def sgen_param(
         self,
         borders: bool = True,
@@ -1719,9 +1755,9 @@ class GridManager(Page):
         )
         return items  # type: ignore[return-value]
 
-# =========================================================
-#                PASSIVE / SENSORS PLACEHOLDERS
-# =========================================================
+    # =========================================================
+    #                PASSIVE / SENSORS PLACEHOLDERS
+    # =========================================================
     def passive_manager(self) -> bool:
         sac.result("Passives elements coming soon", status="warning")
         return False
@@ -1730,9 +1766,8 @@ class GridManager(Page):
         sac.result("Sensors elements coming soon", status="warning")
         return False
 
+    # ========== UTILITIES METHOS ============
 
-# ========== UTILITIES METHOS ============
-    
     # ----------> Builders <----------
     def _build_items(
         self,
@@ -1750,20 +1785,20 @@ class GridManager(Page):
             state_key (str): session_state key used to store the number of items ("n").
             n_cols (int): number of columns in the grid layout.
             render_param_fn (Callable[[int], Any]): function that renders a single editor and returns its data.
-                If it returns a tuple where the first element is a bool, it is treated as a validity flag 
+                If it returns a tuple where the first element is a bool, it is treated as a validity flag
                 and aggregated across items.
             add_label (str): label for the "+" button (usually from i18n via self.T).
             remove_label (str): label for the "−" button (usually from i18n via self.T).
             borders (bool): whether to show a bordered container.
 
         Returns:
-            tuple[bool, list]: 
+            tuple[bool, list]:
                 - all_valid (bool): True if all editors returned a truthy validity flag (when present).
                 - items (list): list of return values from each editor.
         -----
         Note:
-        
-            This function dynamically renders a grid of editors based on the number stored in 
+
+            This function dynamically renders a grid of editors based on the number stored in
             `session_state[state_key]`. It aggregates validation flags if provided by each editor.
         """
 
@@ -1794,7 +1829,7 @@ class GridManager(Page):
                     st.rerun()
 
         return all_valid, items
-    
+
     def _batch_add_with_auto_name(
         self, count: int, obj: dict, create_fn, name_key: str = "name"
     ) -> list[Any]:
@@ -1826,73 +1861,64 @@ class GridManager(Page):
         )
 
 
-
-
-
-
-
-
-
 # ----------------------- OLD ----------------------------
 
- # @st.dialog("Change connection", width="large")
-    # def change_connection(self, conn_params: BusParams):
-    #     link_aviable, line = self.line_params(line=conn_params, horizontal=False)
-    #     if st.button("Save changes"):
-    #         # Update the line in the grid
-    #         ...
+# @st.dialog("Change connection", width="large")
+# def change_connection(self, conn_params: BusParams):
+#     link_aviable, line = self.line_params(line=conn_params, horizontal=False)
+#     if st.button("Save changes"):
+#         # Update the line in the grid
+#         ...
 
-    # @st.dialog(
-    #     "Change bus", width="large"
-    # )
-    # def change_bus(
-    #     self, bus_id: int, bus_params: BusParams, connected_elements
-    # ) -> bool:
-    #     """Change the parameters of a bus in the grid."""
-    #     _, new_bus = self.bus_params(
-    #         id=f"manager_{bus_id}", quantity=False, bus=bus_params, borders=False
-    #     )
-    #     elements = {}
-    #     for el in connected_elements:
-    #         etype, eid, name_hint = _normalize_element_spec(el)
-    #         elements["type"] = etype
-    #         elements["element ID"] = eid
-    #         elements["name"] = name_hint
-    #     df_elements = pd.DataFrame([elements])
-    #     if "element ID" in df_elements.columns:
-    #         df_elements = pd.DataFrame([elements]).set_index("element ID")
-    #         sac.divider(
-    #             "Connected elements", icon=sac.BsIcon("diagram-3"), align="center"
-    #         )
-    #         st.dataframe(df_elements)
-    #     else:
-    #         sac.alert(label='No elements connected', variant="quote-light", 
-    #                   icon=sac.BsIcon(name='ban', size=15, color="red"), 
-    #                   closable=True, color="orange")
-    #     if st.button("Save changes"):
-    #         # Update the bus in the grid
-    #         try:
-    #             self.grid.update_bus(bus_id, new_bus)
-    #         except Exception as e:
-    #             self.logger.error(f"[GridManagerPage] Error updating bus: {e}")
-    #             raise Exception(f"Error updating bus {bus_id}: {e}")
-    #         st.session_state["modified"] = True
-    #         st.toast(f"Bus {bus_id} updated successfully.", icon="✅")
-    #         st.rerun(scope="fragment")
-        # if st.button("Delete"):
-        #     try:
-        #         self.grid.safe_remove_bus(bus_to_remove=3, drop_connected=True)
-        #     except Exception as e:
-        #         self.logger.error(f"[GridManagerPage] Error in deleting bus: {e}")
-        #         st.error(f"Error in deleting bus: {e}")
-        #     st.session_state["modified"] = True
-        #     st.toast(f"Bus {bus_id} eliminated successfully.", icon="✅")
-        # st.rerun()
-
-
+# @st.dialog(
+#     "Change bus", width="large"
+# )
+# def change_bus(
+#     self, bus_id: int, bus_params: BusParams, connected_elements
+# ) -> bool:
+#     """Change the parameters of a bus in the grid."""
+#     _, new_bus = self.bus_params(
+#         id=f"manager_{bus_id}", quantity=False, bus=bus_params, borders=False
+#     )
+#     elements = {}
+#     for el in connected_elements:
+#         etype, eid, name_hint = _normalize_element_spec(el)
+#         elements["type"] = etype
+#         elements["element ID"] = eid
+#         elements["name"] = name_hint
+#     df_elements = pd.DataFrame([elements])
+#     if "element ID" in df_elements.columns:
+#         df_elements = pd.DataFrame([elements]).set_index("element ID")
+#         sac.divider(
+#             "Connected elements", icon=sac.BsIcon("diagram-3"), align="center"
+#         )
+#         st.dataframe(df_elements)
+#     else:
+#         sac.alert(label='No elements connected', variant="quote-light",
+#                   icon=sac.BsIcon(name='ban', size=15, color="red"),
+#                   closable=True, color="orange")
+#     if st.button("Save changes"):
+#         # Update the bus in the grid
+#         try:
+#             self.grid.update_bus(bus_id, new_bus)
+#         except Exception as e:
+#             self.logger.error(f"[GridManagerPage] Error updating bus: {e}")
+#             raise Exception(f"Error updating bus {bus_id}: {e}")
+#         st.session_state["modified"] = True
+#         st.toast(f"Bus {bus_id} updated successfully.", icon="✅")
+#         st.rerun(scope="fragment")
+# if st.button("Delete"):
+#     try:
+#         self.grid.safe_remove_bus(bus_to_remove=3, drop_connected=True)
+#     except Exception as e:
+#         self.logger.error(f"[GridManagerPage] Error in deleting bus: {e}")
+#         st.error(f"Error in deleting bus: {e}")
+#     st.session_state["modified"] = True
+#     st.toast(f"Bus {bus_id} eliminated successfully.", icon="✅")
+# st.rerun()
 
 
-#---------------------------------------------------------
+# ---------------------------------------------------------
 
 # from ...page import Page
 # import streamlit as st
