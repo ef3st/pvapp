@@ -1,7 +1,8 @@
+
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Tuple, List, Union, TypedDict, Dict, Any
+from typing import Optional, Tuple, List, Union, TypedDict, Dict, Any, Literal, Callable, Iterable
 
 import json
 import re
@@ -18,11 +19,19 @@ from pandapower_network.pvnetwork import (
     GenParams,
     SGenParams,
 )
-
-
-# --------
-from typing import Any, Dict, List, Optional, Tuple, Union
+from utils.logger import get_logger
 import pandas as pd
+
+
+# TODO :
+# - Change name of ***_manager method in ***_tab exept for bus_links_manager that became bus_links_tab
+# - Move _element_role_for_bus in Pandapower manager
+# - Dialog Class
+# NOTE:
+#! BUG SEVERE:
+# BUG:
+
+# -------- GLOBAL CONFIG VARIABLES
 
 # Map of element types -> bus reference fields in pandapower
 EL_BUS_FIELDS: Dict[str, List[str]] = {
@@ -43,7 +52,7 @@ EL_BUS_FIELDS: Dict[str, List[str]] = {
     "switch": ["bus"],
 }
 
-# Choose Bootstrap icons for each element (sac uses Bootstrap Icons names)
+# Bootstrap icons for each element
 ICON_MAP: Dict[str, str] = {
     "bus": "crosshair",
     "line": "arrow-left-right",
@@ -62,9 +71,16 @@ ICON_MAP: Dict[str, str] = {
     "ext_grid": "plug-fill",
     "switch": "toggle2-on",
 }
+CONNECTION_ELEMENTS = [
+                    "line",
+                    "trafo",
+                    "trafo3w",
+                    "dcline",
+                    "impedance",
+                    "switch",
+                ]
 
 # ---- Helpers ---------------------------------------------------------------
-
 
 def _normalize_element_spec(
     el: Union[Tuple[str, int], Dict[str, Any], str],
@@ -72,12 +88,22 @@ def _normalize_element_spec(
     """
     Normalize different element spec shapes to (etype, eid, label_hint).
 
+    Args:
+        el (tuple[str,int] | dict[str,Any] | str): element parameters in an accepted format
+    Returns:
+        Tuple[str,Optional[int],Optional[str]]: 
+            - element type (e.g. "line", "bus"...)
+            - element index in the relative pd.Dataframe from pandapower (e.g. from net.bus if it is a bus)
+            - element name
+    ----
+    Note: 
     Accepted input per element in `elements` list:
     - ('line', 5)
     - {'type': 'line', 'index': 5, 'name': 'L5'}
     - {'table': 'line', 'idx': 5}
     - 'line:5'  (etype:index)
     - 'line'    (no id)
+    
     """
     if isinstance(el, tuple) and len(el) >= 2:
         return str(el[0]), int(el[1]), None
@@ -102,8 +128,9 @@ def _element_role_for_bus(
     net: Any, etype: str, eid: Optional[int], bus_idx: int
 ) -> Optional[str]:
     """
-    If `net` is provided and eid is known, return which bus field(s)
+    If `net` is provided and element ID (eid) is known, this returns which bus field(s)
     of the element match this bus (e.g., 'from_bus', 'lv_bus').
+    
     """
     try:
         fields = EL_BUS_FIELDS.get(etype, [])
@@ -120,21 +147,7 @@ def _element_role_for_bus(
     except Exception:
         return None
 
-
-def _label_for_element(
-    etype: str, eid: Optional[int], name_hint: Optional[str], role: Optional[str]
-) -> str:
-    """
-    Build a readable label like: 'line 5 (from_bus)' or 'L5 (lv_bus)'.
-    """
-    base = name_hint or (f"{etype} {eid}" if eid is not None else etype)
-    if role:
-        return f"{base} ({role})"
-    return base
-
-
 # ---- Public API ------------------------------------------------------------
-
 
 def build_sac_tree_from_bus_df(
     bus_df: pd.DataFrame,
@@ -147,26 +160,53 @@ def build_sac_tree_from_bus_df(
     show_line: bool = True,
     checkbox: bool = False,
     show_connectors: bool = True,
+    index:Optional[int] = None,
+    return_index:bool = False,
 ) -> Dict[str, Any]:
     """
-    Create sac.tree kwargs (items + sensible defaults) from a bus DataFrame that
-    includes an 'elements' column (each cell: list of connected elements).
+    Create `sac.tree` kwargs (items + sensible defaults) from a bus DataFrame
+    that includes an "elements" column (each cell: list of connected elements).
 
-    Returns a dict ready to be unpacked into sac.tree(**result).
+    Args:
+        bus_df (pandas.DataFrame): Rielaborated bus DataFrame from
+            `pandapowerNet["bus"]`, with an "elements" column listing the elements
+            connected to each bus.
+        bus_name_col (str): Column label for bus names.
+        bus_index_col (str): Column label for bus indices. If None, the DataFrame
+            index is used as the bus index.
+        elements_col (str): Column label for connected elements
+            ("elements" by default).
+        net (pandapowerNet): Network object used to identify bus roles.
+        open_all (bool): Whether to expand all tree nodes initially. Defaults to True
+            (see `sac.Tree` params).
+        show_line (bool): Whether to display lines. Defaults to True (see `sac.Tree` params).
+        checkbox (bool): Whether to display checkboxes. Defaults to False.
+        show_connectors (bool): If True, also include connectors such as lines,
+            transformers, switches, etc.
+        index (int): Default selected tree element index.
+        return_index (bool): Whether to return the index instead of the value.
+            Defaults to False (see `sac.Tree` params).
 
-    Expected DataFrame columns:
-      - bus_name_col: display name of the bus
-      - bus_index_col: (optional) numeric bus index; if None, use row index
-      - elements_col: list of element specs per bus. Each spec can be:
-          ('line', 5)
-          {'type':'line','index':5,'name':'L5'}
-          {'table':'line','idx':5}
-          'line:5'
-          'line'
+    Returns:
+        dict: Dictionary ready to be unpacked into `sac.tree(**result)`.
+    ------
+    Note:
+    
+        Expected DataFrame columns:
+            - `bus_name_col`: Display name of the bus.
+            - `bus_index_col`: (optional) Numeric bus index; if None, use row index.
+            - `elements_col`: List of element specs per bus. Each spec can be:
+                ('line', 5)
+                {'type': 'line', 'index': 5, 'name': 'L5'}
+                {'table': 'line', 'idx': 5}
+                'line:5'
+                'line'
 
-    Icons are assigned based on ICON_MAP. Unknown types fall back to a generic icon.
-    If `net` is provided, the element label includes the matching bus role(s).
+        Icons are assigned based on `ICON_MAP`. Unknown types fall back to a generic
+        icon. If `net` is provided, the element label includes the matching bus
+        role(s).
     """
+
     # Validate presence
     if bus_name_col not in bus_df.columns:
         raise ValueError(f"'{bus_name_col}' column not found in bus_df")
@@ -174,8 +214,18 @@ def build_sac_tree_from_bus_df(
         raise ValueError(f"'{elements_col}' column not found in bus_df")
 
     items: List[sac.TreeItem] = []
+    def _label_for_element(
+        etype: str, eid: Optional[int], name_hint: Optional[str], role: Optional[str]
+    ) -> str:
+        """
+        Build a readable label like: 'line 5 (from_bus)' or 'L5 (lv_bus)'.
+        """
+        base = name_hint or (f"{etype} {eid}" if eid is not None else etype)
+        if role:
+            return f"{base} ({role})"
+        return base
 
-    for ridx, row in bus_df.reset_index(drop=True).iterrows():
+    for _, row in bus_df.reset_index(drop=True).iterrows():
         bus_idx = int(row[bus_index_col]) if bus_index_col else int(row.name)
         bus_name = f"[{bus_idx}]  -  " + row[bus_name_col]
         icon_bus = ICON_MAP.get("bus", "diagram-3")
@@ -186,14 +236,7 @@ def build_sac_tree_from_bus_df(
             if not etype:
                 continue
             if not show_connectors:
-                if etype in [
-                    "line",
-                    "trafo",
-                    "trafo3w",
-                    "dcline",
-                    "impedance",
-                    "switch",
-                ]:
+                if etype in CONNECTION_ELEMENTS:
                     continue
             role = (
                 _element_role_for_bus(net, etype, eid, bus_idx)
@@ -227,15 +270,17 @@ def build_sac_tree_from_bus_df(
         show_line=show_line,
         checkbox=checkbox,
         format_func=None,
-        return_index=False,
-        index=None,
+        return_index=return_index,
+        index=index,
     )
 
 
-# --------
+# -------------------------------------------------------
 # =============================
-#   SGen Types & Utilities
+#    Utilities
 # =============================
+
+# ================  SGEN TYPES =================
 class PVParams(TypedDict):
     module_per_string: int
     strings_per_inverter: int
@@ -256,14 +301,104 @@ def sgen_type_detection(obj: Union[PVParams, None]) -> int:
     raise ValueError("Invalid SGen type or parameters provided.")
 
 
+
+# TODO 
+# --------------------------------------------------------------------------------------
+# Generic, reusable dialog to edit/create a network element (e.g., bus, line, generator)
+# --------------------------------------------------------------------------------------
+# Design goals
+# - Decouple UI rendering from business logic: pass callbacks for save/delete.
+# - Strongly-typed field specs with sensible defaults.
+# - Minimal state handling via st.session_state to open/close the dialog.
+# - Works for create and edit flows (initial_values optional).
+# - Simple validation hook.
+# --------------------------------------------------------------------------------------
+
+
+
+ValidateFn = Callable[[dict[str, Any]], tuple[bool, Optional[str]]]
+SaveFn = Callable[[dict[str, Any]], None]
+DeleteFn = Callable[[dict[str, Any]], None]
+
+
+class DialogManager:
+    """Reusable modal dialog to change a network element.
+    ---
+    Example:
+        mgr = DialogManager()
+        mgr.open("edit_line")  # somewhere in a button callback
+        mgr.change_element_dialog(
+            title="Edit Line",
+            schema=[...],
+            initial_values=line_dict,
+            on_save=save_fn,
+            on_delete=delete_fn,
+            width="large",
+            state_key="edit_line",
+        )
+    """
+    def open(self, state_key: str):
+        """Open the dialog by setting the state flag."""
+        st.session_state[state_key] = True
+
+    def close(self, state_key: str):
+        st.session_state[state_key] = False
+
+    def change_element_dialog(
+        self,
+        *,
+        title: str,
+        corefn: Callable,
+        on_save: SaveFn = None,
+        on_delete: Optional[DeleteFn] = None,
+        validate: Optional[ValidateFn] = None,
+        width: Literal["small", "large"] = "small",
+        state_key: str = "change_element_dialog",
+        save_label: str = "Save",
+        delete_label: str = "Delete",
+        cancel_label: str = "Cancel",
+    ) -> None:
+        """Render the dialog when state flag is True.
+
+        If the dialog is closed (state flag False), nothing is rendered.
+        """
+        if not st.session_state.get(state_key):
+            return
+        logger = get_logger("solartracker")
+        # Define the modal dialog with Streamlit's decorator.
+        @st.dialog(title, width=width)
+        def _dialog():
+            # We use a form so Save triggers a single rerun.
+            try:
+                new_element = corefn                
+            except Exception as e:
+                logger.error(f"[DialogManager] Something wrong with grid dialog : {e}")
+                st.toast(f"Something wrong with grid dialog : {e}")
+                
+            # Inline validation (optional)
+            error_box = st.empty()
+            # Action buttons
+            st.divider()
+            cols = st.columns([1, 1, 1]) if on_delete else st.columns([1, 1])
+            if st.button(save_label):
+                errors = None
+                if validate is not None:
+                    errors = validate(new_element)
+                if not errors:
+                    ...
+                    
+
+        # Render the dialog now
+        _dialog()
+
 # =============================
-#        Grid Manager UI
+#!        Grid Manager UI
 # =============================
 class GridManager(Page):
     """Interactive grid builder and editor for PlantPowerGrid.
 
     The UI is organized in four tabs:
-      1) Links (buses, lines, transformers)
+      1) Links (buses, lines, transformers and switches)
       2) Generators (sgen, gen, storage)
       3) Passive elements
       4) Sensors & controllers
@@ -279,12 +414,9 @@ class GridManager(Page):
     - `_batch_add_with_auto_name(...)`: repeat-apply creation with auto-renaming.
     - `_status_badge(...)`: read-only segmented status indicator used across editors.
 
-    Existing specific editors (`bus_params`, `line_params`, `sgen_param`, `gen_param`) are
-    kept, but the *build* and *add* flows are implemented using the generic helpers so you
-    can plug new element types with minimal boilerplate.
     """
 
-    # ---------- lifecycle ----------
+    # ========== LIFECYCLE ==========
     def __init__(self, subfolder: Path) -> None:
         super().__init__("grid_manager")
 
@@ -296,7 +428,9 @@ class GridManager(Page):
 
         st.session_state["arrays_to_add"] = {}  # PV arrays pending persistence
 
-    # ---------- properties & small framework helpers ----------
+    # ========== UTILITIES METHOS ============
+    
+    # ----------> Builders <----------
     def _build_items(
         self,
         state_key: str,
@@ -306,29 +440,30 @@ class GridManager(Page):
         remove_label: str,
         borders: bool = True,
     ) -> tuple[bool, list]:
-        """Generic builder that renders N parameter editors in a grid.
-
-        Parameters
-        ----------
-        state_key : str
-            session_state key used to store the number of items ("n").
-        n_cols : int
-            number of columns in the grid layout.
-        render_param_fn : Callable[[int], Any]
-            function that renders a single editor and returns its data.
-            If it returns a tuple where the first element is a bool, it is
-            treated as a validity flag and aggregated across items.
-        add_label, remove_label : str
-            labels for the + and − buttons (usually from i18n via self.T).
-        borders : bool
-            whether to show a bordered container.
-
-        Returns
-        -------
-        (all_valid, items): tuple[bool, list]
-            all_valid is True if all editors returned a truthy validity flag (when present).
-            items is the list of return values from each editor.
         """
+        Generic builder that renders N element creators in a grid.
+
+        Args:
+            state_key (str): session_state key used to store the number of items ("n").
+            n_cols (int): number of columns in the grid layout.
+            render_param_fn (Callable[[int], Any]): function that renders a single editor and returns its data.
+                If it returns a tuple where the first element is a bool, it is treated as a validity flag 
+                and aggregated across items.
+            add_label (str): label for the "+" button (usually from i18n via self.T).
+            remove_label (str): label for the "−" button (usually from i18n via self.T).
+            borders (bool): whether to show a bordered container.
+
+        Returns:
+            tuple[bool, list]: 
+                - all_valid (bool): True if all editors returned a truthy validity flag (when present).
+                - items (list): list of return values from each editor.
+        -----
+        Note:
+        
+            This function dynamically renders a grid of editors based on the number stored in 
+            `session_state[state_key]`. It aggregates validation flags if provided by each editor.
+        """
+
         all_valid = True
         items: list = []
 
@@ -356,12 +491,11 @@ class GridManager(Page):
                     st.rerun()
 
         return all_valid, items
-
+    
     def _batch_add_with_auto_name(
         self, count: int, obj: dict, create_fn, name_key: str = "name"
     ) -> list[Any]:
-        """Repeat creation `count` times, auto-prefixing names on duplicates.
-
+        """Repeat creation `count` times, auto-prefixing names on duplicates to avoid elements with same params and names
         Returns a list of results produced by `create_fn`.
         """
         results = []
@@ -375,7 +509,7 @@ class GridManager(Page):
     def _status_badge(
         self, key_prefix: str, voltage: str, level: str, onoff: str
     ) -> None:
-        """Render a read-only segmented status badge (voltage level + state) when bus selection is required"""
+        """Render a read-only segmented status badge (voltage level + bus level + in service state) when bus selection is required"""
         items = [sac.SegmentedItem(x) for x in (voltage, level, onoff)]
         sac.segmented(
             items=items,
@@ -433,7 +567,7 @@ class GridManager(Page):
 
         changed = False
         if tab == 0:
-            changed |= self.bus_links_manager()
+            changed |= self.bus_links_tab()
         elif tab == 1:
             changed |= self.gens_manager()
         elif tab == 2:
@@ -480,10 +614,9 @@ class GridManager(Page):
                 json.dump(arrays, f, indent=4, ensure_ascii=False)
             st.session_state["arrays_to_add"] = {}
 
-    # =========================================================
-    #               LINKS (BUSES / LINES / TX)
-    # =========================================================
-    def bus_links_manager(self) -> bool:
+    # ============= LINKS (BUSES / LINES / TX) ===============
+
+    def bus_links_tab(self) -> bool:
         labels_root = "tabs.links"
         changed = False
         # Adder
@@ -509,13 +642,13 @@ class GridManager(Page):
             changed |= st.session_state["modified"]
             if st.session_state["modified"]:
                 st.session_state["modified"] = False
-            self.bus_manager()
+            self.bus_links_manager()
         return changed
 
     # ---- manage elements ----
     @st.fragment
-    def bus_manager(self):
-        df = self.grid.summarize_buses().copy()
+    def bus_links_manager(self):
+        df = self.grid.summarize_buses()
         st.dataframe(df.drop(columns=["elements"]))
 
         # st.markdown("### Rete elettrica (bus → elementi)")
@@ -539,39 +672,58 @@ class GridManager(Page):
                     )
                 col += 1
         tree_bus, connection = st.columns([2, 5])
+        with connection:
+            self.manager_connections()
         with tree_bus:
-            show_connectors = st.toggle(
-                "Show connectors", key="bus_tree_show_connectors"
-            )
+            self.manager_buses()
+
+    def manager_buses(self):
+        df = self.grid.summarize_buses().copy()
+        show_connectors = st.toggle(
+            "Show connectors", key="bus_tree_show_connectors"
+        )
+        with st.empty():
+            if "original_tree" not in st.session_state:
+                st.session_state.original_tree = None
+
             kwargs = build_sac_tree_from_bus_df(
                 self.grid.summarize_buses(),
                 bus_name_col="name",
                 elements_col="elements",
                 net=self.grid.net,
-                show_connectors=show_connectors,
+                show_connectors= show_connectors,
             )
-            selected = sac.tree(**kwargs)
-            if selected:
+            def update_tree():
+                st.session_state.original_tree = None
+
+            selected = sac.tree(on_change=update_tree,key = "original_tree",**kwargs)
+            
+            if "tree_selected_bus" not in st.session_state:
+                st.session_state["tree_selected_bus"] = selected
+            
+            if selected and st.session_state["tree_selected_bus"] != selected:
+                st.session_state["tree_selected_bus"] = selected
+                    # for check in [not show_connectors, show_connectors]:
                 match = re.match(r"\[(\d+)\]", selected)
                 if match:
                     bus_id = int(match.group(1))
                     bus = self.grid.net.bus.loc[bus_id].to_dict()
                     try:
-                        self.change_bus(
-                            bus_id, BusParams(**bus), df.loc[bus_id, "elements"]
+                        self.change_element(
+                            bus_id=bus_id, params=BusParams(**bus), connected_elements=df.loc[bus_id, "elements"],type="bus"
                         )
                     except StreamlitAPIException as e:
                         self.logger.error(
                             f"[GridManagerPage] Streamlit error in bus change dialog: {e}"
                         )
-                        st.toast(f"Error in streamlit: {e}")
+                        st.toast(f"❌ Error in streamlit from MANAGER BUS: {e}")
                     except Exception as e:
                         self.logger.error(f"[GridManagerPage] Error in changing bus")
-                        st.toast(f"Error in changing bus: \n {e}", icon="❌")
-        with connection:
-            self.connection_manager()
-
-    def connection_manager(self):
+                        st.toast(f"❌ Error in changing bus: \n {e}", icon="❌")
+                        
+            
+    
+    def manager_connections(self):
         # connection_df = self.grid.bus_connections()
         open_dialog = None
         values_contraints = {
@@ -593,7 +745,7 @@ class GridManager(Page):
             try:
                 v = self.grid.net.bus["vn_kv"].iloc[bus_idx]
             except Exception as e:
-                st.error(f"Error in uploading connections: {e}")
+                st.error(f"❌ Error in uploading connections: {e}")
             for i in values_contraints:
                 if v > values_contraints[i][0] and v < values_contraints[i][1]:
                     return colors[i]
@@ -649,53 +801,147 @@ class GridManager(Page):
 
         if open_dialog:
             try:
-                self.change_connection(LineParams(**open_dialog))
+                self.change_element(params=LineParams(**open_dialog),line_id=None,type="line")
             except StreamlitAPIException as e:
                 self.logger.error(
                     f"[GridManagerPage] Streamlit error in connection change dialog: {e}"
                 )
-                st.toast(f"Error in streamlit: {e}")
-
-    @st.dialog("Change connection", width="large")
-    def change_connection(self, conn_params: BusParams):
-        link_aviable, line = self.line_params(line=conn_params, horizontal=False)
-        if st.button("Save changes"):
-            # Update the line in the grid
+                st.toast(f" ❌ Error in streamlit for connection dialog: {e}")
+                
+    
+    def _change_element_dialog(self, core_dialog,save_button,delete_button,width:Literal["small","large"]):
+        @st.dialog(width=width)
+        def dialog(core_dialog,save_button,delete_button):
             ...
+        
+        return dialog(core_dialog,save_button,delete_button)
+        
 
-    @st.dialog(
-        "Change bus",
-    )
-    def change_bus(
-        self, bus_id: int, bus_params: BusParams, connected_elements
+    @st.dialog("Edit grid element", width="large")
+    def change_element(
+        self,
+        params: Union[BusParams, LineParams],
+        *,
+        # opzionali: per aggiornare nel grid model se ti servono gli ID
+        bus_id: Optional[int] = None,
+        line_id: Optional[int] = None,
+        connected_elements = None,
+        # in caso di dubbio sulle chiavi puoi forzare:
+        type: Optional[Literal["bus", "line"]] = None,
     ) -> bool:
-        """Change the parameters of a bus in the grid."""
-        _, new_bus = self.bus_params(
-            id=f"manager_{bus_id}", quantity=False, bus=bus_params, borders=False
-        )
-        elements = {}
-        for el in connected_elements:
-            etype, eid, name_hint = _normalize_element_spec(el)
-            elements["type"] = etype
-            elements["element ID"] = eid
-            elements["name"] = name_hint
-        df_elements = pd.DataFrame([elements])
-        if "element ID" in df_elements.columns:
-            df_elements = pd.DataFrame([elements]).set_index("element ID")
-            sac.divider(
-                "Connected elements", icon=sac.BsIcon("diagram-3"), align="center"
+        """
+        Unisce change_bus e change_connection in un unico dialog.
+        Decide il flusso in base al tipo di params (TypedDict) o al parametro 'kind'.
+        Ritorna True se l'elemento è stato aggiornato, altrimenti False.
+        """
+        updated = False
+
+        # --- Dispatch: auto o forzato ---
+        if type == "line" or (type is None):
+            # === LINE FLOW (ex-change_connection) ===
+            link_available, new_line = self.line_params(line=params, horizontal=False)
+
+            if st.button("Save changes", key="save_line"):
+                try:
+                    # Se nel tuo modello serve l'ID: self.grid.update_line(line_id, new_line)
+                    # Altrimenti:
+                    self.grid.update_line(new_line)  # <-- adatta al tuo metodo reale
+                except Exception as e:
+                    self.logger.error(f"[GridManagerPage] Error updating line: {e}")
+                    raise Exception(f"Error updating line{' ' + str(line_id) if line_id is not None else ''}: {e}")
+                st.session_state["modified"] = True
+                st.toast(f"Line{f' {line_id}' if line_id is not None else ''} updated successfully.", icon="✅")
+                updated = True
+                st.rerun(scope="fragment")
+
+        else:
+            # === BUS FLOW (ex-change_bus) ===
+            # bus_id è richiesto per l'update; se assente, provo a leggerlo da params o segnalo in errore al commit
+            _, new_bus = self.bus_params(
+                id=f"manager_{bus_id if bus_id is not None else 'unknown'}",
+                quantity=False,
+                bus=params,
+                borders=False,
             )
-            st.dataframe(df_elements)
-        if st.button("Save changes"):
-            # Update the bus in the grid
-            try:
-                self.grid.update_bus(bus_id, new_bus)
-            except Exception as e:
-                self.logger.error(f"[GridManagerPage] Error updating bus: {e}")
-                raise Exception(f"Error updating bus {bus_id}: {e}")
-            st.session_state["modified"] = True
-            st.toast(f"Bus {bus_id} updated successfully.", icon="✅")
-            st.rerun(scope="fragment")
+
+            # Se ho elementi connessi, mostro la tabella
+            elements_rows = []
+            for el in connected_elements:
+                etype, eid, name_hint = _normalize_element_spec(el)
+                elements_rows.append({"type": etype, "element ID": eid, "name": name_hint})
+
+            if elements_rows and any("element ID" in r for r in elements_rows):
+                df_elements = pd.DataFrame(elements_rows).set_index("element ID")
+                sac.divider("Connected elements", icon=sac.BsIcon("diagram-3"), align="center")
+                st.dataframe(df_elements)
+            else:
+                sac.alert(
+                    label="No elements connected",
+                    variant="quote-light",
+                    icon=sac.BsIcon(name="ban", size=15, color="red"),
+                    closable=True,
+                    color="orange",
+                )
+
+            if st.button("Save changes", key="save_bus"):
+                try:
+                    if bus_id is None:
+                        raise ValueError("Missing 'bus_id' for bus update.")
+                    self.grid.update_bus(bus_id, new_bus)
+                except Exception as e:
+                    self.logger.error(f"[GridManagerPage] Error updating bus: {e}")
+                    raise Exception(f"Error updating bus {bus_id if bus_id is not None else ''}: {e}")
+                st.session_state["modified"] = True
+                st.toast(f"Bus {bus_id} updated successfully.", icon="✅")
+                updated = True
+                st.rerun(scope="fragment")
+
+        return updated
+
+    # @st.dialog("Change connection", width="large")
+    # def change_connection(self, conn_params: BusParams):
+    #     link_aviable, line = self.line_params(line=conn_params, horizontal=False)
+    #     if st.button("Save changes"):
+    #         # Update the line in the grid
+    #         ...
+
+    # @st.dialog(
+    #     "Change bus", width="large"
+    # )
+    # def change_bus(
+    #     self, bus_id: int, bus_params: BusParams, connected_elements
+    # ) -> bool:
+    #     """Change the parameters of a bus in the grid."""
+    #     _, new_bus = self.bus_params(
+    #         id=f"manager_{bus_id}", quantity=False, bus=bus_params, borders=False
+    #     )
+    #     elements = {}
+    #     for el in connected_elements:
+    #         etype, eid, name_hint = _normalize_element_spec(el)
+    #         elements["type"] = etype
+    #         elements["element ID"] = eid
+    #         elements["name"] = name_hint
+    #     df_elements = pd.DataFrame([elements])
+    #     if "element ID" in df_elements.columns:
+    #         df_elements = pd.DataFrame([elements]).set_index("element ID")
+    #         sac.divider(
+    #             "Connected elements", icon=sac.BsIcon("diagram-3"), align="center"
+    #         )
+    #         st.dataframe(df_elements)
+    #     else:
+    #         sac.alert(label='No elements connected', variant="quote-light", 
+    #                   icon=sac.BsIcon(name='ban', size=15, color="red"), 
+    #                   closable=True, color="orange")
+    #     if st.button("Save changes"):
+    #         # Update the bus in the grid
+    #         try:
+    #             self.grid.update_bus(bus_id, new_bus)
+    #         except Exception as e:
+    #             self.logger.error(f"[GridManagerPage] Error updating bus: {e}")
+    #             raise Exception(f"Error updating bus {bus_id}: {e}")
+    #         st.session_state["modified"] = True
+    #         st.toast(f"Bus {bus_id} updated successfully.", icon="✅")
+    #         st.rerun(scope="fragment")
         # if st.button("Delete"):
         #     try:
         #         self.grid.safe_remove_bus(bus_to_remove=3, drop_connected=True)

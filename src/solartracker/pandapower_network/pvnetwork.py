@@ -100,18 +100,6 @@ class PlantPowerGrid:
         if path:
             self.load_grid(path)
 
-        # self.buses_df = pd.DataFrame(
-        #     columns=[
-        #         "name",
-        #         "zone",
-        #         "type",
-        #         "geodata",
-        #         "min_vm_pu",
-        #         "max_vm_pu",
-        #         "vn_kv",
-        #     ]
-        # )
-
     def load_grid(self, path):
         self.net = pp.from_json(path)
         return self
