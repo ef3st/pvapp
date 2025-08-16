@@ -270,9 +270,35 @@
                     {
                         "name": "Trasformatore"
                     }
-                
-
-                }
+                },
+                "manager":
+                    {
+                        "title": "Gestione Bus e Links",
+                        "icon_label": ["Legenda icone",{
+                            "bus": "Nodo",
+                            "line": "Linea",
+                            "trafo": "Trasformatore",
+                            "trafo3w": "Trasformatore a 3 avv.",
+                            "impedance": "Impedenza",
+                            "dcline": "Linea in corrente continua",
+                            "load": "Carico",
+                            "sgen": "Generatore statico",
+                            "gen": "Generatore sincrono",
+                            "storage": "Accumulo",
+                            "shunt": "Reattanza in derivazione",
+                            "ward": "Modello Ward",
+                            "xward": "Modello esteso Ward",
+                            "motor": "Motore",
+                            "ext_grid": "Rete esterna",
+                            "switch": "Interruttore"
+                        }],
+                        "tree_connectors": "Mostra connettori",
+                        "connectors": ["Connettori", "Legenda colori"],
+                        "bus_df": {
+                            "title": "Elenco Bus",
+                            "legend": ["Legenda Colonne",["Nome Bus",["Tipo","Principale","Ausiliaro","Moff"],"Tensione operatiuva","ON/OFF","Tensione minima sostenuta", "Tensione masisma sostenuta"]]
+                        }
+                    }
             },
             "gens":
             {

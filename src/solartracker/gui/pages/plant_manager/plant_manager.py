@@ -203,7 +203,9 @@ class PlantManager(Page):
 
         scheme = labels_display[3] in sumup
         description = labels_display[4] in sumup
-        self.show_sumup(tab_index, scheme, description)
+        placeholeder = st.empty()
+        with placeholeder.container():
+            self.show_sumup(tab_index, scheme, description)
 
         # Secondary tabs (except for the Site): Setup / Analysis
         tab_display = 0
@@ -230,8 +232,9 @@ class PlantManager(Page):
             self.logger.error("[PlantManagerPage] Errors in show_display(): {e}")
 
         # Right side: top action buttons (save / simulate)
-        with right_col.container(border=True):
-            self.top_buttons()
+        with right_col.empty():
+            with st.container(border=True):
+                self.top_buttons()
 
     # ---------------------------------------------------------------------
     # Actions (save / simulate)
@@ -416,8 +419,11 @@ class PlantManager(Page):
             Whether to show descriptions/metadata where available
         """
         # Only Grid currently exposes a textual description
-        if tab == 1 and description and self.grid_manager is not None:
-            self.grid_manager.get_description()
+        if tab == 1 and self.grid_manager is not None:
+            if scheme:
+                self.grid_manager.get_scheme()
+            if description:
+                self.grid_manager.get_description()
 
     def show_display(self, tab: int = 0, display: int = 0) -> None:
         """Dispatch rendering to the selected manager and view.
