@@ -42,7 +42,6 @@ import pandas as pd
 # BUG:
 
 # * ======== GLOBAL CONFIG VARIABLES ========
-
 # ? Map of element types -> bus reference fields in pandapower
 # TODO: take/move this from/to pvnetwork.py (there is the same in summarize_buses method)
 EL_BUS_FIELDS: Dict[str, List[str]] = {
@@ -107,6 +106,7 @@ def normalize_element_spec(
 
     Args:
         el (tuple[str,int] | dict[str,Any] | str): element parameters in an accepted format
+
     Returns:
         Tuple[str,Optional[int],Optional[str]]:
             - element type (e.g. "line", "bus"...)
@@ -155,9 +155,11 @@ def element_role_for_bus(
         if not fields or eid is None:
             return None
         table = getattr(net, etype, None)
-        if table is None or len(table) <= eid:
+        if table is None:  # or len(table) <= eid:
             return None
-        row = table.loc[eid]
+        row = table.loc[eid] if eid in table.index else None
+        if row is None:
+            return None
         hits = [f for f in fields if f in row.index and int(row[f]) == int(bus_idx)]
         if not hits:
             return None
@@ -414,10 +416,10 @@ class GridManager(Page):
     render_tab_bus_links() -> bool
         Render the Links tab, including UI for adding and managing buses, lines, and transformers.
 
-    bus_params(...)
+    paramsUI_bus(...)
         Render and return the editor for a bus element.
 
-    line_params(...)
+    paramsUI_line(...)
         Render and return the editor for a line element.
 
     _bus_links_manager()
@@ -438,10 +440,10 @@ class GridManager(Page):
     render_tab_active_elements() -> bool
         Render the Generators tab with controls for SGen, Gen, and Storage.
 
-    sgen_param(...)
+    paramsUI_sgen(...)
         Render and return the editor for a static generator element (SGen) and optional PV properties.
 
-    gen_param(...)
+    paramsUI_gen(...)
         Render and return the editor for a synchronous generator element (Gen).
 
     _add_sgen() / _add_gen() / _add_storage()
@@ -512,7 +514,7 @@ class GridManager(Page):
             bool: `True` if something changed in the PlanPowerGrid class, `False` otherwise
 
         ----
-        TODO: Add message to show if and which element(s) is(are) missing to have an aviable grid
+        TODO: Add message to show if and which element(s) is(are) missing to have an available grid
         """
         if not self.grid_file.exists():
             # Inline import to avoid hard dependency when not needed.
@@ -593,7 +595,7 @@ class GridManager(Page):
     def get_scheme(self):
         sac.alert(
             "Scheme info",
-            "Scheme not yet aviable. Take a coffee in the meanwhile",
+            "Scheme not yet available. Take a coffee in the meanwhile",
             size="md",
             variant="quote",
             icon=True,
@@ -800,7 +802,7 @@ class GridManager(Page):
                 sac.divider(label=titles[1], align="center", key=f"{id}_bus_volt_div")
                 simple_selection_col, value_selection_col = st.columns(2)
 
-                values_contraints = {
+                voltage_contraints = {
                     "LV": (0.0, 1.0),
                     "MV": (1.0, 35.0),
                     "HV": (36.0, 220.0),
@@ -809,14 +811,15 @@ class GridManager(Page):
                 voltage_type = bidict({"LV": 0, "MV": 1, "HV": 2, "EHV": 3})
                 voltages = {"LV": 0.250, "MV": 15.0, "HV": 150.0, "EHV": 380.0}
                 with simple_selection_col:
-                    idx = 0
-                    for i in values_contraints:
-                        if (
-                            bus["vn_kv"] >= values_contraints[i][0]
-                            and bus["vn_kv"] <= values_contraints[i][1]
-                        ):
-                            idx = voltage_type[i]
-                            break
+                    #! To check if it works well
+                    idx = next(
+                        (
+                            voltage_type[i]
+                            for i, (a, b) in voltage_contraints.items()
+                            if a <= bus["vn_kv"] <= b
+                        ),
+                        0,
+                    )
                     # ? sac.segmented to choose bus voltage level by words (e.g. "Low", "Hight" voltage)
                     voltage_idx = sac.segmented(
                         items=[sac.SegmentedItem(label) for label in T("voltage")],
@@ -832,7 +835,7 @@ class GridManager(Page):
                     enable_limits = st.checkbox(labels[0], key=f"{id}_bus_set_limits")
 
                 with value_selection_col:
-                    constraints = values_contraints[voltage_type.inv[voltage_idx]]
+                    constraints = voltage_contraints[voltage_type.inv[voltage_idx]]
                     # * currently disable, this is the input to set the bus voltage.
                     # the selection occurs via voltage_idx variable and voltages dict
                     bus["vn_kv"] = st.number_input(
@@ -883,12 +886,12 @@ class GridManager(Page):
 
         Returns:
             Tuple[bool,LineParams]:
-                - `bool`: `True` if the line is aviable for the creation, `False` otherwise
+                - `bool`: `True` if the line is available for the creation, `False` otherwise
                 - `LineParams`: the configuration dictionary with the selected line
                   parameters.
 
         ----
-        TODO: modify aviable_line check also for manager and not only for the creation
+        TODO: modify available_line check also for manager and not only for the creation
         """
         # ? Translator semplifier
         labels_root = "tabs.links.item.link"
@@ -896,7 +899,7 @@ class GridManager(Page):
         def T(key):
             return self.T(f"{labels_root}.{key}")
 
-        line_types = self.grid.get_aviable_lines()
+        line_types = self.grid.get_available_lines()
 
         # Default LineParams if None is passed
         if line is None:
@@ -938,7 +941,7 @@ class GridManager(Page):
                     index=bus_id,
                     key=f"{id}_line_{align}_bus_name",
                 )
-            with d:  # Bus index (Currently selection is not aviable)
+            with d:  # Bus index (Currently selection is not available)
                 sac.divider(
                     T("bus_identity")[1],
                     align=align,
@@ -1010,7 +1013,7 @@ class GridManager(Page):
 
                 # ----- LINE AVIABILITY CHECK  -----
                 # ? error_map list of errors in the selected language
-                # 0 - Link aviable (The line is achievable, the message is here just for convenience)
+                # 0 - Link available (The line is achievable, the message is here just for convenience)
                 # - ERRORS -
                 # 1 - Same bus connected
                 # 2 - Different buses voltage
@@ -1019,7 +1022,7 @@ class GridManager(Page):
                 color = "green"
                 buses_df = self.grid.net.bus
                 line_available = True
-                error_code = self.grid.aviable_link(
+                error_code = self.grid.available_link(
                     buses_df.iloc[start_bus], buses_df.iloc[end_bus]
                 )
                 if error_code:
@@ -1333,7 +1336,7 @@ class GridManager(Page):
         """Line adder UI. The output is a bool used to check if something has been added
 
         Returns:
-            bool: `True` if add button is pressed and all lines are aviables (checked in the `paramsUI_line`). `False` otherwise
+            bool: `True` if add button is pressed and all lines are availables (checked in the `paramsUI_line`). `False` otherwise
         """
         labels_root = "tabs.links.item.link"
         # ? Check if it possible to build lines.
@@ -1448,6 +1451,8 @@ class GridManager(Page):
                                     n° of modules per string and  n° of strings, setted with `st.number_input`
                                     and saved in a predefined TypedDict
 
+        ----
+        TODO: Move voltage_constraints
         """
         # ? Translator semplifier
         labels_root = "tabs.gens.item.sgen"
@@ -1476,8 +1481,7 @@ class GridManager(Page):
                 self.logger.warning("specficProps should be None when sgen is None")
                 st.toast("⚠️ Look at Logs page")
             specficProps = PVParams(module_per_string=1, strings_per_inverter=1)
-
-        # Input toggles and values
+        # Input toggles and values defaults
         inputs = {
             "p_mw": [False, float(sgen["p_mw"])],
             "q_mvar": [False, float(sgen.get("q_mvar", 0.0))],
@@ -1571,7 +1575,7 @@ class GridManager(Page):
                     "⚠️ Specific properties have been reset for the selected SGen type."
                 )
 
-            if sgen_type_idx == 0:
+            if sgen_type_idx == 0:  # if one want create a PV array
                 with st.expander("⚡ PV Setup"):
                     left, right = st.columns(2)
                     specficProps = specficProps or PVParams(
@@ -1594,7 +1598,7 @@ class GridManager(Page):
             else:
                 specficProps = None
 
-            # --- bus selection ---
+            # --- BUS SELECTION ---
             sac.divider(
                 T("titles")[2],
                 align="center",
@@ -1607,7 +1611,7 @@ class GridManager(Page):
                 label_visibility="collapsed",
                 key=f"{id}_sgen_bus",
             )
-
+            # TODO Move this
             voltage_constraints = {
                 "LV": (0.0, 1.0),
                 "MV": (1.0, 35.0),
@@ -1616,7 +1620,10 @@ class GridManager(Page):
             }
             level_names = {
                 key: T("bus_params.level")[i] for i, key in enumerate(["b", "n", "m"])
-            }
+            }  # ? In the bus pd.DataFrame the types are identified with:
+            # b = Main bus
+            # n = auxiliary bus
+            # m = Moff bus
 
             if bus_name:
                 sgen["bus"] = self.grid.get_element(
@@ -1642,23 +1649,24 @@ class GridManager(Page):
             else:
                 voltage, bus_level, bus_on = "NaN", "NaN", "NaN"
 
-            segmenteds: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
-            for v_label in ["LV", "MV", "HV", "EHV"]:
-                for lvl_label in [level_names[i] for i in level_names]:
-                    for state in ["ON", "OFF"]:
-                        key = (v_label, lvl_label, state)
-                        segmenteds[key] = {
-                            "items": [sac.SegmentedItem(item) for item in key],
-                            "color": "green" if state == "ON" else "red",
-                            "index": 2,
-                            "bg_color": "#043b41",
-                            "size": "sm",
-                            "key": f"{id}_sgen_bus_prop_{v_label}_{lvl_label}_{state}",
-                            "align": "end",
-                            "readonly": True,
-                        }
+            #! I don't remember why this was here
+            # // segmenteds: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
+            # // for v_label in ["LV", "MV", "HV", "EHV"]:
+            # //     for lvl_label in [level_names[i] for i in level_names]:
+            # //         for state in ["ON", "OFF"]:
+            # //             key = (v_label, lvl_label, state)
+            # //             segmenteds[key] = {
+            # //                 "items": [sac.SegmentedItem(item) for item in key],
+            # //                 "color": "green" if state == "ON" else "red",
+            # //                 "index": 2,
+            # //                 "bg_color": "#043b41",
+            # //                 "size": "sm",
+            # //                 "key": f"{id}_sgen_bus_prop_{v_label}_{lvl_label}_{state}",
+            # //                 "align": "end",
+            # //                 "readonly": True,
+            # //             }
 
-            with bus_cols[1]:
+            with bus_cols[1]:  # BUS PROPERTIES
                 status_badge(
                     key_prefix=f"{id}_bus_prop",
                     voltage=voltage,
@@ -1675,8 +1683,40 @@ class GridManager(Page):
         gen: Optional[GenParams] = None,
         quantity: bool = True,
     ) -> Tuple[int, GenParams]:
-        """Render Gen editor and return (quantity, gen_params)."""
+        """Render the editor for a Static Generator (SGen) and return the selected configuration with possibily additional setup params for specific generators like PVs
+
+        If `quantity` is `True`, a `streamlit.number_input` is displayed and its
+        value is included in the return tuple together with the chosen sgen parameters.
+
+        Args:
+            id (int): Gen identifier (typically the index in the gen DataFrame).
+                Must be unique for each call, since it is used to create state
+                variables and allow multiple parameter UIs in the same session.
+            gen (GenParams, optional): Existing gen setup to pre-populate the UI.
+                If provided, its values are shown in the editor.
+            quantity (bool, optional): Defaults to `True`. If `True`, a
+                `streamlit.number_input` is shown and its value returned.
+                Used in the gen-adder workflow.
+            borders (bool, optional): If `True`, the UI is wrapped inside a
+                `streamlit.container` with borders.
+
+        Returns:
+            Tuple[int,GenParams]:
+                - `int`: the value from `streamlit.number_input` if `quantity=True`,
+                  otherwise the constant 1.
+                - `GenParams`: the configuration dictionary with the selected gen
+                  parameters.
+
+        ----
+        TODO: Move voltage_constraints
+        """
+
+        # ? Translator semplifier
         labels_root = "tabs.gens.item.gen"
+
+        def T(key):
+            return self.T(f"{labels_root}.{key}")
+
         bus_names = (
             list(self.grid.net.get("bus")["name"])
             if not self.grid.net.bus.empty
@@ -1716,11 +1756,9 @@ class GridManager(Page):
             default_gen = {"slack": gen, "non_slack": gen}
 
         with st.container(border=borders):
-            labels = self.T(f"{labels_root}.labels")
+            labels = T("labels")
             a, b = st.columns([3, 4])
-
-            # --- general properties ---
-            with a:
+            with a:  # --- GEN GENERIC PROPERTIES ---
                 if quantity:
                     sac.divider(
                         labels[1],
@@ -1741,9 +1779,8 @@ class GridManager(Page):
                     )
                 else:
                     n_new_gen = 1
-
                 sac.divider(
-                    self.T(f"{labels_root}.titles")[0],
+                    T("titles")[0],
                     align="center",
                     key=f"{id}_gen_prop_div",
                 )
@@ -1753,14 +1790,12 @@ class GridManager(Page):
                     key=f"{id}_gen_slack",
                 )
                 gen = default_gen["non_slack"] if not slack else default_gen["slack"]
-
                 gen["name"] = st.text_input(
                     labels[0], key=f"{id}_gen_name", value=gen["name"]
                 )
                 gen["in_service"] = sac.switch(
                     labels[2], value=bool(gen["in_service"]), key=f"{id}_gen_on"
                 )
-
                 if not slack:
                     gen["controllable"] = sac.switch(
                         labels[4],
@@ -1775,10 +1810,9 @@ class GridManager(Page):
                         disabled=True,
                     )
 
-            # --- ratings ---
-            with b:
+            with b:  # --- GEN SETUP PARAMETERS ---
                 sac.divider(
-                    self.T(f"{labels_root}.titles")[1],
+                    T("titles")[1],
                     align="center",
                     key=f"{id}_gen_volt_div",
                 )
@@ -1848,9 +1882,9 @@ class GridManager(Page):
                         key=f"{id}_gen_max_q",
                     )
 
-            # --- bus selection ---
+            # --- BUS SELECTION ---
             sac.divider(
-                self.T(f"{labels_root}.titles")[2],
+                T("titles")[2],
                 align="center",
                 key=f"{id}_gen_bus_div",
             )
@@ -1861,7 +1895,7 @@ class GridManager(Page):
                 label_visibility="collapsed",
                 key=f"{id}_gen_bus",
             )
-
+            # TODO Move this
             voltage_constraints = {
                 "LV": (0.0, 1.0),
                 "MV": (1.0, 35.0),
@@ -1869,8 +1903,7 @@ class GridManager(Page):
                 "EHV": (220.0, 800.0),
             }
             level_names = {
-                key: self.T(f"{labels_root}.bus_params.level")[i]
-                for i, key in enumerate(["b", "n", "m"])
+                key: T("bus_params.level")[i] for i, key in enumerate(["b", "n", "m"])
             }
 
             if bus_name:
@@ -1895,21 +1928,22 @@ class GridManager(Page):
             else:
                 voltage, bus_level, bus_on = "NaN", "NaN", "NaN"
 
-            segmenteds: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
-            for v_label in ["LV", "MV", "HV", "EHV"]:
-                for lvl_label in [level_names[i] for i in level_names]:
-                    for state in ["ON", "OFF"]:
-                        key = (v_label, lvl_label, state)
-                        segmenteds[key] = {
-                            "items": [sac.SegmentedItem(item) for item in key],
-                            "color": "green" if state == "ON" else "red",
-                            "index": 2,
-                            "bg_color": "#043b41",
-                            "size": "sm",
-                            "key": f"{id}_gen_bus_prop_{v_label}_{lvl_label}_{state}",
-                            "align": "end",
-                            "readonly": True,
-                        }
+            #! I don't remember why this was here
+            # // segmenteds: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
+            # // for v_label in ["LV", "MV", "HV", "EHV"]:
+            # //     for lvl_label in [level_names[i] for i in level_names]:
+            # //         for state in ["ON", "OFF"]:
+            # //             key = (v_label, lvl_label, state)
+            # //             segmenteds[key] = {
+            # //                 "items": [sac.SegmentedItem(item) for item in key],
+            # //                 "color": "green" if state == "ON" else "red",
+            # //                 "index": 2,
+            # //                 "bg_color": "#043b41",
+            # //                 "size": "sm",
+            # //                 "key": f"{id}_gen_bus_prop_{v_label}_{lvl_label}_{state}",
+            # //                 "align": "end",
+            # //                 "readonly": True,
+            # //             }
 
             with bus_cols[1]:
                 status_badge(
@@ -1923,6 +1957,11 @@ class GridManager(Page):
 
     # -------------> Adders <--------
     def _add_sgen(self) -> bool:
+        """SGen adder UI. The output is a bool used to check if something has been added
+
+        Returns:
+            bool: `True` if add button is pressed
+        """
         labels_root = "tabs.gens.item.sgen"
         new_sgens = self._build_sgens()
         if st.button(self.T(f"{labels_root}.buttons")[2]):
@@ -1943,6 +1982,11 @@ class GridManager(Page):
         return False
 
     def _add_gen(self) -> bool:
+        """Gen adder UI. The output is a bool used to check if something has been added
+
+        Returns:
+            bool: `True` if add button is pressed
+        """
         labels_root = "tabs.gens.item.gen"
         new_gens = self._build_gens()
         if st.button(self.T(f"{labels_root}.buttons")[2]):
@@ -2093,9 +2137,13 @@ class GridManager(Page):
         type: Optional[Literal["bus", "line"]] = None,
     ) -> bool:
         """
-        Unisce change_bus e change_connection in un unico dialog.
-        Decide il flusso in base al tipo di params (TypedDict) o al parametro 'kind'.
-        Ritorna True se l'elemento è stato aggiornato, altrimenti False.
+        Dialog used to manage grid elements changes.
+        Decide the flux on the base of `type` parameter passed.
+        Returns:
+            bool: `True` if save button has been pressed, `False` otherwise
+
+        ---
+        TODO: This will be moved in a separated class that will handle the different dialogs
         """
         updated = False
 
@@ -2125,7 +2173,7 @@ class GridManager(Page):
 
         else:
             # === BUS FLOW (ex-change_bus) ===
-            # bus_id è richiesto per l'update; se assente, provo a leggerlo da params o segnalo in errore al commit
+            # bus_id is required for the update
             _, new_bus = self.paramsUI_bus(
                 id=f"manager_{bus_id if bus_id is not None else 'unknown'}",
                 quantity=False,
@@ -2133,7 +2181,6 @@ class GridManager(Page):
                 borders=False,
             )
 
-            # Se ho elementi connessi, mostro la tabella
             elements_rows = []
             for el in connected_elements:
                 etype, eid, name_hint = normalize_element_spec(el)
@@ -2141,6 +2188,7 @@ class GridManager(Page):
                     {"type": etype, "element ID": eid, "name": name_hint}
                 )
 
+            # If there are connected elements i'll show them in a st.dataframe
             if elements_rows and any("element ID" in r for r in elements_rows):
                 df_elements = pd.DataFrame(elements_rows).set_index("element ID")
                 sac.divider(

@@ -124,7 +124,7 @@ class PlantPowerGrid:
         # NOTE use pp.available_std_types(net)["line"] to get aviable line tipe (e.g, for LV "NAYY 4x50 SE")
         pp.create_line(self.net, **line)
 
-    def aviable_link(self, start_bus: BusParams, end_bus: BusParams) -> int:
+    def available_link(self, start_bus: BusParams, end_bus: BusParams) -> int:
         if start_bus["name"] == end_bus["name"]:
             return 1
         if start_bus["vn_kv"] != end_bus["vn_kv"]:

@@ -489,7 +489,7 @@ class GridManager(Page):
                 color = "green"
                 buses = self.grid.net.bus
                 link_aviable = True
-                error = self.grid.aviable_link(
+                error = self.grid.available_link(
                     buses.iloc[start_bus], buses.iloc[end_bus]
                 )
                 if error:
