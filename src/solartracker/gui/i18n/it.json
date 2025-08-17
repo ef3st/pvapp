@@ -264,7 +264,9 @@
                         "buttons": ["Nuovo Linea"," Rimuovi Linea", "Aggiungi Linee"],
                         "infos": ["INFORMAZIONI","Linea","Bus di Partenza", "Bus di Arrivo"],
                         "no_bus_error": "Nessun Bus creato",
-                        "errors": ["Collegamento disponibile", "Stessi bus in collegamento", "Tensioni Differenti","Collegamento già esistente"]
+                        "errors": ["Collegamento disponibile", 
+                        "Stessi bus in collegamento", "Tensioni Differenti",
+                        "Collegamento già esistente"]
                     },
                     "transformer":
                     {
