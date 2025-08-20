@@ -56,8 +56,9 @@ class ImplantsPage(Page):
                 continue
 
         if not rows:
-            
-            rows.append( {}
+
+            rows.append(
+                {}
                 # {
                 #     titles[0]: "",
                 #     titles[1]: "",
@@ -71,7 +72,6 @@ class ImplantsPage(Page):
                 #         titles[9]: 0,
                 #     },
                 #     titles[10]: "❌",
-                    
                 # }
             )
         return pd.DataFrame(rows)
@@ -88,15 +88,21 @@ class ImplantsPage(Page):
                     add_implant.render()
             with main:
                 # st.title("🏛️ " + self.T("title"))
-                sac.alert(self.T("title"),variant="quote-light", color="white", size=35, icon=sac.BsIcon("buildings",color="cyan"))
-                
+                sac.alert(
+                    self.T("title"),
+                    variant="quote-light",
+                    color="white",
+                    size=35,
+                    icon=sac.BsIcon("buildings", color="cyan"),
+                )
+
                 st.markdown("---")
                 df = self._load_implants()
 
                 # Show table with selected columns
                 if df.empty:
                     messages = self.T("messages.no_plant_found")
-                    sac.result(messages[0],description=messages[1],status="empty")
+                    sac.result(messages[0], description=messages[1], status="empty")
                 else:
                     titles = self.T("df_title")
                     columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]]
@@ -106,21 +112,46 @@ class ImplantsPage(Page):
             return
         else:
             # st.title("🏛️ " + self.T("title"))
-            sac.alert(self.T("title"),variant="quote-light", color="white", size=35, icon=sac.BsIcon("buildings",color="cyan"))
-            
+            sac.alert(
+                self.T("title"),
+                variant="quote-light",
+                color="white",
+                size=35,
+                icon=sac.BsIcon("buildings", color="cyan"),
+            )
+
             st.markdown("---")
             df = self._load_implants()
 
-            items = [sac.ButtonsItem(self.T("buttons.add_implant"),icon=sac.BsIcon("building-add"),color="green"),
-                     sac.ButtonsItem(self.T("buttons.remove_implant"),icon=sac.BsIcon("building-dash"),color="red")]
-            build_buttons = sac.buttons(items,variant="outline",align="start",return_index=True,index=None)
+            items = [
+                sac.ButtonsItem(
+                    self.T("buttons.add_implant"),
+                    icon=sac.BsIcon("building-add"),
+                    color="green",
+                ),
+                sac.ButtonsItem(
+                    self.T("buttons.remove_implant"),
+                    icon=sac.BsIcon("building-dash"),
+                    color="red",
+                ),
+            ]
+            build_buttons = sac.buttons(
+                items, variant="outline", align="start", return_index=True, index=None
+            )
             if build_buttons == 0:
                 st.session_state.adding_implant = True
                 st.rerun()
-            elif build_buttons == 1:  
-                sac.alert("Command not perfomed yet", description=f"To delete a plant, delete its folder in /data after check the name of site and Plant in site.json and implant.json files →‼️ DO NOT delete the /data folder ",closable=True,color="warning",variant="light",icon=sac.BsIcon("info-circle"))
+            elif build_buttons == 1:
+                sac.alert(
+                    "Command not perfomed yet",
+                    description=f"To delete a plant, delete its folder in /data after check the name of site and Plant in site.json and implant.json files →‼️ DO NOT delete the /data folder ",
+                    closable=True,
+                    color="warning",
+                    variant="light",
+                    icon=sac.BsIcon("info-circle"),
+                )
                 # sac.alert("Command not perfomed yet", description="To delete a plant, delete its folder in /data after check the name of site and Plant in site.json and implant.json",closable=True)
-                
+
                 # st.warning(
                 #     "Non abbiate fretta, ci stiamo lavorando: per cancellare un impianto, cancellate la cartella relativa in data/ (⚠️NON CANCELLATE /data⚠️ - solo la cartella dell'impianto da eliminare)"
                 # )
@@ -135,7 +166,7 @@ class ImplantsPage(Page):
 
             if df.empty:
                 messages = self.T("messages.no_plant_found")
-                sac.result(messages[0],description=messages[1],status="empty")
+                sac.result(messages[0], description=messages[1], status="empty")
                 return
             # Show table with selected columns
             titles = self.T("df_title")

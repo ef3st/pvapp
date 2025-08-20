@@ -33,11 +33,9 @@ def _build_dir_model(base_dir: Path) -> dict:
     return tree
 
 
-def _model_to_menuitems(model: dict,
-                        base_dir: Path,
-                        index2path: dict,
-                        path2index: dict,
-                        counter: list[int]) -> list:
+def _model_to_menuitems(
+    model: dict, base_dir: Path, index2path: dict, path2index: dict, counter: list[int]
+) -> list:
     """Depth-first build of sac.MenuItem list while tracking global indices."""
     items = []
 
@@ -48,13 +46,14 @@ def _model_to_menuitems(model: dict,
     # Folders -> nested MenuItem with children
     for dname in dir_names:
         # Reserve an index for the folder tab itself (non-document)
-        idx = counter[0]; counter[0] += 1
+        idx = counter[0]
+        counter[0] += 1
         index2path[idx] = None
 
-        children = _model_to_menuitems(model[dname], base_dir, index2path, path2index, counter)
-        items.append(
-            sac.MenuItem(dname, icon="folder", children=children)
+        children = _model_to_menuitems(
+            model[dname], base_dir, index2path, path2index, counter
         )
+        items.append(sac.MenuItem(dname, icon="folder", children=children))
 
     # Files -> leaf MenuItem (selectable document)
     for fname in file_names:
@@ -62,13 +61,12 @@ def _model_to_menuitems(model: dict,
         rel = str(path.relative_to(base_dir)).replace(os.sep, "/")
         title = _read_md_title(path)
 
-        idx = counter[0]; counter[0] += 1
+        idx = counter[0]
+        counter[0] += 1
         index2path[idx] = rel
         path2index[rel] = idx
 
-        items.append(
-            sac.MenuItem(title, icon="file-earmark-text")
-        )
+        items.append(sac.MenuItem(title, icon="file-earmark-text"))
     return items
 
 
@@ -90,7 +88,12 @@ def menu_kwargs(
     root = Path(base_dir)
     if not root.exists():
         st.error(f"Cartella non trovata: {root.resolve()}")
-        return dict(items=[sac.MenuItem(home_label, icon=home_icon)], index=0, return_index=True, key=key)
+        return dict(
+            items=[sac.MenuItem(home_label, icon=home_icon)],
+            index=0,
+            return_index=True,
+            key=key,
+        )
 
     model = _build_dir_model(root)
     # Build index maps and items
@@ -104,7 +107,9 @@ def menu_kwargs(
     counter[0] += 1
 
     # Build the rest of the menu from the docs tree
-    items = [home_item] + _model_to_menuitems(model, root, index2path, path2index, counter)
+    items = [home_item] + _model_to_menuitems(
+        model, root, index2path, path2index, counter
+    )
 
     # Restore last selection if still valid, else default to Home (0)
     last_path = st.session_state.get(f"{key}_path")
@@ -120,7 +125,7 @@ def menu_kwargs(
     return dict(
         items=items,
         index=default_index,
-        return_index=True,   # sac.menu will return an int index
+        return_index=True,  # sac.menu will return an int index
         key=key,
         color=color,
         size=size,

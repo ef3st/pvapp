@@ -25,19 +25,19 @@ class SGenParams(TypedDict, total=False):
         See pandapower 'sgen' for more details.
     """
 
-    bus: int                       # Bus index where the sgen is connected
-    p_mw: float                    # Active power [MW], positive = generation
-    q_mvar: Optional[float]        # Reactive power [MVAr], +inj / -cons
-    name: Optional[str]            # Readable name
-    scaling: float                 # Multiplier applied to p_mw and q_mvar
-    in_service: bool               # True if the element is active
-    type: Optional[str]            # Connection type (3-phase only)
-    sn_mva: Optional[float]        # Nominal apparent power [MVA]
-    max_p_mw: Optional[float]      # Max active power (OPF)
-    min_p_mw: Optional[float]      # Min active power (OPF)
-    max_q_mvar: Optional[float]    # Max reactive power (OPF)
-    min_q_mvar: Optional[float]    # Min reactive power (OPF)
-    controllable: Optional[bool]   # Flexible in OPF if True
+    bus: int  # Bus index where the sgen is connected
+    p_mw: float  # Active power [MW], positive = generation
+    q_mvar: Optional[float]  # Reactive power [MVAr], +inj / -cons
+    name: Optional[str]  # Readable name
+    scaling: float  # Multiplier applied to p_mw and q_mvar
+    in_service: bool  # True if the element is active
+    type: Optional[str]  # Connection type (3-phase only)
+    sn_mva: Optional[float]  # Nominal apparent power [MVA]
+    max_p_mw: Optional[float]  # Max active power (OPF)
+    min_p_mw: Optional[float]  # Min active power (OPF)
+    max_q_mvar: Optional[float]  # Max reactive power (OPF)
+    min_q_mvar: Optional[float]  # Min reactive power (OPF)
+    controllable: Optional[bool]  # Flexible in OPF if True
 
 
 class GenParams(TypedDict, total=False):
@@ -63,18 +63,18 @@ class GenParams(TypedDict, total=False):
         See pandapower 'gen' for more details.
     """
 
-    bus: int                       # Bus index
-    p_mw: Optional[float]          # Active power [MW]
-    vm_pu: float                   # Voltage setpoint [pu]
-    name: Optional[str]            # Name
-    q_mvar: Optional[float]        # Reactive power [MVAr]
-    min_q_mvar: Optional[float]    # Min Q (OPF)
-    max_q_mvar: Optional[float]    # Max Q (OPF)
-    sn_mva: Optional[float]        # Apparent power rating [MVA]
-    slack: Optional[bool]          # Slack flag
-    scaling: Optional[float]       # Scaling factor
-    in_service: bool               # Active status
-    controllable: Optional[bool]   # OPF flexibility
+    bus: int  # Bus index
+    p_mw: Optional[float]  # Active power [MW]
+    vm_pu: float  # Voltage setpoint [pu]
+    name: Optional[str]  # Name
+    q_mvar: Optional[float]  # Reactive power [MVAr]
+    min_q_mvar: Optional[float]  # Min Q (OPF)
+    max_q_mvar: Optional[float]  # Max Q (OPF)
+    sn_mva: Optional[float]  # Apparent power rating [MVA]
+    slack: Optional[bool]  # Slack flag
+    scaling: Optional[float]  # Scaling factor
+    in_service: bool  # Active status
+    controllable: Optional[bool]  # OPF flexibility
 
 
 class ExtGridParams(TypedDict, total=False):
@@ -93,11 +93,11 @@ class ExtGridParams(TypedDict, total=False):
         See pandapower 'ext_grid' for more details.
     """
 
-    bus: int                       # Reference bus
-    vm_pu: float                   # Voltage magnitude [pu]
-    va_degree: float               # Voltage angle [deg]
-    name: Optional[str]             # Name
-    in_service: bool               # Active status
+    bus: int  # Reference bus
+    vm_pu: float  # Voltage magnitude [pu]
+    va_degree: float  # Voltage angle [deg]
+    name: Optional[str]  # Name
+    in_service: bool  # Active status
 
 
 class BusParams(TypedDict, total=False):
@@ -119,14 +119,14 @@ class BusParams(TypedDict, total=False):
         See pandapower 'bus' for more details.
     """
 
-    vn_kv: Union[str, float, None] # Nominal voltage [kV]
-    name: Optional[str]            # Name
-    geodata: Optional[Tuple]       # (x,y) coordinates
-    type: Optional[str]            # Bus type
-    zone: Union[None, int, str]    # Zone label
-    in_service: bool               # Active status
-    min_vm_pu: Optional[float]     # Lower voltage limit [pu]
-    max_vm_pu: Optional[float]     # Upper voltage limit [pu]
+    vn_kv: Union[str, float, None]  # Nominal voltage [kV]
+    name: Optional[str]  # Name
+    geodata: Optional[Tuple]  # (x,y) coordinates
+    type: Optional[str]  # Bus type
+    zone: Union[None, int, str]  # Zone label
+    in_service: bool  # Active status
+    min_vm_pu: Optional[float]  # Lower voltage limit [pu]
+    max_vm_pu: Optional[float]  # Upper voltage limit [pu]
 
 
 class LineParams(TypedDict, total=False):
@@ -146,12 +146,12 @@ class LineParams(TypedDict, total=False):
         See pandapower 'line' for more details.
     """
 
-    from_bus: int                  # From bus
-    to_bus: int                    # To bus
-    length_km: float               # Length [km]
-    name: str                      # Line name
-    std_type: str                  # Standard type
-    in_service: bool               # Active status
+    from_bus: int  # From bus
+    to_bus: int  # To bus
+    length_km: float  # Length [km]
+    name: str  # Line name
+    std_type: str  # Standard type
+    in_service: bool  # Active status
 
 
 class SwitchParams(TypedDict, total=False):
@@ -173,14 +173,14 @@ class SwitchParams(TypedDict, total=False):
         See pandapower 'switch' for more details.
     """
 
-    bus: int                       # Bus side
-    element: int                   # Connected element index
-    et: str                        # Element type
-    closed: bool                   # Switch status
-    type: Optional[str]            # Switch type
-    name: Optional[str]            # Name
-    in_service: Optional[bool]     # Active status
-    z_ohm: Optional[float]         # Resistance (bus-bus)
+    bus: int  # Bus side
+    element: int  # Connected element index
+    et: str  # Element type
+    closed: bool  # Switch status
+    type: Optional[str]  # Switch type
+    name: Optional[str]  # Name
+    in_service: Optional[bool]  # Active status
+    z_ohm: Optional[float]  # Resistance (bus-bus)
 
 
 class TrafoParams(TypedDict, total=False):

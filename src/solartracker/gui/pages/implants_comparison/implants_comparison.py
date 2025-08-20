@@ -7,6 +7,7 @@ import plotly.express as px
 from ..page import Page
 from ...utils.plots import plots
 
+
 class ImplantsComparisonPage(Page):
     def __init__(self):
         super().__init__("implants_comparison")
@@ -105,11 +106,18 @@ class ImplantsComparisonPage(Page):
     def render(self):
         # st.title("\U0001f3ad " + self.T("title"))
         import streamlit_antd_components as sac
-        sac.alert(self.T("title"),variant="quote-light", color="blue", size=35, icon=sac.BsIcon("bar-chart-steps",color="lime"))
+
+        sac.alert(
+            self.T("title"),
+            variant="quote-light",
+            color="blue",
+            size=35,
+            icon=sac.BsIcon("bar-chart-steps", color="lime"),
+        )
         self.df_implants = self.load_all_implants()
         if self.df_implants.empty:
             messages = self.T("messages.no_plant_found")
-            sac.result(messages[0],description=messages[1],status="empty")
+            sac.result(messages[0], description=messages[1], status="empty")
         else:
             self.select_implants()
 

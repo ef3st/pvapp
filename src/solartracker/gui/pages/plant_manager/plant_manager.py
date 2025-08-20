@@ -118,7 +118,7 @@ class PlantManager(Page):
         implants_df = self.load_all_implants()
         if implants_df.empty:
             messages = self.T("messages.no_plant_found")
-            sac.result(messages[0],description=messages[1],status="empty")
+            sac.result(messages[0], description=messages[1], status="empty")
             return None
 
         col1, col2 = st.columns(2)
@@ -140,7 +140,13 @@ class PlantManager(Page):
     def render(self, tab_index: int = 0) -> None:
         """Render the full Plant Manager page."""
         # st.title("🖥️ " + self.T("title"))
-        sac.alert(self.T("title"),variant="quote-light", color="orange", size=35, icon=sac.BsIcon("building-fill-gear",color="white"),)
+        sac.alert(
+            self.T("title"),
+            variant="quote-light",
+            color="orange",
+            size=35,
+            icon=sac.BsIcon("building-fill-gear", color="white"),
+        )
 
         left_col, right_col = st.columns([7, 5])
 

@@ -95,9 +95,9 @@ LINK_ERR_VOLTAGE_MISMATCH = 2
 LINK_ERR_DUPLICATE = 3
 
 
-#* =========================================================
-#*                 PlantPowerGrid (Main Class)
-#* =========================================================
+# * =========================================================
+# *                 PlantPowerGrid (Main Class)
+# * =========================================================
 class PlantPowerGrid:
     """
     Thin domain wrapper around a pandapowerNet with convenience methods for
@@ -148,7 +148,6 @@ class PlantPowerGrid:
         """
         pp.to_json(self.net, path)
         return self
-
 
     # ------------------------ CRUD: Buses & Links ------------------------
 

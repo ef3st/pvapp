@@ -201,7 +201,7 @@ def _sidebar_menu(plant_manager_names: List[str]) -> str:
         Translated names for the Plant Manager sub-menu (first three entries used).
     """
     if "sidebar" not in st.session_state:
-            st.session_state["sidebar"] = "main"
+        st.session_state["sidebar"] = "main"
     if st.session_state["sidebar"] == "main":
         # Compute app status and log badges
         status, n_logs = LogsPage().app_status
@@ -236,10 +236,10 @@ def _sidebar_menu(plant_manager_names: List[str]) -> str:
             "journal-text",
             notification_icon[status],
         ][: len(options)]
-        color = ["red","white","blue","orange","green","red"]
+        color = ["red", "white", "blue", "orange", "green", "red"]
 
         # Per-item tags
-        base_tags = [None, None, None, None,None]
+        base_tags = [None, None, None, None, None]
         log_tag = _build_notifications_tag(n_logs)
         tags = base_tags + [log_tag] + [None, None]
 
@@ -249,14 +249,14 @@ def _sidebar_menu(plant_manager_names: List[str]) -> str:
             sac.MenuItem(name, icon=icon)
             for name, icon in zip(plant_manager_names, plant_manager_icons)
         ]
-        children = [None, None, None, plant_manager_menu, None,None]
+        children = [None, None, None, plant_manager_menu, None, None]
         if "option_menu" not in st.session_state:
             st.session_state["option_menu"] = T("menu")[0]
         try:
             color_idx = T("menu").index(st.session_state["option_menu"])
         except ValueError:
             color_idx = 3
-        
+
         # Render left-bar menu
         selected = sac.menu(
             [
@@ -266,8 +266,7 @@ def _sidebar_menu(plant_manager_names: List[str]) -> str:
             variant="left-bar",
             key="option_menu",
             open_all=True,
-            color=color[color_idx]
-            
+            color=color[color_idx],
         )
 
         # Keep the selected index in session
@@ -275,7 +274,9 @@ def _sidebar_menu(plant_manager_names: List[str]) -> str:
             st.session_state.menu if st.session_state.menu < len(options) else 0
         )
         if selected != options[previous_index]:
-            st.session_state.menu = options.index(selected) if selected in options else 0
+            st.session_state.menu = (
+                options.index(selected) if selected in options else 0
+            )
     elif st.session_state["sidebar"] == "guide":
         placeholder = st.container()
         with placeholder:
@@ -297,7 +298,7 @@ def streamlit() -> None:
 
         # Language selector
         st.divider()
-        
+
         selected = _sidebar_menu(plant_manager_names)
         st.divider()
 
@@ -344,7 +345,11 @@ def streamlit() -> None:
             st.session_state["sidebar"] = "main"
             st.rerun()
         elif selected is None:
-            sac.result("**GUIDE**", description = "*Select a document in the sidebar on the left*", icon=sac.BsIcon("journal-text",color="teal"))
+            sac.result(
+                "**GUIDE**",
+                description="*Select a document in the sidebar on the left*",
+                icon=sac.BsIcon("journal-text", color="teal"),
+            )
         else:
             guide.render(selected)
     else:

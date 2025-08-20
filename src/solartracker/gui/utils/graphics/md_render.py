@@ -2,6 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal, Optional
 
+
 class MarkdownStreamlitPage:
     """
     Renderizza un file .md in Streamlit senza alterare il file sorgente.
@@ -86,6 +87,7 @@ class MarkdownStreamlitPage:
     def _render_native(self, text: str) -> None:
         """Render via st.markdown: nessuna trasformazione del testo (oltre allo stripping opzionale)."""
         import streamlit as st
+
         st.markdown(text)
 
     def _render_html(self, text: str) -> None:
@@ -95,7 +97,7 @@ class MarkdownStreamlitPage:
 
         extensions = [
             "fenced_code",
-            "codehilite",    # Richiede Pygments per highlight
+            "codehilite",  # Richiede Pygments per highlight
             "tables",
             "toc",
             "footnotes",
@@ -127,6 +129,7 @@ class MarkdownStreamlitPage:
     def _infer_title(self) -> Optional[str]:
         """Estrae il primo header H1 (# ...) come titolo, se presente."""
         import re
+
         text = self._read()
         m = re.search(r"^\s*#\s+(.+)$", text, flags=re.MULTILINE)
         return m.group(1).strip() if m else None
@@ -134,10 +137,16 @@ class MarkdownStreamlitPage:
     @staticmethod
     def _looks_advanced(text: str) -> bool:
         """Euristiche semplici per capire se servono estensioni avanzate."""
-        triggers = ("[^", "]:",  # footnotes/reference-style links
-                    "```",       # fenced code
-                    "|---",      # tables
-                    "{:", ":::", ":::note", ":::info")
+        triggers = (
+            "[^",
+            "]:",  # footnotes/reference-style links
+            "```",  # fenced code
+            "|---",  # tables
+            "{:",
+            ":::",
+            ":::note",
+            ":::info",
+        )
         return any(t in text for t in triggers)
 
     # -------------------------
@@ -163,7 +172,7 @@ class MarkdownStreamlitPage:
         re_gfm_line = re.compile(
             r'^\s*\[(?:\/\/|comment)\]\s*:\s*(?:#|<>)\s*(?:\((?:[^()]|\\\(|\\\))*\)|"(?:[^"\\]|\\.)*")\s*$'
         )
-        re_fence = re.compile(r'^\s*(```|~~~)')  # apertura/chiusura fence
+        re_fence = re.compile(r"^\s*(```|~~~)")  # apertura/chiusura fence
 
         for raw_line in lines:
             line = raw_line

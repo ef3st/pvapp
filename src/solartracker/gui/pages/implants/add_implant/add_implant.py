@@ -9,6 +9,7 @@ from simulation.simulator import Simulator
 from ....utils.plots.plots import pv3d
 import streamlit_antd_components as sac
 
+
 def load_sites_df(base_path=Path("data/")) -> pd.DataFrame:
     rows = []
 
@@ -183,8 +184,12 @@ def step_site():
                 error = True
     if error:
         # st.error("Complete all fields")
-        sac.alert("Complete all fields",icon=sac.BsIcon("info-lg"),variant="outline",color="warning")
-        
+        sac.alert(
+            "Complete all fields",
+            icon=sac.BsIcon("info-lg"),
+            variant="outline",
+            color="warning",
+        )
 
 
 def step_location():
@@ -231,7 +236,12 @@ def step_location():
                 st.session_state.implant_step += 1
                 st.rerun()
             else:
-                sac.alert("Complete all fields",icon=sac.BsIcon("info-lg"),variant="outline",color="warning")
+                sac.alert(
+                    "Complete all fields",
+                    icon=sac.BsIcon("info-lg"),
+                    variant="outline",
+                    color="warning",
+                )
 
 
 def step_module():
@@ -367,7 +377,14 @@ def navigation_buttons(step_back, next_key, target_dict, section_key, update_dic
 def render():
     # import extra_streamlit_components as stx
     # st.title("➕ New Plant")
-    sac.alert("New Plant", color="white",variant="text",radius=0, icon=sac.BsIcon("building-add",color="teal"),size=40)
+    sac.alert(
+        "New Plant",
+        color="white",
+        variant="text",
+        radius=0,
+        icon=sac.BsIcon("building-add", color="teal"),
+        size=40,
+    )
     init_session()
     step = st.session_state.implant_step
     steps()
