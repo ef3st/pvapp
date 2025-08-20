@@ -11,7 +11,7 @@ from typing import (
 import pandas as pd
 import pandapower as pp
 from pandapower import toolbox as tb  # noqa: F401  # kept if you used it elsewhere
-from src.solartracker.utils.logger import get_logger
+from utils.logger import get_logger
 
 
 # =========================================================
@@ -95,9 +95,9 @@ LINK_ERR_VOLTAGE_MISMATCH = 2
 LINK_ERR_DUPLICATE = 3
 
 
-# =========================================================
-#                 PlantPowerGrid (Main Class)
-# =========================================================
+#* =========================================================
+#*                 PlantPowerGrid (Main Class)
+#* =========================================================
 class PlantPowerGrid:
     """
     Thin domain wrapper around a pandapowerNet with convenience methods for
@@ -149,6 +149,7 @@ class PlantPowerGrid:
         pp.to_json(self.net, path)
         return self
 
+
     # ------------------------ CRUD: Buses & Links ------------------------
 
     def create_bus(self, bus: BusParams) -> int:
@@ -181,11 +182,11 @@ class PlantPowerGrid:
         Create a line between two buses.
 
         Args:
-            line: LineParams including 
-                - from_bus, 
-                - to_bus, 
-                - std_type, 
-                - length_km, 
+            line: LineParams including
+                - from_bus,
+                - to_bus,
+                - std_type,
+                - length_km,
                 - name
 
         Returns:
@@ -238,18 +239,16 @@ class PlantPowerGrid:
 
         # Lines
         if not net.line.empty:
-            mask = (
-                ((net.line["from_bus"] == bus1) & (net.line["to_bus"] == bus2))
-                | ((net.line["from_bus"] == bus2) & (net.line["to_bus"] == bus1))
+            mask = ((net.line["from_bus"] == bus1) & (net.line["to_bus"] == bus2)) | (
+                (net.line["from_bus"] == bus2) & (net.line["to_bus"] == bus1)
             )
             if bool(mask.any()):
                 links.append("line")
 
         # 2-winding transformers
         if not net.trafo.empty:
-            mask = (
-                ((net.trafo["hv_bus"] == bus1) & (net.trafo["lv_bus"] == bus2))
-                | ((net.trafo["hv_bus"] == bus2) & (net.trafo["lv_bus"] == bus1))
+            mask = ((net.trafo["hv_bus"] == bus1) & (net.trafo["lv_bus"] == bus2)) | (
+                (net.trafo["hv_bus"] == bus2) & (net.trafo["lv_bus"] == bus1)
             )
             if bool(mask.any()):
                 links.append("trafo")
@@ -263,8 +262,9 @@ class PlantPowerGrid:
         # Series impedance
         if not net.impedance.empty:
             mask = (
-                ((net.impedance["from_bus"] == bus1) & (net.impedance["to_bus"] == bus2))
-                | ((net.impedance["from_bus"] == bus2) & (net.impedance["to_bus"] == bus1))
+                (net.impedance["from_bus"] == bus1) & (net.impedance["to_bus"] == bus2)
+            ) | (
+                (net.impedance["from_bus"] == bus2) & (net.impedance["to_bus"] == bus1)
             )
             if bool(mask.any()):
                 links.append("impedance")
@@ -272,19 +272,21 @@ class PlantPowerGrid:
         # DC lines
         if not net.dcline.empty:
             mask = (
-                ((net.dcline["from_bus"] == bus1) & (net.dcline["to_bus"] == bus2))
-                | ((net.dcline["from_bus"] == bus2) & (net.dcline["to_bus"] == bus1))
-            )
+                (net.dcline["from_bus"] == bus1) & (net.dcline["to_bus"] == bus2)
+            ) | ((net.dcline["from_bus"] == bus2) & (net.dcline["to_bus"] == bus1))
             if bool(mask.any()):
                 links.append("dcline")
 
         # Bus-bus switch (et == 'b')
         if not net.switch.empty:
-            sw_bus = net.switch[net.switch["et"] == "b"] if "et" in net.switch.columns else net.switch.iloc[0:0]
+            sw_bus = (
+                net.switch[net.switch["et"] == "b"]
+                if "et" in net.switch.columns
+                else net.switch.iloc[0:0]
+            )
             if not sw_bus.empty:
-                mask = (
-                    ((sw_bus["bus"] == bus1) & (sw_bus["element"] == bus2))
-                    | ((sw_bus["bus"] == bus2) & (sw_bus["element"] == bus1))
+                mask = ((sw_bus["bus"] == bus1) & (sw_bus["element"] == bus2)) | (
+                    (sw_bus["bus"] == bus2) & (sw_bus["element"] == bus1)
                 )
                 if bool(mask.any()):
                     links.append("bus_switch")
@@ -338,7 +340,9 @@ class PlantPowerGrid:
         element: Literal["bus"] = None,
         index: Optional[int] = None,
         name: Optional[str] = None,
-        column: Literal["index", "name", "vn_kv", "type", "zone", "in_service", "geo", ""] = "",
+        column: Literal[
+            "index", "name", "vn_kv", "type", "zone", "in_service", "geo", ""
+        ] = "",
     ) -> Union[None, str, pd.Series, int, float]:
         """
         Retrieve a bus (or a field) by name or index.
@@ -360,7 +364,11 @@ class PlantPowerGrid:
         df = self.net.bus
 
         if name is not None:
-            mask = (df["name"] == name) if "name" in df.columns else pd.Series(False, index=df.index)
+            mask = (
+                (df["name"] == name)
+                if "name" in df.columns
+                else pd.Series(False, index=df.index)
+            )
             if not mask.any():
                 return None
             result = df[mask]
@@ -436,6 +444,7 @@ class PlantPowerGrid:
             try:
                 if timeseries:
                     from pandapower.timeseries import run_timeseries
+
                     run_timeseries(self.net)
                 else:
                     pp.runpp(self.net)
@@ -493,7 +502,9 @@ class PlantPowerGrid:
 
     # ------------------------ Controllers / Profiles ------------------------
 
-    def update_sgen_power(self, type: Optional[str] = None, power: Optional[float] = None):
+    def update_sgen_power(
+        self, type: Optional[str] = None, power: Optional[float] = None
+    ):
         """
         Set p_mw for all sgens whose 'name' contains a given substring (or for all if type is None).
 
@@ -505,7 +516,9 @@ class PlantPowerGrid:
             ValueError, TypeError: On invalid 'power'.
         """
         if power is None:
-            raise ValueError("The 'power' parameter must be a numeric value (not None).")
+            raise ValueError(
+                "The 'power' parameter must be a numeric value (not None)."
+            )
         if not isinstance(power, (int, float)):
             raise TypeError("The 'power' parameter must be a number (int or float).")
 
@@ -559,7 +572,9 @@ class PlantPowerGrid:
             or not net.storage.empty
         )
         if not has_power_source:
-            errors.append("Nessuna fonte di potenza presente (ext_grid/gen/sgen/storage).")
+            errors.append(
+                "Nessuna fonte di potenza presente (ext_grid/gen/sgen/storage)."
+            )
 
         # 3) All buses must have a valid vn_kv
         if "vn_kv" in net.bus.columns and (net.bus.vn_kv <= 0).any():
@@ -608,7 +623,9 @@ class PlantPowerGrid:
         out["name"] = buses["name"] if "name" in buses.columns else ""
         out["type"] = buses["type"] if "type" in buses.columns else ""
         out["voltage_kv"] = buses["vn_kv"] if "vn_kv" in buses.columns else pd.NA
-        out["in_service"] = buses["in_service"] if "in_service" in buses.columns else True
+        out["in_service"] = (
+            buses["in_service"] if "in_service" in buses.columns else True
+        )
         out["min_vm_pu"] = buses["min_vm_pu"] if "min_vm_pu" in buses.columns else None
         out["max_vm_pu"] = buses["max_vm_pu"] if "max_vm_pu" in buses.columns else None
 
@@ -627,8 +644,12 @@ class PlantPowerGrid:
                 seen_keys[b] = set()
             if key in seen_keys[b]:
                 return
-            label = ename.strip() if (ename and str(ename).strip()) else f"{etype} {eindex}"
-            connections[b].append({"name": str(label), "type": str(etype), "index": int(eindex)})
+            label = (
+                ename.strip() if (ename and str(ename).strip()) else f"{etype} {eindex}"
+            )
+            connections[b].append(
+                {"name": str(label), "type": str(etype), "index": int(eindex)}
+            )
             seen_keys[b].add(key)
 
         # What to scan: {element_table: [bus_columns]}
@@ -691,6 +712,7 @@ class PlantPowerGrid:
           - start : (bus_name, bus_index)
           - end   : (bus_name, bus_index)
         """
+
         def bus_tuple(bi: int) -> Tuple[str, int]:
             bi = int(bi)
             if "name" in self.net.bus.columns:
@@ -789,23 +811,49 @@ class PlantPowerGrid:
                     if "hv-mv" in trafo3w_pairs:
                         nm = f"{base} (hv-mv)" if role_suffix_for_trafo3w else base
                         rows.append(
-                            {"type": "trafo3w", "id": int(idx), "name": nm, "start": bus_tuple(hv), "end": bus_tuple(mv)}
+                            {
+                                "type": "trafo3w",
+                                "id": int(idx),
+                                "name": nm,
+                                "start": bus_tuple(hv),
+                                "end": bus_tuple(mv),
+                            }
                         )
                     if "hv-lv" in trafo3w_pairs:
                         nm = f"{base} (hv-lv)" if role_suffix_for_trafo3w else base
                         rows.append(
-                            {"type": "trafo3w", "id": int(idx), "name": nm, "start": bus_tuple(hv), "end": bus_tuple(lv)}
+                            {
+                                "type": "trafo3w",
+                                "id": int(idx),
+                                "name": nm,
+                                "start": bus_tuple(hv),
+                                "end": bus_tuple(lv),
+                            }
                         )
                     if "mv-lv" in trafo3w_pairs:
                         nm = f"{base} (mv-lv)" if role_suffix_for_trafo3w else base
                         rows.append(
-                            {"type": "trafo3w", "id": int(idx), "name": nm, "start": bus_tuple(mv), "end": bus_tuple(lv)}
+                            {
+                                "type": "trafo3w",
+                                "id": int(idx),
+                                "name": nm,
+                                "start": bus_tuple(mv),
+                                "end": bus_tuple(lv),
+                            }
                         )
 
         # Bus-bus switches (optional)
-        if include_bus_bus_switches and hasattr(self.net, "switch") and len(self.net.switch):
+        if (
+            include_bus_bus_switches
+            and hasattr(self.net, "switch")
+            and len(self.net.switch)
+        ):
             df = self.net.switch
-            mask = (df["et"] == "b") if "et" in df.columns else pd.Series(False, index=df.index)
+            mask = (
+                (df["et"] == "b")
+                if "et" in df.columns
+                else pd.Series(False, index=df.index)
+            )
             if not include_out_of_service and "closed" in df.columns:
                 mask = mask & (df["closed"] == True)
             df = df[mask]

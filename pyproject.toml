@@ -25,6 +25,8 @@ dependencies = [
     "pandapower[all] (>=3.1.2,<4.0.0)",
     "bidict (>=0.23.1,<0.24.0)",
     "streamlit-autorefresh (>=1.0.1,<2.0.0)",
+    "markdown (>=3.8.2,<4.0.0)",
+    "pygments (>=2.19.2,<3.0.0)",
 ]
 
 [tool.poetry]

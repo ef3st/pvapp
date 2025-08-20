@@ -1,6 +1,6 @@
 {
     "main": {
-      "menu": ["Home", "Impianti", "Confronta Impianti", "Gestione Impianto","Logs"],
+      "menu": ["Home", "Impianti", "Confronta Impianti", "Gestione Impianto","Guida","Logs"],
       "buttons": {
         "simulate": "Simula tutto",
         "language": "Lingua"
@@ -65,6 +65,10 @@
         },
         "info": {
             "implants_not_found": "Nessun impianto trovato"
+        },
+        "messages":{
+            "no_plant_found": ["Nessun impianto","Nessuna catella trovata in /data"],
+            "folder_error": "Errore nella cartella"
         }
     },
 
@@ -97,6 +101,10 @@
                 "legend": "Impianti",
                 "x": "Periodo"
             }
+        },
+        "messages":{
+            "no_plant_found": ["Nessun impianto","Crea un impianto nella pagina \"Impianti\""],
+            "folder_error": "Errore nella cartella"
         }
 
     },
@@ -357,7 +365,11 @@
         "title": "Gestione e analisi Impianto",
         "selection": ["Seleziona impianto","Sito","Impianto"],
         "buttons": ["Esegui","Salva","Tutto","Modulo","Rete", "Sito","Simulazione"],
-        "display_setup": ["Modulo FV","Rete","Sito","Schema","Descrizione","Setup","Analisi"]
+        "display_setup": ["Modulo FV","Rete","Sito","Schema","Descrizione","Setup","Analisi"],
+        "messages":{
+            "no_plant_found": ["Nessun impianto","Nessuna catella trovata in /data"],
+            "folder_error": "Errore nella cartella"
+        }
     }
 
 

@@ -34,6 +34,7 @@ from .pages.implants.implants import ImplantsPage
 from .pages.implants_comparison.implants_comparison import ImplantsComparisonPage
 from .pages.plant_manager.plant_manager import PlantManager
 from .pages.logs.logs import LogsPage, _SEV_ICON
+from .pages.guide import guide
 
 
 # -----------------------------------------------------------------------------
@@ -199,70 +200,86 @@ def _sidebar_menu(plant_manager_names: List[str]) -> str:
     plant_manager_names : list[str]
         Translated names for the Plant Manager sub-menu (first three entries used).
     """
-    # Compute app status and log badges
-    status, n_logs = LogsPage().app_status
+    if "sidebar" not in st.session_state:
+            st.session_state["sidebar"] = "main"
+    if st.session_state["sidebar"] == "main":
+        # Compute app status and log badges
+        status, n_logs = LogsPage().app_status
 
-    # High-level options
-    base_options: List[str] = T("menu")  # e.g., [Home, Implants, Comparison, …]
-    # Append beta items only when enabled
-    beta_options: List[str] = (
-        [
-            "Real-time monitor  (beta)",
-            "Grid manager (beta)",
+        # High-level options
+        base_options: List[str] = T("menu")  # e.g., [Home, Implants, Comparison, …]
+        # Append beta items only when enabled
+        beta_options: List[str] = (
+            [
+                "Real-time monitor  (beta)",
+                "Grid manager (beta)",
+            ]
+            if st.session_state.get("beta_tools")
+            else []
+        )
+
+        options = base_options + beta_options
+
+        # Icons aligned with options (truncate to options length)
+        notification_icon = [
+            "app",
+            "app-indicator",
+            "exclamation-triangle-fill",
+            "exclamation-circle-fill",
+            "x-circle-fill",
         ]
-        if st.session_state.get("beta_tools")
-        else []
-    )
+        icons = [
+            "house",
+            "buildings",
+            "bar-chart-steps",
+            "building-fill-gear",
+            "journal-text",
+            notification_icon[status],
+        ][: len(options)]
+        color = ["red","white","blue","orange","green","red"]
 
-    options = base_options + beta_options
+        # Per-item tags
+        base_tags = [None, None, None, None,None]
+        log_tag = _build_notifications_tag(n_logs)
+        tags = base_tags + [log_tag] + [None, None]
 
-    # Icons aligned with options (truncate to options length)
-    notification_icon = [
-        "bell",
-        "bell-fill",
-        "exclamation-triangle-fill",
-        "exclamation-circle-fill",
-        "x-circle-fill",
-    ]
-    icons = [
-        "house",
-        "tools",
-        "bar-chart",
-        "toggles",
-        notification_icon[status],
-    ][: len(options)]
+        # Children (submenu) for Plant Manager
+        plant_manager_icons = ["sun", "diagram-3", "compass"]
+        plant_manager_menu = [
+            sac.MenuItem(name, icon=icon)
+            for name, icon in zip(plant_manager_names, plant_manager_icons)
+        ]
+        children = [None, None, None, plant_manager_menu, None,None]
+        if "option_menu" not in st.session_state:
+            st.session_state["option_menu"] = T("menu")[0]
+        try:
+            color_idx = T("menu").index(st.session_state["option_menu"])
+        except ValueError:
+            color_idx = 3
+        
+        # Render left-bar menu
+        selected = sac.menu(
+            [
+                sac.MenuItem(option, icon, tag=tag, children=child)
+                for option, icon, tag, child in zip(options, icons, tags, children)
+            ],
+            variant="left-bar",
+            key="option_menu",
+            open_all=True,
+            color=color[color_idx]
+            
+        )
 
-    # Per-item tags
-    base_tags = [None, None, None, None]
-    log_tag = _build_notifications_tag(n_logs)
-    tags = base_tags + [log_tag] + [None, None]
-
-    # Children (submenu) for Plant Manager
-    plant_manager_icons = ["sun", "diagram-3", "compass"]
-    plant_manager_menu = [
-        sac.MenuItem(name, icon=icon)
-        for name, icon in zip(plant_manager_names, plant_manager_icons)
-    ]
-    children = [None, None, None, plant_manager_menu, None]
-
-    # Render left-bar menu
-    selected = sac.menu(
-        [
-            sac.MenuItem(option, icon, tag=tag, children=child)
-            for option, icon, tag, child in zip(options, icons, tags, children)
-        ],
-        variant="left-bar",
-        key="option_menu",
-        open_all=True,
-    )
-
-    # Keep the selected index in session
-    previous_index = (
-        st.session_state.menu if st.session_state.menu < len(options) else 0
-    )
-    if selected != options[previous_index]:
-        st.session_state.menu = options.index(selected) if selected in options else 0
-
+        # Keep the selected index in session
+        previous_index = (
+            st.session_state.menu if st.session_state.menu < len(options) else 0
+        )
+        if selected != options[previous_index]:
+            st.session_state.menu = options.index(selected) if selected in options else 0
+    elif st.session_state["sidebar"] == "guide":
+        placeholder = st.container()
+        with placeholder:
+            selected = sac.menu(**guide.menu_kwargs())
     return selected
 
 
@@ -280,6 +297,7 @@ def streamlit() -> None:
 
         # Language selector
         st.divider()
+        
         selected = _sidebar_menu(plant_manager_names)
         st.divider()
 
@@ -299,25 +317,38 @@ def streamlit() -> None:
     # ------------------------------
     # Page routing
     # ------------------------------
-    if selected == T("menu")[0]:  # Home
-        home.render()
+    if st.session_state["sidebar"] == "main":
+        if selected == T("menu")[0]:  # Home
+            home.render()
 
-    elif selected == T("menu")[1]:  # Implants
-        pages["implants"].render()
+        elif selected == T("menu")[1]:  # Implants
+            pages["implants"].render()
 
-    elif selected == T("menu")[2]:  # Implants comparison
-        pages["implants_comparison"].render()
+        elif selected == T("menu")[2]:  # Implants comparison
+            pages["implants_comparison"].render()
 
-    elif selected in plant_manager_names:  # Plant Manager subpages
-        if selected == plant_manager_names[1]:
-            pages["plant_manager"].render(1)
-        elif selected == plant_manager_names[2]:
-            pages["plant_manager"].render(2)
+        elif selected in plant_manager_names:  # Plant Manager subpages
+            if selected == plant_manager_names[1]:
+                pages["plant_manager"].render(1)
+            elif selected == plant_manager_names[2]:
+                pages["plant_manager"].render(2)
+            else:
+                pages["plant_manager"].render()
+        elif selected == T("menu")[4]:  # Logs
+            st.session_state["sidebar"] = "guide"
+            st.rerun()
+        elif selected == T("menu")[5]:  # Logs
+            pages["logs"].render()
+    elif st.session_state["sidebar"] == "guide":
+        if selected == 0:
+            st.session_state["sidebar"] = "main"
+            st.rerun()
+        elif selected is None:
+            sac.result("**GUIDE**", description = "*Select a document in the sidebar on the left*", icon=sac.BsIcon("journal-text",color="teal"))
         else:
-            pages["plant_manager"].render()
-
-    elif selected == T("menu")[4]:  # Logs
-        pages["logs"].render()
+            guide.render(selected)
+    else:
+        st.error("ERROR IN MENU SELECTION")
 
     # Future beta routes (kept for reference)
     # elif selected == "Real-time monitor  (beta)":

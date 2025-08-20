@@ -582,7 +582,9 @@ class LogsPage(Page):
             st.warning(self.T("log_not_found"))
             return
 
-        st.title(self.T("title"))
+        # st.title(self.T("title"))
+        sac.alert(self.T("title"),variant="quote-light", color="red", size=35, icon=sac.BsIcon("menu-up",color="red",size=30))
+        
 
         # Parse logs and normalize datetime
         log_df = self.parse_logs_to_dataframe(self.logs, from_path=False)

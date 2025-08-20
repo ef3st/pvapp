@@ -7,7 +7,6 @@ import plotly.express as px
 from ..page import Page
 from ...utils.plots import plots
 
-
 class ImplantsComparisonPage(Page):
     def __init__(self):
         super().__init__("implants_comparison")
@@ -104,45 +103,51 @@ class ImplantsComparisonPage(Page):
             self.df_selected = df[df["id"].isin(selected_ids)]
 
     def render(self):
-        st.title("\U0001f3ad " + self.T("title"))
-        self.df_implants = self.load_all_implants()
-        self.select_implants()
-
-        if self.df_selected.empty:
-            st.info("\u2139\ufe0f Nessun impianto selezionato")
-            return
+        # st.title("\U0001f3ad " + self.T("title"))
         import streamlit_antd_components as sac
+        sac.alert(self.T("title"),variant="quote-light", color="blue", size=35, icon=sac.BsIcon("bar-chart-steps",color="lime"))
+        self.df_implants = self.load_all_implants()
+        if self.df_implants.empty:
+            messages = self.T("messages.no_plant_found")
+            sac.result(messages[0],description=messages[1],status="empty")
+        else:
+            self.select_implants()
 
-        sac.divider(
-            label="Analysis",
-            icon=sac.BsIcon("clipboard2-data", 20),
-            align="center",
-            color="gray",
-            variant="dashed",
-        )
-        dfs = []
-        for row in self.df_selected.itertuples(index=True):
-            if (row.subfolder / "simulation.csv").exists():
-                df = ImplantAnalyser(row.subfolder).periodic_report()
-                df["implant"] = row.label
-                dfs.append(df)
+            if self.df_selected.empty:
+                st.info("\u2139\ufe0f Nessun impianto selezionato")
+                return
+            import streamlit_antd_components as sac
 
-        self.df_total = pd.concat(dfs, ignore_index=True)
-        st.subheader("\U0001f4ca " + self.T("subtitle.plots"))
-        plots.seasonal_plot(self.df_total, "implants_comparison")
-        sac.divider(
-            label="Istantant measures",
-            icon=sac.BsIcon("clock", 20),
-            align="center",
-            color="gray",
-            variant="dashed",
-        )
-        dfs = []
-        for row in self.df_selected.itertuples(index=True):
-            if (row.subfolder / "simulation.csv").exists():
-                df = ImplantAnalyser(row.subfolder).numeric_dataframe()
-                df["implant"] = row.label
-                dfs.append(df)
+            sac.divider(
+                label="Analysis",
+                icon=sac.BsIcon("clipboard2-data", 20),
+                align="center",
+                color="gray",
+                variant="dashed",
+            )
+            dfs = []
+            for row in self.df_selected.itertuples(index=True):
+                if (row.subfolder / "simulation.csv").exists():
+                    df = ImplantAnalyser(row.subfolder).periodic_report()
+                    df["implant"] = row.label
+                    dfs.append(df)
 
-        dfs = pd.concat(dfs)
-        plots.time_plot(dfs, 1, "implants_comparison")
+            self.df_total = pd.concat(dfs, ignore_index=True)
+            st.subheader("\U0001f4ca " + self.T("subtitle.plots"))
+            plots.seasonal_plot(self.df_total, "implants_comparison")
+            sac.divider(
+                label="Istantant measures",
+                icon=sac.BsIcon("clock", 20),
+                align="center",
+                color="gray",
+                variant="dashed",
+            )
+            dfs = []
+            for row in self.df_selected.itertuples(index=True):
+                if (row.subfolder / "simulation.csv").exists():
+                    df = ImplantAnalyser(row.subfolder).numeric_dataframe()
+                    df["implant"] = row.label
+                    dfs.append(df)
+
+            dfs = pd.concat(dfs)
+            plots.time_plot(dfs, 1, "implants_comparison")
