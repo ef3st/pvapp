@@ -22,13 +22,15 @@ def render():
     # _,title,_ = st.columns([3,1,3])
     # with title:
     sac.result(
-        "***PV Plant Analyser***", icon=sac.BsIcon("house-door", color="red", size=50)
+        "PVApp",
+        description="***PV Plant Simulator and Analyser***",
+        icon=sac.BsIcon("sun", color="red", size=50),
     )
-    sac.divider("HOME", align="center")
+    sac.divider("HOME", align="center", icon=sac.BsIcon("house-door"))
 
     # sac.alert("Home: *PV Implant Analyser*",variant="quote-light", color="red", size=35, icon=sac.BsIcon("house-door",color="blue"))
     MarkdownStreamlitPage(
-        "README.md", mode="native"
+        "README.md", mode="native", page_title=""
     ).render()  # st.markdown(content, unsafe_allow_html=True)
     # if readme_path.exists():
     #     with readme_path.open("r", encoding="utf-8") as f:

@@ -1,31 +1,30 @@
-# Solartracker ☀️
 
 <!-- [![CI](https://img.shields.io/github/actions/workflow/status/ef3st/solartracker/ci.yml?branch=main&label=CI)](https://github.com/ef3st/solartracker/actions)
 [![Coverage](https://img.shields.io/codecov/c/github/ef3st/solartracker?label=coverage)](https://codecov.io/gh/ef3st/solartracker)
 [![Last Commit](https://img.shields.io/github/last-commit/ef3st/solartracker)](https://github.com/ef3st/solartracker/commits/main) -->
 
 
-> Solar Tracking software for a PV implant. Written in python, the iplant is model with pvlib
+<!-- > Solar Tracking software for a PV implant. Written in python, the iplant is model with pvlib -->
 
 
----
-# 🖼️ Using GUI
+# 🖼️ Basic Guide to the GUI
 
-The app is divided in 4 pages:
-1. ***Home***: this page. Here you can find a guide to use the app, develop system, simulation and other aspects
-2. ***Implants***: Here you can find main details about the implants grouped in a table. Moreover a map shows you the actual positions of implants. Here you can also add (remove is in developing) implants
-3. ***Implants comparison***: Here you can select one or more implants and compare a parameter in 4 season or annually (both in mean and sum)
-4. ***Implant performance***: here, after selecting ONE implant, you can change settings about tha implant, starting the simulation of the new settings and anylysing results of the simulation in some charateristic plots
+*PVApp* is divided in four main pages and two utily pages:
+1. ***Home***: (You are here!). Basic commands and a summury of what PVApp does and eventually some important future updaes.
+> **Manager and Analyser Pages**
+2. ***Plants***: Here you can find main details about the plants grouped in a table. Moreover a map shows you the actual positions of implants. Here you can also add plants, setting basic properties of PV module, inverters and mounting system.
+3. ***Plants comparison***: This page provides an overview and detailed comparative analysis of simulation parameters for the PV plants selected by the user. Comparisons can be performed on a seasonal, annual on averaged or summend parameter values, but also on on hourly basis, over a time range that spans either the entire simulation or a user-defined interval.
+4. ***Plant Manager***: From this page, it is possible setting the electrical grid of the plant, changing plant setup, both for module and site, and analyses the simulation results both for PV arrays and entire grid. 
+  
+> **Utility Pages**  
+5. ***Guide***: More detailed information on how to use *PVApp*, simulation mechanisms, operation of specialized technical libraries for this purpose and parameter entry can be found in this sectio
+>> A tip: When you select this page, the menu in the left sidebar changes, displaying folders and documents related to specific topics. Sometimes, on the first try, selecting a folder below the first one may appear to be blank or inclomplete. In this case:
+>> - Open the first folder
+>> - Select a displayed document
+>> - Finally, try again with the desired starting folder.  
+6. ***Logs***: in this page is possible to check for errors, informative and warning messages. Look at the icon of this page to see the status of the App and the presence of messages
+In the sidebare (on the left) you can select these pages. With the "⚙️" button but you can also change language and setting the auto-save and auto-simulation options, with which operate these operation at each change in the plant setup. The "🔥 Simulate All", insteand, allow to simulate everything in one shot.
 
-In the sidebare (on the left) you can select these pages, but you can also change language and a button in the bottom will start all simulation in one shot
-
----
----
-
-
-
-
----
 ---
 # 👨‍💻Programming
 > Commands, consideration and phylosophy for developers

@@ -126,7 +126,12 @@ def simulate_all(folder: Path = Path("data/")) -> None:
             progress.progress(i / total, text=f"{i}/{total} simulations completed")
 
     progress.empty()
-    st.success("All simulations completed.")
+    sac.alert(
+        "All simulations completed.",
+        icon=sac.BsIcon("info-circle"),
+        color="green",
+        closable=True,
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -294,7 +299,7 @@ def streamlit() -> None:
     # Sidebar: branding, language, and quick actions
     plant_manager_names = translate("plant_manager.display_setup")[:3]
     with st.sidebar:
-        st.markdown("## 🌅 PV Implants Analyser")
+        st.markdown("## 🌅 PVApp")
 
         # Language selector
         st.divider()

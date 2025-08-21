@@ -52,8 +52,8 @@ In `pvlib`, mounting configurations are modeled through the pvlib.pvsystem.Mount
  | `BIPV`       | Building Integrated PV indicator                 | Yes/No  | N              |
  | `Version`    | Database version                                 | -       | SAM 2018.11.11 |
  | `Date`       | Entry date                                       | -       | 1/3/2019       |
-
-*A10Green_Technology_A10J_M60_225 is used as example
+>
+**A10Green_Technology_A10J_M60_225 is used as example*
 > #### NOTE:
 > - `a_ref`, `I_L_ref`, `I_o_ref`, `R_s`, `R_sh_ref`, `Adjust` parmas are used in the single-diod model, the most detailed in `pvlib`.
 > - `gamma_r` is usually used in the PVWatts model, as simplification.
@@ -93,7 +93,7 @@ Even if aviable in the selection, currently, inverters aviable for simulations m
 | `C3`      | Coefficient 3 (efficiency polynomial)               | 1/W·V | 1.523e-05      |
 | `Pnt`     | Night-time tare loss (power consumed with no input) | W     | 0.25 W         |
 | `Eta_max` | Maximum efficiency (not always listed)              | %     | 95.5 %         |.
-
+>
 *ABB__MICRO_0_25_I_OUTD_US_208__208V_ is used as example
 
 #### 2. **SandiaMod (Sandia Module) Database**
@@ -115,8 +115,8 @@ Even if aviable in the selection, currently, inverters aviable for simulations m
 | `FD`                   | Diffuse fraction derate factor                             | -    | 1.0      |
 | `IXO, IXXO`            | Empirical fitting params                                   | A    |          |
 | `C4, C5, C6, C7`       | Misc. coefficients for MPP estimation                      | -    |          |
-
-*Advent_Solar_AS160___2006_ is used as example
+>
+**Advent_Solar_AS160___2006_ is used as example*
 
 
 #### 3. **Custum parameters**
