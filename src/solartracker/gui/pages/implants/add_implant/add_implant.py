@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import pydeck as pdk
 from geopy.geocoders import Nominatim
+import geopy.exc as geoExept
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
 from simulation.simulator import Simulator
@@ -119,6 +120,7 @@ def save_and_simulate(path=Path("data/")):
 def get_coordinates(address: str):
     geolocator = Nominatim(user_agent="solartracker-app")
     location = geolocator.geocode(address)
+
     if location:
         return location.latitude, location.longitude
     return None, None
@@ -195,7 +197,20 @@ def step_site():
 def step_location():
     new_implant = st.session_state.new_implant
     site = new_implant["site"]
-    lat, lon = get_coordinates(f"{site['address']}, {site['city']}, Italia")
+    try:
+        lat, lon = get_coordinates(f"{site['address']}, {site['city']}, Italia")
+    except geoExept.GeocoderUnavailable:
+        lat = 44.5075
+        lon = 11.3514
+    except geoExept.GeocoderQuotaExceeded:
+        sac.alert(
+            "Geo coordiantes are not aviable",
+            description="*1 request per second is aviable. Press buttons slower*",
+            variant="outline",
+            color="warning",
+            icon="exclamation-triangle",
+        )
+
     st.text("🗺️ Coordinates")
     lat_col, lon_col = st.columns(2)
     lat = lat_col.number_input("Latitude", value=lat or 0.0, format="%.4f")
@@ -406,7 +421,7 @@ def render():
         # stx.stepper_bar(steps=["Site","Location","Set Module", "Set Inverter","Set Mount"])
     elif step == 5:
         new_implant = st.session_state.new_implant
-        st.markdown("### 🧾 Riepilogo")
+        st.markdown("### 🧾 Recup")
         st.markdown("🏢 **Site**")
         st.json(new_implant["site"])
         st.markdown("🧰 **Implant**")

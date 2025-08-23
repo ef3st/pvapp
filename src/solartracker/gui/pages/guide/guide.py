@@ -163,4 +163,8 @@ def render(
     # Persist chosen path and render
     st.session_state[f"{key}_path"] = rel
     abs_path = str(Path(base_dir) / rel)
-    MarkdownStreamlitPage(abs_path, mode=mode).render()
+    MarkdownStreamlitPage(abs_path, mode=mode).render_with_inline_images(
+        default_width=800,  # optional
+        image_root=".",  # base for path that start with '/...'
+        caption_from_title=True,
+    )
