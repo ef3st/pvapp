@@ -7,7 +7,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ## 📑 Table of Contents
 
-- [SGenParams (net['sgen'])](#-sgenparams-netsgen)  
+- [SGenParams (net['sgen'])](#-s-gen-params)  
 - [GenParams (net['gen'])](#-genparams-netgen)  
 - [ExtGridParams (net['ext_grid'])](#-extgridparams-netext_grid)  
 - [BusParams (net['bus'])](#-busparams-netbus)  
@@ -20,7 +20,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 SGenParams (net['sgen'])
+## 🔹 SGenParams
 
 | Key          | Type  | Description                                         |
 |--------------|-------|-----------------------------------------------------|
@@ -42,7 +42,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 GenParams (net['gen'])
+## 🔹 GenParams
 
 | Key          | Type  | Description                                   |
 |--------------|-------|-----------------------------------------------|
@@ -63,7 +63,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 ExtGridParams (net['ext_grid'])
+## 🔹 ExtGridParams
 
 | Key        | Type  | Description                 |
 |------------|-------|-----------------------------|
@@ -77,7 +77,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 BusParams (net['bus'])
+## 🔹 BusParams
 
 | Key        | Type                | Description                    |
 |------------|---------------------|--------------------------------|
@@ -94,7 +94,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 LineParams (net['line'])
+## 🔹 LineParams
 
 | Key        | Type  | Description                        |
 |------------|-------|------------------------------------|
@@ -109,7 +109,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 SwitchParams (net['switch'])
+## 🔹 SwitchParams
 
 | Key        | Type  | Description                             |
 |------------|-------|-----------------------------------------|
@@ -126,7 +126,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 TrafoParams (net['trafo'])
+## 🔹 TrafoParams
 
 | Key                 | Type  | Description                 |
 |---------------------|-------|-----------------------------|
@@ -159,7 +159,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 Trafo3WParams (net['trafo3w'])
+## 🔹 Trafo3WParams
 
 | Key              | Type  | Description                     |
 |------------------|-------|---------------------------------|
@@ -177,7 +177,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 LoadParams (net['load'])
+## 🔹 LoadParams
 
 | Key               | Type  | Description                      |
 |-------------------|-------|----------------------------------|
@@ -199,7 +199,7 @@ Each section corresponds to one element (`net['xxx']`).
 
 ---
 
-## 🔹 StorageParams (net['storage'])
+## 🔹 StorageParams
 
 | Key          | Type  | Description                        |
 |--------------|-------|------------------------------------|
