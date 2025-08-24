@@ -29,10 +29,12 @@ Thumbs.db
 .vscode/
 .idea/
 
-
+#folders
 data/
 output/
 results/
+garbage/
+
 
 # Pytest
 /tests
