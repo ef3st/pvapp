@@ -1,0 +1,362 @@
+{
+    "main": {
+      "menu": ["Accueil", "Centrales", "Comparer Centrales", "Gestion Centrale","Guide","Journaux"],
+      "buttons": {
+        "simulate": "Simuler tout",
+        "language": "Langue"
+      }
+    },
+    "log": {
+        "title": "Journal",
+        "subtitle": "Afficher les journaux du système",
+        "buttons": {
+            "clear_log": "Effacer le journal"
+        },
+        "messages": {
+            "log_cleared": "Journal effacé avec succès",
+            "log_not_found": "Aucun journal trouvé"
+        }
+    },
+    "plots":{
+        "variable_description": {
+            "poa_global": "(W/m²) Irradiance globale sur le plan du module (directe + diffuse)",
+            "poa_direct": "(W/m²) Irradiance directe sur le plan du module",
+            "poa_diffuse": "(W/m²) Irradiance diffuse sur le plan du module",
+            "aoi": "(degrés) Angle d’incidence entre le soleil et la surface du module",
+            "effective_irradiance": "(W/m²) Irradiance effective corrigée pour pertes angulaires et spectrales",
+            "ac_v_mp": "(V) AC : Tension au point de puissance maximale",
+            "ac_i_mp": "(A) AC : Courant au point de puissance maximale",
+            "ac_p_mp": "(W) AC : Puissance au point de puissance maximale",
+            "ac_i_sc": "(A) AC : Courant de court-circuit",
+            "ac_v_oc": "(V) AC : Tension à circuit ouvert",
+            "ac_i_x": "Inconnu",
+            "ac_i_xx": "Inconnu",
+            "dc_v_mp": "(V) DC : Tension au point de puissance maximale",
+            "dc_i_mp": "(A) DC : Courant au point de puissance maximale",
+            "dc_p_mp": "(W) DC : Puissance au point de puissance maximale",
+            "dc_i_sc": "(A) DC : Courant de court-circuit",
+            "dc_v_oc": "(V) DC : Tension à circuit ouvert",
+            "dc_i_x": "Inconnu",
+            "dc_i_xx": "Inconnu",
+            "diode_voltage": "(V) Tension aux bornes de la diode interne",
+            "shunt_current": "(A) Courant perdu par résistance de shunt",
+            "cell_teperature": "(°C) Température de la cellule photovoltaïque",
+            "temp_module": "(°C) Température arrière du module",
+            "dc_power": "(W) Puissance en courant continu en sortie du module/système",
+            "ac_power": "(W) Puissance en courant alternatif après l’onduleur",
+            "losses": "(%) Facteur de perte total du système (si modélisé)",
+            "zenith": "(degrés) Angle zénithal du soleil",
+            "azimuth": "(degrés) Azimut solaire",
+            "airmass": "(-) Masse d’air relative (longueur optique dans l’atmosphère)",
+            "clearsky_ghi": "(W/m²) Irradiance horizontale globale (ciel clair)",
+            "clearsky_dni": "(W/m²) Irradiance directe normale (ciel clair)",
+            "clearsky_dhi": "(W/m²) Irradiance diffuse horizontale (ciel clair)"
+        }
+    },
+    "plants":{
+        "title": "Centrales",
+        "df_title":["Site","Adresse","Ville","Centrale","Module","Onduleur","Montage","Coordonnées","lat","lon","Simulation"],
+        "map":{
+            "title": "Carte"
+        },
+        "buttons": {
+            "add_plant": "Ajouter une centrale",
+            "remove_plant": "Supprimer une centrale"
+        },
+        "info": {
+            "plants_not_found": "Aucune centrale trouvée"
+        },
+        "messages":{
+            "no_plant_found": ["Aucune centrale","Aucun dossier trouvé dans /data"],
+            "folder_error": "Erreur de dossier"
+        }
+    },
+
+    "plants_comparison":{
+        "title": "Comparaison des Centrales",
+        "subtitle":{
+            "select_plants": "Sélectionnez les centrales à comparer",
+            "plots": "Graphiques",
+            "time_distribution": "Valeurs en fonction du temps",
+            "periodic": "Valeurs moyennes et résumées par période"    
+        },
+        "buttons":{
+            "select_all": "Tout sélectionner",
+            "deselect_all":"Tout désélectionner",
+            "sum": "Somme",
+            "mean": "Moyenne",
+            "choose_var": "Sélectionner la variable à afficher",
+            "choose_variable": "Choisir variable",
+            "periods": "Choisir la période",
+            "option":  {
+                "label": "Intervalle",
+                "options": ["Annuel","Quotidien"]
+            },
+            "choose_date": "Choisir une date",
+            "interval": "Choisir l’intervalle"
+        },
+        "plots":{
+            "periodic": {
+                "legend": "Centrales",
+                "x": "Période"
+            }
+        },
+        "messages":{
+            "no_plant_found": ["Aucune centrale","Créez une centrale dans la page \"Centrales\""],
+            "folder_error": "Erreur de dossier"
+        }
+    },
+    "plant_performance":
+    {
+        "title": "Analyse de la Centrale PV",
+        "subtitle": {
+            "plant_config": "Configuration de la centrale",
+            "site": "Site",
+            "plant": "Centrale",
+            "coordinates": "Coordonnées",
+            "performance": "Performance",
+            "periodic": "Valeurs moyennes et résumées par période",
+            "time_distribution": "Valeurs en fonction du temps",
+            "search_plant": "Rechercher une centrale",
+            "altitude_tz": "Altitude et Fuseau horaire",
+            "address": "Adresse"
+        },
+        "buttons":{
+            "site":{
+                "name": "Nom du site",
+                "address": "Adresse",
+                "city": "Ville",
+                "coordinates": "Coordonnées",
+                "lat": "Latitude",
+                "lon":"Longitude",
+                "altitude": "Altitude",
+                "timezone": "Fuseau horaire"
+            },
+            "plant":{
+                "name": "Nom de la centrale",
+                "module": {
+                    "title": "Module",
+                    "origin": "Source",
+                    "model": "Modèle",
+                    "details": "Afficher les détails du module",
+                    "name": "Nom"
+                },
+                "inverter": {
+                    "title": "Onduleur",
+                    "origin": "Source",
+                    "model": "Modèle",
+                    "details": "Afficher les détails de l’onduleur",
+                    "name": "Nom"
+                },
+                "mount":{
+                    "title": "Montage de la centrale",
+                    "type": "Type de montage"
+                }
+            },
+            "save": "Enregistrer les modifications",
+            "simulate": "Simuler",
+            "choose_variable": "Choisir variable",
+            "sum": "Somme",
+            "mean": "Moyenne",
+            "periods": "Choisir la période",
+            "option":  {
+                "label": "Intervalle",
+                "options": ["Annuel","Quotidien"]
+            },
+            "choose_date": "Choisir une date",
+            "interval": "Choisir l’intervalle"
+        }
+    },
+    "module_manager":
+    {
+        "title": "Analyse de la Centrale PV",
+        "subtitle": {
+            "plant_config": "Configuration de la centrale",
+            "site": "Site",
+            "plant": "Centrale",
+            "coordinates": "Coordonnées",
+            "performance": "Performance",
+            "periodic": "Valeurs moyennes et résumées par période",
+            "time_distribution": "Valeurs en fonction du temps",
+            "search_plant": "Rechercher une centrale",
+            "altitude_tz": "Altitude et Fuseau horaire",
+            "address": "Adresse"
+        },
+        "buttons":{
+            "site":{
+                "name": "Nom du site",
+                "address": "Adresse",
+                "city": "Ville",
+                "coordinates": "Coordonnées",
+                "lat": "Latitude",
+                "lon":"Longitude",
+                "altitude": "Altitude",
+                "timezone": "Fuseau horaire"
+            },
+            "plant":{
+                "name": "Nom de la centrale",
+                "module": {
+                    "title": "Module",
+                    "origin": "Source",
+                    "model": "Modèle",
+                    "details": "Afficher les détails du module",
+                    "name": "Nom"
+                },
+                "inverter": {
+                    "title": "Onduleur",
+                    "origin": "Source",
+                    "model": "Modèle",
+                    "details": "Afficher les détails de l’onduleur",
+                    "name": "Nom"
+                },
+                "mount":{
+                    "title": "Montage de la centrale",
+                    "type": "Type de montage"
+                }
+            },
+            "save": "Enregistrer les modifications",
+            "simulate": "Simuler",
+            "choose_variable": "Choisir variable",
+            "sum": "Somme",
+            "mean": "Moyenne",
+            "periods": "Choisir la période",
+            "option":  {
+                "label": "Intervalle",
+                "options": ["Annuel","Quotidien"]
+            },
+            "choose_date": "Choisir une date",
+            "interval": "Choisir l’intervalle"
+        }
+    },
+    "grid_manager":
+    {
+        "title": "Gestion du Réseau",
+        "buttons": {
+            "save_grid": "Enregistrer le réseau"
+        },
+        "tabs":
+        {
+            "links":
+            {
+                "title": "Bus, lignes et transformateurs",
+                "new_item": "Ajouter un nouvel élément",
+                "select_item": "Sélectionner un élément à ajouter",
+                "item":
+                {
+                    "bus":
+                    {
+                        "name": "Bus",
+                        "titles": ["Général","Tension"],
+                        "in_service": "Nœud actif",
+                        "bus_level": ["Principal","Auxiliaire", "Moff"],
+                        "voltage":["Basse", "Moyenne", "Haute", "Très haute"],
+                        "constraints": ["Fixer les limites de tension","Tension (kV)","min (kV)", "max (kV)"],
+                        "buttons": ["Nouveau nœud"," Supprimer nœud", "Ajouter des nœuds"]
+                    },
+                    "link":
+                    {
+                        "name": "Ligne",
+                        "buses": ["BUS DE DÉPART", "BUS D’ARRIVÉE"],
+                        "bus_identity": ["Nom du Bus", "Indice Bus"],
+                        "bus_level": ["Principal","Auxiliaire", "Moff"],
+                        "line_params": ["Type de ligne","Longueur","Nom"],
+                        "buttons": ["Nouvelle ligne"," Supprimer ligne", "Ajouter des lignes"],
+                        "infos": ["INFORMATIONS","Ligne","Bus de départ", "Bus d’arrivée"],
+                        "no_bus_error": "Aucun Bus créé",
+                        "errors": ["Connexion disponible", 
+                        "Mêmes bus en connexion", "Tensions différentes",
+                        "Connexion déjà existante"]
+                    },
+                    "transformer":
+                    {
+                        "name": "Transformateur"
+                    }
+                },
+                "manager":
+                    {
+                        "title": "Gestion Bus et Lignes",
+                        "icon_label": ["Légende icônes",{
+                            "bus": "Nœud",
+                            "line": "Ligne",
+                            "trafo": "Transformateur",
+                            "trafo3w": "Transformateur à 3 enroulements",
+                            "impedance": "Impédance",
+                            "dcline": "Ligne en courant continu",
+                            "load": "Charge",
+                            "sgen": "Générateur statique",
+                            "gen": "Générateur synchrone",
+                            "storage": "Stockage",
+                            "shunt": "Réactance en dérivation",
+                            "ward": "Modèle Ward",
+                            "xward": "Modèle étendu Ward",
+                            "motor": "Moteur",
+                            "ext_grid": "Réseau externe",
+                            "switch": "Interrupteur"
+                        }],
+                        "tree_connectors": "Afficher les connecteurs",
+                        "connectors": ["Connecteurs", "Légende couleurs"],
+                        "bus_df": {
+                            "title": "Liste des Bus",
+                            "legend": ["Légende colonnes",["Nom du Bus",["Type","Principal","Auxiliaire","Moff"],"Tension de fonctionnement","ON/OFF","Tension minimale supportée", "Tension maximale supportée"]]
+                        }
+                    }
+            },
+            "gens":
+            {
+                "title": "Générateurs",
+                "new_item": "Ajouter un nouvel élément",
+                "select_item": "Sélectionner un élément à ajouter",
+                "item":
+                {
+                    "sgen":{
+                        "name": "Générateur statique",
+                        "titles": ["Propriétés","Tension","Bus connecté"],
+                        "labels": ["Nom","Quantité","Générateur actif","Tension","Échelle","Puissance réactive"],
+                        "bus_params":{
+                            "voltage": ["Basse","Moyenne","Haute","Très haute"],
+                            "level": ["Principal","Auxiliaire","Moff"]
+                        },
+                        "buttons": ["Nouveau générateur statique"," Supprimer générateur", "Ajouter des générateurs"]
+                    },
+                    "gen":{
+                        "name":"Générateur actif et réglable",
+                        "titles": ["Propriétés","Tension","Bus connecté"],
+                        "labels": ["Nom","Quantité","Générateur actif","Slack","Contrôlable","Puissance active","Tension nominale (au nœud)",
+                                   "Puissance réactive","Puissance apparente nominale","Échelle"],
+                        "bus_params":{
+                            "voltage": ["Basse","Moyenne","Haute","Très haute"],
+                            "level": ["Principal","Auxiliaire","Moff"]
+                        },
+                        "buttons": ["Nouveau générateur statique"," Supprimer générateur", "Ajouter des générateurs"]
+                    },
+                    "storage":
+                    {
+                        "name":"Batterie"
+                    }
+                }
+            },
+            "passive":
+            {
+                "title": "Éléments passifs"
+            },
+            "sensors":
+            {
+                "title":"Capteurs, contrôleurs, limites"
+            }
+        },
+        "messages":
+        {
+            "no_grid": "Le réseau n’a pas encore été enregistré"
+        }
+    },
+    "plant_manager":{
+        "title": "Gestion et analyse de la Centrale",
+        "selection": ["Sélectionner une centrale","Site","Centrale"],
+        "buttons": ["Exécuter","Enregistrer","Tout","Module","Réseau", "Site","Simulation"],
+        "display_setup": ["Module PV","Réseau","Site","Schéma","Description","Configuration","Analyse"],
+        "messages":{
+            "no_plant_found": ["Aucune centrale","Aucun dossier trouvé dans /data"],
+            "folder_error": "Erreur de dossier"
+        }
+    }
+}

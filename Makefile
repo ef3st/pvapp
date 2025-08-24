@@ -8,7 +8,7 @@ test:
 
 # Run the main script
 run:
-	poetry run python src/solartracker/main.py
+	poetry run python src/pvapp/main.py
 
 # Run ruff -> check for errors
 ruff:
@@ -36,20 +36,20 @@ notebook:
 
 # Register the environment as a Jupyter kernel (one-time)
 register-kernel:
-	poetry run python -m ipykernel install --user --name=solartracker --display-name "Python (solartracker)"
+	poetry run python -m ipykernel install --user --name=pvapp --display-name "Python (pvapp)"
 
 # Run Jupyter Lab (optional, if you use it)
 lab:
 	poetry run jupyter lab
 
 streamlit:
-	poetry run streamlit run src/solartracker/main.py --logger.level=debug gui
+	poetry run streamlit run src/pvapp/main.py --logger.level=debug gui
 
 downloader-doc: 
 	poetry run streamlit run src/documentation/docbuilder.py
 
 developer:
-	poetry run python src/solartracker/main.py dev
+	poetry run python src/pvapp/main.py dev
 
 count_lines:
 	cloc . --include-ext=py

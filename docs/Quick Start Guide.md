@@ -15,8 +15,8 @@ From here, the user can have an overview of all plants created.
 ![Plants-Page](/docs/img/Plant_page.png) 
 
 
-### 2. Press  `*Add Implant*` 
-On the top rigth, below the title, click `*Add Implant*`[`*Aggiungi Impianto*`]. Then a section on the rigth will be open to set the PV system (see image below). 
+### 2. Press  `*Add Plant*` 
+On the top rigth, below the title, click `*Add Plant*`[`*Aggiungi Impianto*`]. Then a section on the rigth will be open to set the PV system (see image below). 
 ![Add-Section](/docs/img/Add_Plant.png)  
 The user is going to complete six steps:  
 1. ![Site](#3-set-the-site): setting names and address of the city. Currently, only Italy is aviable to set correctly the site informations (No updates are predicted for now!).
@@ -87,5 +87,5 @@ The mount types aviable are 2 selectable in `_Select Mount Type_` box.  On the b
 
 ---
 ### 8. Save
-The user can check the setup created and choose a name for the implant in the final saving form.
+The user can check the setup created and choose a name for the plant in the final saving form.
 ![Saving-Form](/docs/img/save_form.png)

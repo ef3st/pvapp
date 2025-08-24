@@ -1,0 +1,376 @@
+{
+    "main": {
+      "menu": ["Home", "Plants", "Compare Plants", "Plant Management","Guide","Logs"],
+      "buttons": {
+        "simulate": "Simulate all",
+        "language": "Language"
+      }
+    },
+    "log": {
+        "title": "Log",
+        "subtitle": "View system logs",
+        "buttons": {
+            "clear_log": "Clear log"
+        },
+        "messages": {
+            "log_cleared": "Log cleared successfully",
+            "log_not_found": "No log found"
+        }
+    },
+    "plots":{
+        "variable_description": {
+            "poa_global": "(W/m²) Global irradiance on the module plane (direct + diffuse)",
+            "poa_direct": "(W/m²) Direct irradiance on the module plane",
+            "poa_diffuse": "(W/m²) Diffuse irradiance on the module plane",
+            "aoi": "(degrees) Angle of incidence between the sun and the module surface",
+            "effective_irradiance": "(W/m²) Effective irradiance corrected for angular and spectral losses",
+            "ac_v_mp": "(V) AC: Voltage at maximum power point",
+            "ac_i_mp": "(A) AC: Current at maximum power point",
+            "ac_p_mp": "(W) AC: Power at maximum power point",
+            "ac_i_sc": "(A) AC: Short-circuit current",
+            "ac_v_oc": "(V) AC: Open-circuit voltage",
+            "ac_i_x": "Unknown",
+            "ac_i_xx": "Unknown",
+            "dc_v_mp": "(V) DC: Voltage at maximum power point",
+            "dc_i_mp": "(A) DC: Current at maximum power point",
+            "dc_p_mp": "(W) DC: Power at maximum power point",
+            "dc_i_sc": "(A) DC: Short-circuit current",
+            "dc_v_oc": "(V) DC: Open-circuit voltage",
+            "dc_i_x": "Unknown",
+            "dc_i_xx": "Unknown",
+            "diode_voltage": "(V) Voltage across the internal diode",
+            "shunt_current": "(A) Current lost due to shunt resistance",
+            "cell_teperature": "(°C) PV cell temperature",
+            "temp_module": "(°C) Back surface module temperature",
+            "dc_power": "(W) Direct current output power from the module/system",
+            "ac_power": "(W) Alternating current power after inverter",
+            "losses": "(%) Total system loss factor (if modeled)",
+            "zenith": "(degrees) Solar zenith angle",
+            "azimuth": "(degrees) Solar azimuth",
+            "airmass": "(-) Relative air mass (optical path length in the atmosphere)",
+            "clearsky_ghi": "(W/m²) Global horizontal irradiance (clear sky model)",
+            "clearsky_dni": "(W/m²) Direct normal irradiance (clear sky model)",
+            "clearsky_dhi": "(W/m²) Diffuse horizontal irradiance (clear sky model)"
+        }
+    },
+    "plants":{
+        "title": "Plants",
+        "df_title":["Site","Address","City","Plant","Module","Inverter","Mounting","Coordinates","lat","lon","Simulation"],
+        "map":{
+            "title": "Map"
+        },
+        "buttons": {
+            "add_plant": "Add plant",
+            "remove_plant": "Remove plant"
+        },
+        "info": {
+            "plants_not_found": "No plants found"
+        },
+        "messages":{
+            "no_plant_found": ["No plant","No folder found in /data"],
+            "folder_error": "Folder error"
+        }
+    },
+
+    "plants_comparison":{
+        "title": "Plant Comparison",
+        "subtitle":{
+            "select_plants": "Select Plants to compare",
+            "plots": "Charts",
+            "time_distribution": "Values as a function of time",
+            "periodic": "Average and summary values per period"    
+
+        },
+        "buttons":{
+            "select_all": "Select all",
+            "deselect_all":"Deselect all",
+            "sum": "sum",
+            "mean": "mean",
+            "choose_var": "Select variable to display",
+            "choose_variable": "Choose variable",
+            "periods": "Choose period",
+            "option":  {
+                "label": "Interval",
+                "options": ["Yearly","Daily"]
+            },
+            "choose_date": "Choose a date",
+            "interval": "Choose interval"
+        },
+        "plots":{
+            "periodic": {
+                "legend": "Plants",
+                "x": "Period"
+            }
+        },
+        "messages":{
+            "no_plant_found": ["No plant","Create a plant in the \"Plants\" page"],
+            "folder_error": "Folder error"
+        }
+
+    },
+    "plant_performance":
+    {
+        "title": "PV Plant Analysis",
+        "subtitle": {
+            "plant_config": "Plant configuration",
+            "site": "Site",
+            "plant": "Plant",
+            "coordinates": "Coordinates",
+            "performance": "Performance",
+            "periodic": "Average and summary values per period",
+            "time_distribution": "Values as a function of time",
+            "search_plant": "Search Plant",
+            "altitude_tz": "Altitude and Time Zone",
+            "address": "Address"
+
+        },
+        "buttons":{
+            "site":{
+                "name": "Site name",
+                "address": "Address",
+                "city": "City",
+                "coordinates": "Coordinates",
+                "lat": "Latitude",
+                "lon":"Longitude",
+                "altitude": "Altitude",
+                "timezone": "Time Zone"
+            },
+            "plant":{
+                "name": "Plant name",
+                "module": {
+                    "title": "Module",
+                    "origin": "Source",
+                    "model": "Model",
+                    "details": "Show module details",
+                    "name": "Name"
+                },
+                "inverter": {
+                    "title": "Inverter",
+                    "origin": "Source",
+                    "model": "Model",
+                    "details": "Show inverter details",
+                    "name": "Name"
+                },
+                "mount":{
+                    "title": "Plant mounting",
+                    "type": "Mounting type"
+                }
+            },
+            "save": "Save changes",
+            "simulate": "Simulate",
+            "choose_variable": "Choose variable",
+            "sum": "Sum",
+            "mean": "Mean",
+            "periods": "Choose period",
+            "option":  {
+                "label": "Interval",
+                "options": ["Yearly","Daily"]
+            },
+            "choose_date": "Choose a date",
+            "interval": "Choose interval"
+
+        }
+
+    },
+    "module_manager":
+    {
+        "title": "PV Plant Analysis",
+        "subtitle": {
+            "plant_config": "Plant configuration",
+            "site": "Site",
+            "plant": "Plant",
+            "coordinates": "Coordinates",
+            "performance": "Performance",
+            "periodic": "Average and summary values per period",
+            "time_distribution": "Values as a function of time",
+            "search_plant": "Search Plant",
+            "altitude_tz": "Altitude and Time Zone",
+            "address": "Address"
+
+        },
+        "buttons":{
+            "site":{
+                "name": "Site name",
+                "address": "Address",
+                "city": "City",
+                "coordinates": "Coordinates",
+                "lat": "Latitude",
+                "lon":"Longitude",
+                "altitude": "Altitude",
+                "timezone": "Time Zone"
+            },
+            "plant":{
+                "name": "Plant name",
+                "module": {
+                    "title": "Module",
+                    "origin": "Source",
+                    "model": "Model",
+                    "details": "Show module details",
+                    "name": "Name"
+                },
+                "inverter": {
+                    "title": "Inverter",
+                    "origin": "Source",
+                    "model": "Model",
+                    "details": "Show inverter details",
+                    "name": "Name"
+                },
+                "mount":{
+                    "title": "Plant mounting",
+                    "type": "Mounting type"
+                }
+            },
+            "save": "Save changes",
+            "simulate": "Simulate",
+            "choose_variable": "Choose variable",
+            "sum": "Sum",
+            "mean": "Mean",
+            "periods": "Choose period",
+            "option":  {
+                "label": "Interval",
+                "options": ["Yearly","Daily"]
+            },
+            "choose_date": "Choose a date",
+            "interval": "Choose interval"
+
+        }
+
+    },
+    "grid_manager":
+    {
+        "title": "Grid Management",
+        "buttons": {
+            "save_grid": "Save Grid"
+        },
+        "tabs":
+        {
+            "links":
+            {
+                "title": "Buses, lines and transformers",
+                "new_item": "Add new element",
+                "select_item": "Select element to add",
+                "item":
+                {
+                    "bus":
+                    {
+                        "name": "Bus",
+                        "titles": ["General","Voltage"],
+                        "in_service": "Active node",
+                        "bus_level": ["Main","Auxiliary", "Off"],
+                        "voltage":["Low", "Medium", "High", "Very high"],
+                        "constraints": ["Set voltage limits","Voltage (kV)","min (kV)", "max (kV)"],
+                        "buttons": ["New Node","Remove Node", "Add Nodes"]
+                        
+                    },
+                    "link":
+                    {
+                        "name": "Line",
+                        "buses": ["STARTING BUS", "ENDING BUS"],
+                        "bus_identity": ["Bus Name", "Bus Index"],
+                        "bus_level": ["Main","Auxiliary", "Off"],
+                        "line_params": ["Line type","Length","Name"],
+                        "buttons": ["New Line","Remove Line", "Add Lines"],
+                        "infos": ["INFORMATION","Line","Starting Bus", "Ending Bus"],
+                        "no_bus_error": "No Bus created",
+                        "errors": ["Available connection", 
+                        "Same buses in connection", "Different voltages",
+                        "Connection already exists"]
+                    },
+                    "transformer":
+                    {
+                        "name": "Transformer"
+                    }
+                },
+                "manager":
+                    {
+                        "title": "Bus and Links Management",
+                        "icon_label": ["Icon legend",{
+                            "bus": "Node",
+                            "line": "Line",
+                            "trafo": "Transformer",
+                            "trafo3w": "3-winding transformer",
+                            "impedance": "Impedance",
+                            "dcline": "Direct current line",
+                            "load": "Load",
+                            "sgen": "Static generator",
+                            "gen": "Synchronous generator",
+                            "storage": "Storage",
+                            "shunt": "Shunt reactance",
+                            "ward": "Ward model",
+                            "xward": "Extended Ward model",
+                            "motor": "Motor",
+                            "ext_grid": "External grid",
+                            "switch": "Switch"
+                        }],
+                        "tree_connectors": "Show connectors",
+                        "connectors": ["Connectors", "Color legend"],
+                        "bus_df": {
+                            "title": "Bus List",
+                            "legend": ["Column Legend",["Bus Name",["Type","Main","Auxiliary","Off"],"Operating voltage","ON/OFF","Minimum supported voltage", "Maximum supported voltage"]]
+                        }
+                    }
+            },
+            "gens":
+            {
+                "title": "Generators",
+                "new_item": "Add new element",
+                "select_item": "Select element to add",
+                "item":
+                {
+                    "sgen":{
+                        "name": "Static Generator",
+                        "titles": ["Properties","Voltage","Connected Bus"],
+                        "labels": ["Name","Quantity","Active Generator","Voltage","Scale","Reactive Power"],
+                        "bus_params":{
+                            "voltage": ["Low","Medium","High","Very high"],
+                            "level": ["Main","Auxiliary","Off"]
+                        },
+                        "buttons": ["New Static Generator","Remove generator", "Add Generators"]
+                        
+                    },
+                    "gen":{
+                        "name":"Active and Controllable Generator",
+                        "titles": ["Properties","Voltage","Connected Bus"],
+                        "labels": ["Name","Quantity","Active Generator","Slack","Controllable","Active Power","Nominal Voltage (at node)",
+                                   "Reactive Power","Nominal Apparent Power","Scale"],
+                        "bus_params":{
+                            "voltage": ["Low","Medium","High","Very high"],
+                            "level": ["Main","Auxiliary","Off"]
+                        },
+                        "buttons": ["New Static Generator","Remove generator", "Add Generators"]
+                    },
+                    "storage":
+                    {
+                        "name":"Battery"
+                    }
+                }
+
+            },
+            "passive":
+            {
+                "title": "Passive elements"
+            },
+            "sensors":
+            {
+                "title":"Sensors, controllers, limits"
+            }
+        },
+        "messages":
+        {
+            "no_grid": "The grid has not been saved yet"
+        }
+
+    },
+    "plant_manager":{
+        "title": "Plant Management and Analysis",
+        "selection": ["Select plant","Site","Plant"],
+        "buttons": ["Run","Save","All","Module","Grid", "Site","Simulation"],
+        "display_setup": ["PV Module","Grid","Site","Diagram","Description","Setup","Analysis"],
+        "messages":{
+            "no_plant_found": ["No plant","No folder found in /data"],
+            "folder_error": "Folder error"
+        }
+    }
+
+
+}

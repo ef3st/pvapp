@@ -1,0 +1,362 @@
+{
+    "main": {
+      "menu": ["Startseite", "Anlagen", "Anlagen vergleichen", "Anlagenverwaltung","Handbuch","Protokolle"],
+      "buttons": {
+        "simulate": "Alles simulieren",
+        "language": "Sprache"
+      }
+    },
+    "log": {
+        "title": "Protokoll",
+        "subtitle": "Systemprotokolle anzeigen",
+        "buttons": {
+            "clear_log": "Protokoll löschen"
+        },
+        "messages": {
+            "log_cleared": "Protokoll erfolgreich gelöscht",
+            "log_not_found": "Kein Protokoll gefunden"
+        }
+    },
+    "plots":{
+        "variable_description": {
+            "poa_global": "(W/m²) Globale Einstrahlung auf Modulebene (direkt + diffus)",
+            "poa_direct": "(W/m²) Direkte Einstrahlung auf Modulebene",
+            "poa_diffuse": "(W/m²) Diffuse Einstrahlung auf Modulebene",
+            "aoi": "(Grad) Einfallswinkel zwischen Sonne und Moduloberfläche",
+            "effective_irradiance": "(W/m²) Effektive Einstrahlung korrigiert für Winkel- und Spektralverluste",
+            "ac_v_mp": "(V) AC: Spannung am Maximum Power Point",
+            "ac_i_mp": "(A) AC: Strom am Maximum Power Point",
+            "ac_p_mp": "(W) AC: Leistung am Maximum Power Point",
+            "ac_i_sc": "(A) AC: Kurzschlussstrom",
+            "ac_v_oc": "(V) AC: Leerlaufspannung",
+            "ac_i_x": "Unbekannt",
+            "ac_i_xx": "Unbekannt",
+            "dc_v_mp": "(V) DC: Spannung am Maximum Power Point",
+            "dc_i_mp": "(A) DC: Strom am Maximum Power Point",
+            "dc_p_mp": "(W) DC: Leistung am Maximum Power Point",
+            "dc_i_sc": "(A) DC: Kurzschlussstrom",
+            "dc_v_oc": "(V) DC: Leerlaufspannung",
+            "dc_i_x": "Unbekannt",
+            "dc_i_xx": "Unbekannt",
+            "diode_voltage": "(V) Spannung an der internen Diode",
+            "shunt_current": "(A) Stromverlust durch Shunt-Widerstand",
+            "cell_teperature": "(°C) Temperatur der Solarzelle",
+            "temp_module": "(°C) Rückseitentemperatur des Moduls",
+            "dc_power": "(W) Gleichstromleistung am Ausgang des Moduls/Systems",
+            "ac_power": "(W) Wechselstromleistung nach dem Wechselrichter",
+            "losses": "(%) Gesamter Systemverlustfaktor (falls modelliert)",
+            "zenith": "(Grad) Zenitwinkel der Sonne",
+            "azimuth": "(Grad) Sonnenazimut",
+            "airmass": "(-) Relative Luftmasse (optische Länge in der Atmosphäre)",
+            "clearsky_ghi": "(W/m²) Globale horizontale Einstrahlung (klarer Himmel)",
+            "clearsky_dni": "(W/m²) Direkte normale Einstrahlung (klarer Himmel)",
+            "clearsky_dhi": "(W/m²) Diffuse horizontale Einstrahlung (klarer Himmel)"
+        }
+    },
+    "plants":{
+        "title": "Anlagen",
+        "df_title":["Standort","Adresse","Stadt","Anlage","Modul","Wechselrichter","Montage","Koordinaten","lat","lon","Simulation"],
+        "map":{
+            "title": "Karte"
+        },
+        "buttons": {
+            "add_plant": "Anlage hinzufügen",
+            "remove_plant": "Anlage entfernen"
+        },
+        "info": {
+            "plants_not_found": "Keine Anlage gefunden"
+        },
+        "messages":{
+            "no_plant_found": ["Keine Anlage","Kein Ordner in /data gefunden"],
+            "folder_error": "Ordnerfehler"
+        }
+    },
+
+    "plants_comparison":{
+        "title": "Anlagenvergleich",
+        "subtitle":{
+            "select_plants": "Wählen Sie die zu vergleichenden Anlagen",
+            "plots": "Diagramme",
+            "time_distribution": "Werte in Abhängigkeit von der Zeit",
+            "periodic": "Durchschnitts- und Summenwerte nach Zeitraum"    
+        },
+        "buttons":{
+            "select_all": "Alle auswählen",
+            "deselect_all":"Alle abwählen",
+            "sum": "Summe",
+            "mean": "Mittelwert",
+            "choose_var": "Variable zur Anzeige auswählen",
+            "choose_variable": "Variable wählen",
+            "periods": "Zeitraum wählen",
+            "option":  {
+                "label": "Intervall",
+                "options": ["Jährlich","Täglich"]
+            },
+            "choose_date": "Datum wählen",
+            "interval": "Intervall wählen"
+        },
+        "plots":{
+            "periodic": {
+                "legend": "Anlagen",
+                "x": "Zeitraum"
+            }
+        },
+        "messages":{
+            "no_plant_found": ["Keine Anlage","Erstellen Sie eine Anlage auf der Seite \"Anlagen\""],
+            "folder_error": "Ordnerfehler"
+        }
+    },
+    "plant_performance":
+    {
+        "title": "PV-Anlagenanalyse",
+        "subtitle": {
+            "plant_config": "Anlagenkonfiguration",
+            "site": "Standort",
+            "plant": "Anlage",
+            "coordinates": "Koordinaten",
+            "performance": "Leistung",
+            "periodic": "Durchschnitts- und Summenwerte nach Zeitraum",
+            "time_distribution": "Werte in Abhängigkeit von der Zeit",
+            "search_plant": "Anlage suchen",
+            "altitude_tz": "Höhe und Zeitzone",
+            "address": "Adresse"
+        },
+        "buttons":{
+            "site":{
+                "name": "Standortname",
+                "address": "Adresse",
+                "city": "Stadt",
+                "coordinates": "Koordinaten",
+                "lat": "Breitengrad",
+                "lon":"Längengrad",
+                "altitude": "Höhe",
+                "timezone": "Zeitzone"
+            },
+            "plant":{
+                "name": "Anlagenname",
+                "module": {
+                    "title": "Modul",
+                    "origin": "Quelle",
+                    "model": "Modell",
+                    "details": "Moduldetails anzeigen",
+                    "name": "Name"
+                },
+                "inverter": {
+                    "title": "Wechselrichter",
+                    "origin": "Quelle",
+                    "model": "Modell",
+                    "details": "Wechselrichterdetails anzeigen",
+                    "name": "Name"
+                },
+                "mount":{
+                    "title": "Anlagenmontage",
+                    "type": "Montagetyp"
+                }
+            },
+            "save": "Änderungen speichern",
+            "simulate": "Simulieren",
+            "choose_variable": "Variable wählen",
+            "sum": "Summe",
+            "mean": "Mittelwert",
+            "periods": "Zeitraum wählen",
+            "option":  {
+                "label": "Intervall",
+                "options": ["Jährlich","Täglich"]
+            },
+            "choose_date": "Datum wählen",
+            "interval": "Intervall wählen"
+        }
+    },
+    "module_manager":
+    {
+        "title": "PV-Anlagenanalyse",
+        "subtitle": {
+            "plant_config": "Anlagenkonfiguration",
+            "site": "Standort",
+            "plant": "Anlage",
+            "coordinates": "Koordinaten",
+            "performance": "Leistung",
+            "periodic": "Durchschnitts- und Summenwerte nach Zeitraum",
+            "time_distribution": "Werte in Abhängigkeit von der Zeit",
+            "search_plant": "Anlage suchen",
+            "altitude_tz": "Höhe und Zeitzone",
+            "address": "Adresse"
+        },
+        "buttons":{
+            "site":{
+                "name": "Standortname",
+                "address": "Adresse",
+                "city": "Stadt",
+                "coordinates": "Koordinaten",
+                "lat": "Breitengrad",
+                "lon":"Längengrad",
+                "altitude": "Höhe",
+                "timezone": "Zeitzone"
+            },
+            "plant":{
+                "name": "Anlagenname",
+                "module": {
+                    "title": "Modul",
+                    "origin": "Quelle",
+                    "model": "Modell",
+                    "details": "Moduldetails anzeigen",
+                    "name": "Name"
+                },
+                "inverter": {
+                    "title": "Wechselrichter",
+                    "origin": "Quelle",
+                    "model": "Modell",
+                    "details": "Wechselrichterdetails anzeigen",
+                    "name": "Name"
+                },
+                "mount":{
+                    "title": "Anlagenmontage",
+                    "type": "Montagetyp"
+                }
+            },
+            "save": "Änderungen speichern",
+            "simulate": "Simulieren",
+            "choose_variable": "Variable wählen",
+            "sum": "Summe",
+            "mean": "Mittelwert",
+            "periods": "Zeitraum wählen",
+            "option":  {
+                "label": "Intervall",
+                "options": ["Jährlich","Täglich"]
+            },
+            "choose_date": "Datum wählen",
+            "interval": "Intervall wählen"
+        }
+    },
+    "grid_manager":
+    {
+        "title": "Netzverwaltung",
+        "buttons": {
+            "save_grid": "Netz speichern"
+        },
+        "tabs":
+        {
+            "links":
+            {
+                "title": "Busse, Leitungen und Transformatoren",
+                "new_item": "Neues Element hinzufügen",
+                "select_item": "Element zum Hinzufügen auswählen",
+                "item":
+                {
+                    "bus":
+                    {
+                        "name": "Bus",
+                        "titles": ["Allgemein","Spannung"],
+                        "in_service": "Aktiver Knoten",
+                        "bus_level": ["Haupt","Hilfs", "Moff"],
+                        "voltage":["Niedrig", "Mittel", "Hoch", "Sehr hoch"],
+                        "constraints": ["Spannungsgrenzen festlegen","Spannung (kV)","min (kV)", "max (kV)"],
+                        "buttons": ["Neuer Knoten"," Knoten entfernen", "Knoten hinzufügen"]
+                    },
+                    "link":
+                    {
+                        "name": "Leitung",
+                        "buses": ["STARTBUS", "ZIELBUS"],
+                        "bus_identity": ["Busname", "Busindex"],
+                        "bus_level": ["Haupt","Hilfs", "Moff"],
+                        "line_params": ["Linientyp","Länge","Name"],
+                        "buttons": ["Neue Leitung"," Leitung entfernen", "Leitungen hinzufügen"],
+                        "infos": ["INFORMATIONEN","Leitung","Startbus", "Zielbus"],
+                        "no_bus_error": "Kein Bus erstellt",
+                        "errors": ["Verbindung möglich", 
+                        "Gleiche Busse verbunden", "Unterschiedliche Spannungen",
+                        "Verbindung bereits vorhanden"]
+                    },
+                    "transformer":
+                    {
+                        "name": "Transformator"
+                    }
+                },
+                "manager":
+                    {
+                        "title": "Bus- und Leitungsverwaltung",
+                        "icon_label": ["Symbollegende",{
+                            "bus": "Knoten",
+                            "line": "Leitung",
+                            "trafo": "Transformator",
+                            "trafo3w": "3-Wicklungs-Transformator",
+                            "impedance": "Impedanz",
+                            "dcline": "Gleichstromleitung",
+                            "load": "Last",
+                            "sgen": "Statischer Generator",
+                            "gen": "Synchron-Generator",
+                            "storage": "Speicher",
+                            "shunt": "Parallelreaktanz",
+                            "ward": "Ward-Modell",
+                            "xward": "Erweitertes Ward-Modell",
+                            "motor": "Motor",
+                            "ext_grid": "Externes Netz",
+                            "switch": "Schalter"
+                        }],
+                        "tree_connectors": "Verbinder anzeigen",
+                        "connectors": ["Verbinder", "Farblegende"],
+                        "bus_df": {
+                            "title": "Busliste",
+                            "legend": ["Spaltenlegende",["Busname",["Typ","Haupt","Hilfs","Moff"],"Betriebsspannung","AN/AUS","Minimale Spannung", "Maximale Spannung"]]
+                        }
+                    }
+            },
+            "gens":
+            {
+                "title": "Generatoren",
+                "new_item": "Neues Element hinzufügen",
+                "select_item": "Element zum Hinzufügen auswählen",
+                "item":
+                {
+                    "sgen":{
+                        "name": "Statischer Generator",
+                        "titles": ["Eigenschaften","Spannung","Angeschlossener Bus"],
+                        "labels": ["Name","Menge","Aktiver Generator","Spannung","Skalierung","Blindleistung"],
+                        "bus_params":{
+                            "voltage": ["Niedrig","Mittel","Hoch","Sehr hoch"],
+                            "level": ["Haupt","Hilfs","Moff"]
+                        },
+                        "buttons": ["Neuer statischer Generator"," Generator entfernen", "Generatoren hinzufügen"]
+                    },
+                    "gen":{
+                        "name":"Aktiver und regelbarer Generator",
+                        "titles": ["Eigenschaften","Spannung","Angeschlossener Bus"],
+                        "labels": ["Name","Menge","Aktiver Generator","Slack","Steuerbar","Wirklast","Nennspannung (am Knoten)",
+                                   "Blindleistung","Scheinleistung Nennwert","Skalierung"],
+                        "bus_params":{
+                            "voltage": ["Niedrig","Mittel","Hoch","Sehr hoch"],
+                            "level": ["Haupt","Hilfs","Moff"]
+                        },
+                        "buttons": ["Neuer statischer Generator"," Generator entfernen", "Generatoren hinzufügen"]
+                    },
+                    "storage":
+                    {
+                        "name":"Batterie"
+                    }
+                }
+            },
+            "passive":
+            {
+                "title": "Passive Elemente"
+            },
+            "sensors":
+            {
+                "title":"Sensoren, Steuerungen, Grenzen"
+            }
+        },
+        "messages":
+        {
+            "no_grid": "Das Netz wurde noch nicht gespeichert"
+        }
+    },
+    "plant_manager":{
+        "title": "Anlagenverwaltung und -analyse",
+        "selection": ["Anlage auswählen","Standort","Anlage"],
+        "buttons": ["Ausführen","Speichern","Alles","Modul","Netz", "Standort","Simulation"],
+        "display_setup": ["PV-Modul","Netz","Standort","Schema","Beschreibung","Konfiguration","Analyse"],
+        "messages":{
+            "no_plant_found": ["Keine Anlage","Kein Ordner in /data gefunden"],
+            "folder_error": "Ordnerfehler"
+        }
+    }
+}

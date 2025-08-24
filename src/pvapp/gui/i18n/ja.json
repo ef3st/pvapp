@@ -1,0 +1,251 @@
+{
+    "main": {
+      "menu": ["ホーム", "発電所", "発電所比較", "発電所管理","ガイド","ログ"],
+      "buttons": {
+        "simulate": "すべてシミュレーション",
+        "language": "言語"
+      }
+    },
+    "log": {
+        "title": "ログ",
+        "subtitle": "システムログを表示",
+        "buttons": {
+            "clear_log": "ログをクリア"
+        },
+        "messages": {
+            "log_cleared": "ログを正常にクリアしました",
+            "log_not_found": "ログが見つかりません"
+        }
+    },
+    "plots":{
+        "variable_description": {
+            "poa_global": "(W/m²) モジュール面での総放射（日射直達 + 散乱）",
+            "poa_direct": "(W/m²) モジュール面での直達放射",
+            "poa_diffuse": "(W/m²) モジュール面での散乱放射",
+            "aoi": "(度) 太陽とモジュール表面の入射角",
+            "effective_irradiance": "(W/m²) 有効放射（角度損失・スペクトル損失を補正）",
+            "ac_v_mp": "(V) AC: 最大電力点電圧",
+            "ac_i_mp": "(A) AC: 最大電力点電流",
+            "ac_p_mp": "(W) AC: 最大電力点電力",
+            "ac_i_sc": "(A) AC: 短絡電流",
+            "ac_v_oc": "(V) AC: 開放電圧",
+            "ac_i_x": "不明",
+            "ac_i_xx": "不明",
+            "dc_v_mp": "(V) DC: 最大電力点電圧",
+            "dc_i_mp": "(A) DC: 最大電力点電流",
+            "dc_p_mp": "(W) DC: 最大電力点電力",
+            "dc_i_sc": "(A) DC: 短絡電流",
+            "dc_v_oc": "(V) DC: 開放電圧",
+            "dc_i_x": "不明",
+            "dc_i_xx": "不明",
+            "diode_voltage": "(V) 内部ダイオード電圧",
+            "shunt_current": "(A) シャント抵抗による損失電流",
+            "cell_teperature": "(°C) 太陽電池セル温度",
+            "temp_module": "(°C) モジュール裏面温度",
+            "dc_power": "(W) モジュール/システムの直流出力",
+            "ac_power": "(W) インバータ後の交流出力",
+            "losses": "(%) システム全体の損失係数（モデル化されている場合）",
+            "zenith": "(度) 太陽天頂角",
+            "azimuth": "(度) 太陽方位角",
+            "airmass": "(-) 相対空気質量（大気中の光路長）",
+            "clearsky_ghi": "(W/m²) 全球水平放射（晴天）",
+            "clearsky_dni": "(W/m²) 直達正規放射（晴天）",
+            "clearsky_dhi": "(W/m²) 散乱水平放射（晴天）"
+        }
+    },
+    "plants":{
+        "title": "発電所",
+        "df_title":["サイト","住所","都市","発電所","モジュール","インバータ","架台","座標","緯度","経度","シミュレーション"],
+        "map":{
+            "title": "地図"
+        },
+        "buttons": {
+            "add_plant": "発電所を追加",
+            "remove_plant": "発電所を削除"
+        },
+        "info": {
+            "plants_not_found": "発電所が見つかりません"
+        },
+        "messages":{
+            "no_plant_found": ["発電所なし","/data にフォルダが見つかりません"],
+            "folder_error": "フォルダエラー"
+        }
+    },
+
+    "plants_comparison":{
+        "title": "発電所比較",
+        "subtitle":{
+            "select_plants": "比較する発電所を選択",
+            "plots": "グラフ",
+            "time_distribution": "時間ごとの値",
+            "periodic": "期間ごとの平均値と合計値"    
+        },
+        "buttons":{
+            "select_all": "すべて選択",
+            "deselect_all":"すべて解除",
+            "sum": "合計",
+            "mean": "平均",
+            "choose_var": "表示する変数を選択",
+            "choose_variable": "変数を選択",
+            "periods": "期間を選択",
+            "option":  {
+                "label": "間隔",
+                "options": ["年間","日次"]
+            },
+            "choose_date": "日付を選択",
+            "interval": "間隔を選択"
+        },
+        "plots":{
+            "periodic": {
+                "legend": "発電所",
+                "x": "期間"
+            }
+        },
+        "messages":{
+            "no_plant_found": ["発電所なし","「発電所」ページで作成してください"],
+            "folder_error": "フォルダエラー"
+        }
+    },
+    "plant_performance":
+    {
+        "title": "太陽光発電所分析",
+        "subtitle": {
+            "plant_config": "発電所構成",
+            "site": "サイト",
+            "plant": "発電所",
+            "coordinates": "座標",
+            "performance": "性能",
+            "periodic": "期間ごとの平均値と合計値",
+            "time_distribution": "時間ごとの値",
+            "search_plant": "発電所を検索",
+            "altitude_tz": "高度とタイムゾーン",
+            "address": "住所"
+        },
+        "buttons":{
+            "site":{
+                "name": "サイト名",
+                "address": "住所",
+                "city": "都市",
+                "coordinates": "座標",
+                "lat": "緯度",
+                "lon":"経度",
+                "altitude": "高度",
+                "timezone": "タイムゾーン"
+            },
+            "plant":{
+                "name": "発電所名",
+                "module": {
+                    "title": "モジュール",
+                    "origin": "ソース",
+                    "model": "モデル",
+                    "details": "モジュールの詳細を表示",
+                    "name": "名前"
+                },
+                "inverter": {
+                    "title": "インバータ",
+                    "origin": "ソース",
+                    "model": "モデル",
+                    "details": "インバータの詳細を表示",
+                    "name": "名前"
+                },
+                "mount":{
+                    "title": "発電所の架台",
+                    "type": "架台タイプ"
+                }
+            },
+            "save": "変更を保存",
+            "simulate": "シミュレーション",
+            "choose_variable": "変数を選択",
+            "sum": "合計",
+            "mean": "平均",
+            "periods": "期間を選択",
+            "option":  {
+                "label": "間隔",
+                "options": ["年間","日次"]
+            },
+            "choose_date": "日付を選択",
+            "interval": "間隔を選択"
+        }
+    },
+    "module_manager":
+    {
+        "title": "太陽光発電所分析",
+        "subtitle": {
+            "plant_config": "発電所構成",
+            "site": "サイト",
+            "plant": "発電所",
+            "coordinates": "座標",
+            "performance": "性能",
+            "periodic": "期間ごとの平均値と合計値",
+            "time_distribution": "時間ごとの値",
+            "search_plant": "発電所を検索",
+            "altitude_tz": "高度とタイムゾーン",
+            "address": "住所"
+        },
+        "buttons":{
+            "site":{
+                "name": "サイト名",
+                "address": "住所",
+                "city": "都市",
+                "coordinates": "座標",
+                "lat": "緯度",
+                "lon":"経度",
+                "altitude": "高度",
+                "timezone": "タイムゾーン"
+            },
+            "plant":{
+                "name": "発電所名",
+                "module": {
+                    "title": "モジュール",
+                    "origin": "ソース",
+                    "model": "モデル",
+                    "details": "モジュールの詳細を表示",
+                    "name": "名前"
+                },
+                "inverter": {
+                    "title": "インバータ",
+                    "origin": "ソース",
+                    "model": "モデル",
+                    "details": "インバータの詳細を表示",
+                    "name": "名前"
+                },
+                "mount":{
+                    "title": "発電所の架台",
+                    "type": "架台タイプ"
+                }
+            },
+            "save": "変更を保存",
+            "simulate": "シミュレーション",
+            "choose_variable": "変数を選択",
+            "sum": "合計",
+            "mean": "平均",
+            "periods": "期間を選択",
+            "option":  {
+                "label": "間隔",
+                "options": ["年間","日次"]
+            },
+            "choose_date": "日付を選択",
+            "interval": "間隔を選択"
+        }
+    },
+    "grid_manager":
+    {
+        "title": "グリッド管理",
+        "buttons": {
+            "save_grid": "グリッドを保存"
+        },
+        "messages": {
+            "no_grid": "グリッドはまだ保存されていません"
+        }
+    },
+    "plant_manager":{
+        "title": "発電所管理と分析",
+        "selection": ["発電所を選択","サイト","発電所"],
+        "buttons": ["実行","保存","すべて","モジュール","グリッド", "サイト","シミュレーション"],
+        "display_setup": ["太陽光モジュール","グリッド","サイト","スキーマ","説明","設定","分析"],
+        "messages":{
+            "no_plant_found": ["発電所なし","/data にフォルダが見つかりません"],
+            "folder_error": "フォルダエラー"
+        }
+    }
+}

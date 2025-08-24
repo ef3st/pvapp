@@ -1,0 +1,251 @@
+{
+    "main": {
+      "menu": ["Inicio", "Plantas", "Comparar Plantas", "Gestión de Planta","Guía","Registros"],
+      "buttons": {
+        "simulate": "Simular todo",
+        "language": "Idioma"
+      }
+    },
+    "log": {
+        "title": "Registro",
+        "subtitle": "Mostrar registros del sistema",
+        "buttons": {
+            "clear_log": "Borrar registro"
+        },
+        "messages": {
+            "log_cleared": "Registro borrado con éxito",
+            "log_not_found": "No se encontraron registros"
+        }
+    },
+    "plots":{
+        "variable_description": {
+            "poa_global": "(W/m²) Irradiancia global en el plano del módulo (directa + difusa)",
+            "poa_direct": "(W/m²) Irradiancia directa en el plano del módulo",
+            "poa_diffuse": "(W/m²) Irradiancia difusa en el plano del módulo",
+            "aoi": "(grados) Ángulo de incidencia entre el sol y la superficie del módulo",
+            "effective_irradiance": "(W/m²) Irradiancia efectiva corregida por pérdidas angulares y espectrales",
+            "ac_v_mp": "(V) AC: Voltaje en el punto de máxima potencia",
+            "ac_i_mp": "(A) AC: Corriente en el punto de máxima potencia",
+            "ac_p_mp": "(W) AC: Potencia en el punto de máxima potencia",
+            "ac_i_sc": "(A) AC: Corriente de cortocircuito",
+            "ac_v_oc": "(V) AC: Voltaje de circuito abierto",
+            "ac_i_x": "Desconocido",
+            "ac_i_xx": "Desconocido",
+            "dc_v_mp": "(V) DC: Voltaje en el punto de máxima potencia",
+            "dc_i_mp": "(A) DC: Corriente en el punto de máxima potencia",
+            "dc_p_mp": "(W) DC: Potencia en el punto de máxima potencia",
+            "dc_i_sc": "(A) DC: Corriente de cortocircuito",
+            "dc_v_oc": "(V) DC: Voltaje de circuito abierto",
+            "dc_i_x": "Desconocido",
+            "dc_i_xx": "Desconocido",
+            "diode_voltage": "(V) Voltaje en los terminales del diodo interno",
+            "shunt_current": "(A) Corriente perdida por resistencia de derivación",
+            "cell_teperature": "(°C) Temperatura de la celda fotovoltaica",
+            "temp_module": "(°C) Temperatura trasera del módulo",
+            "dc_power": "(W) Potencia en corriente continua a la salida del módulo/sistema",
+            "ac_power": "(W) Potencia en corriente alterna después del inversor",
+            "losses": "(%) Factor total de pérdidas del sistema (si está modelado)",
+            "zenith": "(grados) Ángulo cenital del sol",
+            "azimuth": "(grados) Azimut solar",
+            "airmass": "(-) Masa de aire relativa (longitud óptica en la atmósfera)",
+            "clearsky_ghi": "(W/m²) Irradiancia global horizontal (cielo despejado)",
+            "clearsky_dni": "(W/m²) Irradiancia directa normal (cielo despejado)",
+            "clearsky_dhi": "(W/m²) Irradiancia difusa horizontal (cielo despejado)"
+        }
+    },
+    "plants":{
+        "title": "Plantas",
+        "df_title":["Sitio","Dirección","Ciudad","Planta","Módulo","Inversor","Montaje","Coordenadas","lat","lon","Simulación"],
+        "map":{
+            "title": "Mapa"
+        },
+        "buttons": {
+            "add_plant": "Añadir planta",
+            "remove_plant": "Eliminar planta"
+        },
+        "info": {
+            "plants_not_found": "No se encontraron plantas"
+        },
+        "messages":{
+            "no_plant_found": ["Ninguna planta","No se encontró carpeta en /data"],
+            "folder_error": "Error de carpeta"
+        }
+    },
+
+    "plants_comparison":{
+        "title": "Comparación de Plantas",
+        "subtitle":{
+            "select_plants": "Seleccione las plantas a comparar",
+            "plots": "Gráficos",
+            "time_distribution": "Valores en función del tiempo",
+            "periodic": "Valores medios y resumidos por período"    
+        },
+        "buttons":{
+            "select_all": "Seleccionar todo",
+            "deselect_all":"Deseleccionar todo",
+            "sum": "Suma",
+            "mean": "Media",
+            "choose_var": "Seleccionar variable a mostrar",
+            "choose_variable": "Elegir variable",
+            "periods": "Elegir período",
+            "option":  {
+                "label": "Intervalo",
+                "options": ["Anual","Diario"]
+            },
+            "choose_date": "Elegir fecha",
+            "interval": "Elegir intervalo"
+        },
+        "plots":{
+            "periodic": {
+                "legend": "Plantas",
+                "x": "Período"
+            }
+        },
+        "messages":{
+            "no_plant_found": ["Ninguna planta","Cree una planta en la página \"Plantas\""],
+            "folder_error": "Error de carpeta"
+        }
+    },
+    "plant_performance":
+    {
+        "title": "Análisis de Planta FV",
+        "subtitle": {
+            "plant_config": "Configuración de la planta",
+            "site": "Sitio",
+            "plant": "Planta",
+            "coordinates": "Coordenadas",
+            "performance": "Rendimiento",
+            "periodic": "Valores medios y resumidos por período",
+            "time_distribution": "Valores en función del tiempo",
+            "search_plant": "Buscar planta",
+            "altitude_tz": "Altitud y Zona horaria",
+            "address": "Dirección"
+        },
+        "buttons":{
+            "site":{
+                "name": "Nombre del sitio",
+                "address": "Dirección",
+                "city": "Ciudad",
+                "coordinates": "Coordenadas",
+                "lat": "Latitud",
+                "lon":"Longitud",
+                "altitude": "Altitud",
+                "timezone": "Zona horaria"
+            },
+            "plant":{
+                "name": "Nombre de la planta",
+                "module": {
+                    "title": "Módulo",
+                    "origin": "Fuente",
+                    "model": "Modelo",
+                    "details": "Mostrar detalles del módulo",
+                    "name": "Nombre"
+                },
+                "inverter": {
+                    "title": "Inversor",
+                    "origin": "Fuente",
+                    "model": "Modelo",
+                    "details": "Mostrar detalles del inversor",
+                    "name": "Nombre"
+                },
+                "mount":{
+                    "title": "Montaje de la planta",
+                    "type": "Tipo de montaje"
+                }
+            },
+            "save": "Guardar cambios",
+            "simulate": "Simular",
+            "choose_variable": "Elegir variable",
+            "sum": "Suma",
+            "mean": "Media",
+            "periods": "Elegir período",
+            "option":  {
+                "label": "Intervalo",
+                "options": ["Anual","Diario"]
+            },
+            "choose_date": "Elegir fecha",
+            "interval": "Elegir intervalo"
+        }
+    },
+    "module_manager":
+    {
+        "title": "Análisis de Planta FV",
+        "subtitle": {
+            "plant_config": "Configuración de la planta",
+            "site": "Sitio",
+            "plant": "Planta",
+            "coordinates": "Coordenadas",
+            "performance": "Rendimiento",
+            "periodic": "Valores medios y resumidos por período",
+            "time_distribution": "Valores en función del tiempo",
+            "search_plant": "Buscar planta",
+            "altitude_tz": "Altitud y Zona horaria",
+            "address": "Dirección"
+        },
+        "buttons":{
+            "site":{
+                "name": "Nombre del sitio",
+                "address": "Dirección",
+                "city": "Ciudad",
+                "coordinates": "Coordenadas",
+                "lat": "Latitud",
+                "lon":"Longitud",
+                "altitude": "Altitud",
+                "timezone": "Zona horaria"
+            },
+            "plant":{
+                "name": "Nombre de la planta",
+                "module": {
+                    "title": "Módulo",
+                    "origin": "Fuente",
+                    "model": "Modelo",
+                    "details": "Mostrar detalles del módulo",
+                    "name": "Nombre"
+                },
+                "inverter": {
+                    "title": "Inversor",
+                    "origin": "Fuente",
+                    "model": "Modelo",
+                    "details": "Mostrar detalles del inversor",
+                    "name": "Nombre"
+                },
+                "mount":{
+                    "title": "Montaje de la planta",
+                    "type": "Tipo de montaje"
+                }
+            },
+            "save": "Guardar cambios",
+            "simulate": "Simular",
+            "choose_variable": "Elegir variable",
+            "sum": "Suma",
+            "mean": "Media",
+            "periods": "Elegir período",
+            "option":  {
+                "label": "Intervalo",
+                "options": ["Anual","Diario"]
+            },
+            "choose_date": "Elegir fecha",
+            "interval": "Elegir intervalo"
+        }
+    },
+    "grid_manager":
+    {
+        "title": "Gestión de la Red",
+        "buttons": {
+            "save_grid": "Guardar Red"
+        },
+        "messages": {
+            "no_grid": "La red aún no ha sido guardada"
+        }
+    },
+    "plant_manager":{
+        "title": "Gestión y análisis de Planta",
+        "selection": ["Seleccionar planta","Sitio","Planta"],
+        "buttons": ["Ejecutar","Guardar","Todo","Módulo","Red", "Sitio","Simulación"],
+        "display_setup": ["Módulo FV","Red","Sitio","Esquema","Descripción","Configuración","Análisis"],
+        "messages":{
+            "no_plant_found": ["Ninguna planta","No se encontró carpeta en /data"],
+            "folder_error": "Error de carpeta"
+        }
+    }
+}

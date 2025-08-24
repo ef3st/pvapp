@@ -1,0 +1,362 @@
+{
+    "main": {
+      "menu": ["首页", "电站", "对比电站", "电站管理","指南","日志"],
+      "buttons": {
+        "simulate": "模拟全部",
+        "language": "语言"
+      }
+    },
+    "log": {
+        "title": "日志",
+        "subtitle": "查看系统日志",
+        "buttons": {
+            "clear_log": "清除日志"
+        },
+        "messages": {
+            "log_cleared": "日志清除成功",
+            "log_not_found": "未找到日志"
+        }
+    },
+    "plots":{
+        "variable_description": {
+            "poa_global": "(W/m²) 模块平面上的总辐照度（直射 + 散射）",
+            "poa_direct": "(W/m²) 模块平面上的直射辐照度",
+            "poa_diffuse": "(W/m²) 模块平面上的散射辐照度",
+            "aoi": "(度) 太阳与模块表面之间的入射角",
+            "effective_irradiance": "(W/m²) 有效辐照度（修正角度与光谱损失）",
+            "ac_v_mp": "(V) 交流：最大功率点电压",
+            "ac_i_mp": "(A) 交流：最大功率点电流",
+            "ac_p_mp": "(W) 交流：最大功率点功率",
+            "ac_i_sc": "(A) 交流：短路电流",
+            "ac_v_oc": "(V) 交流：开路电压",
+            "ac_i_x": "未知",
+            "ac_i_xx": "未知",
+            "dc_v_mp": "(V) 直流：最大功率点电压",
+            "dc_i_mp": "(A) 直流：最大功率点电流",
+            "dc_p_mp": "(W) 直流：最大功率点功率",
+            "dc_i_sc": "(A) 直流：短路电流",
+            "dc_v_oc": "(V) 直流：开路电压",
+            "dc_i_x": "未知",
+            "dc_i_xx": "未知",
+            "diode_voltage": "(V) 内部二极管电压",
+            "shunt_current": "(A) 通过分流电阻损失的电流",
+            "cell_teperature": "(°C) 光伏电池温度",
+            "temp_module": "(°C) 模块背面温度",
+            "dc_power": "(W) 模块/系统直流输出功率",
+            "ac_power": "(W) 逆变器后的交流功率",
+            "losses": "(%) 系统总损失因子（若已建模）",
+            "zenith": "(度) 太阳天顶角",
+            "azimuth": "(度) 太阳方位角",
+            "airmass": "(-) 相对空气质量（大气中的光程长度）",
+            "clearsky_ghi": "(W/m²) 全球水平辐照度（晴空）",
+            "clearsky_dni": "(W/m²) 直射法向辐照度（晴空）",
+            "clearsky_dhi": "(W/m²) 散射水平辐照度（晴空）"
+        }
+    },
+    "plants":{
+        "title": "电站",
+        "df_title":["地点","地址","城市","电站","组件","逆变器","安装","坐标","纬度","经度","模拟"],
+        "map":{
+            "title": "地图"
+        },
+        "buttons": {
+            "add_plant": "添加电站",
+            "remove_plant": "删除电站"
+        },
+        "info": {
+            "plants_not_found": "未找到电站"
+        },
+        "messages":{
+            "no_plant_found": ["没有电站","/data 中未找到文件夹"],
+            "folder_error": "文件夹错误"
+        }
+    },
+
+    "plants_comparison":{
+        "title": "电站对比",
+        "subtitle":{
+            "select_plants": "选择要对比的电站",
+            "plots": "图表",
+            "time_distribution": "随时间变化的数值",
+            "periodic": "按周期的平均值与汇总值"    
+        },
+        "buttons":{
+            "select_all": "全选",
+            "deselect_all":"取消全选",
+            "sum": "总和",
+            "mean": "平均",
+            "choose_var": "选择要显示的变量",
+            "choose_variable": "选择变量",
+            "periods": "选择周期",
+            "option":  {
+                "label": "区间",
+                "options": ["年度","每日"]
+            },
+            "choose_date": "选择日期",
+            "interval": "选择区间"
+        },
+        "plots":{
+            "periodic": {
+                "legend": "电站",
+                "x": "周期"
+            }
+        },
+        "messages":{
+            "no_plant_found": ["没有电站","请在“电站”页面创建电站"],
+            "folder_error": "文件夹错误"
+        }
+    },
+    "plant_performance":
+    {
+        "title": "光伏电站分析",
+        "subtitle": {
+            "plant_config": "电站配置",
+            "site": "地点",
+            "plant": "电站",
+            "coordinates": "坐标",
+            "performance": "性能",
+            "periodic": "按周期的平均值与汇总值",
+            "time_distribution": "随时间变化的数值",
+            "search_plant": "搜索电站",
+            "altitude_tz": "海拔与时区",
+            "address": "地址"
+        },
+        "buttons":{
+            "site":{
+                "name": "地点名称",
+                "address": "地址",
+                "city": "城市",
+                "coordinates": "坐标",
+                "lat": "纬度",
+                "lon":"经度",
+                "altitude": "海拔",
+                "timezone": "时区"
+            },
+            "plant":{
+                "name": "电站名称",
+                "module": {
+                    "title": "组件",
+                    "origin": "来源",
+                    "model": "型号",
+                    "details": "显示组件详情",
+                    "name": "名称"
+                },
+                "inverter": {
+                    "title": "逆变器",
+                    "origin": "来源",
+                    "model": "型号",
+                    "details": "显示逆变器详情",
+                    "name": "名称"
+                },
+                "mount":{
+                    "title": "电站安装",
+                    "type": "安装类型"
+                }
+            },
+            "save": "保存更改",
+            "simulate": "模拟",
+            "choose_variable": "选择变量",
+            "sum": "总和",
+            "mean": "平均",
+            "periods": "选择周期",
+            "option":  {
+                "label": "区间",
+                "options": ["年度","每日"]
+            },
+            "choose_date": "选择日期",
+            "interval": "选择区间"
+        }
+    },
+    "module_manager":
+    {
+        "title": "光伏电站分析",
+        "subtitle": {
+            "plant_config": "电站配置",
+            "site": "地点",
+            "plant": "电站",
+            "coordinates": "坐标",
+            "performance": "性能",
+            "periodic": "按周期的平均值与汇总值",
+            "time_distribution": "随时间变化的数值",
+            "search_plant": "搜索电站",
+            "altitude_tz": "海拔与时区",
+            "address": "地址"
+        },
+        "buttons":{
+            "site":{
+                "name": "地点名称",
+                "address": "地址",
+                "city": "城市",
+                "coordinates": "坐标",
+                "lat": "纬度",
+                "lon":"经度",
+                "altitude": "海拔",
+                "timezone": "时区"
+            },
+            "plant":{
+                "name": "电站名称",
+                "module": {
+                    "title": "组件",
+                    "origin": "来源",
+                    "model": "型号",
+                    "details": "显示组件详情",
+                    "name": "名称"
+                },
+                "inverter": {
+                    "title": "逆变器",
+                    "origin": "来源",
+                    "model": "型号",
+                    "details": "显示逆变器详情",
+                    "name": "名称"
+                },
+                "mount":{
+                    "title": "电站安装",
+                    "type": "安装类型"
+                }
+            },
+            "save": "保存更改",
+            "simulate": "模拟",
+            "choose_variable": "选择变量",
+            "sum": "总和",
+            "mean": "平均",
+            "periods": "选择周期",
+            "option":  {
+                "label": "区间",
+                "options": ["年度","每日"]
+            },
+            "choose_date": "选择日期",
+            "interval": "选择区间"
+        }
+    },
+    "grid_manager":
+    {
+        "title": "电网管理",
+        "buttons": {
+            "save_grid": "保存电网"
+        },
+        "tabs":
+        {
+            "links":
+            {
+                "title": "母线、线路和变压器",
+                "new_item": "添加新元素",
+                "select_item": "选择要添加的元素",
+                "item":
+                {
+                    "bus":
+                    {
+                        "name": "母线",
+                        "titles": ["常规","电压"],
+                        "in_service": "活动节点",
+                        "bus_level": ["主","辅助", "Moff"],
+                        "voltage":["低", "中", "高", "超高"],
+                        "constraints": ["设置电压限制","电压 (kV)","最小 (kV)", "最大 (kV)"],
+                        "buttons": ["新母线"," 删除母线", "添加母线"]
+                    },
+                    "link":
+                    {
+                        "name": "线路",
+                        "buses": ["起始母线", "终止母线"],
+                        "bus_identity": ["母线名称", "母线索引"],
+                        "bus_level": ["主","辅助", "Moff"],
+                        "line_params": ["线路类型","长度","名称"],
+                        "buttons": ["新线路"," 删除线路", "添加线路"],
+                        "infos": ["信息","线路","起始母线", "终止母线"],
+                        "no_bus_error": "未创建母线",
+                        "errors": ["连接可用", 
+                        "相同母线连接", "电压不同",
+                        "连接已存在"]
+                    },
+                    "transformer":
+                    {
+                        "name": "变压器"
+                    }
+                },
+                "manager":
+                    {
+                        "title": "母线与线路管理",
+                        "icon_label": ["图标说明",{
+                            "bus": "节点",
+                            "line": "线路",
+                            "trafo": "变压器",
+                            "trafo3w": "三绕组变压器",
+                            "impedance": "阻抗",
+                            "dcline": "直流线路",
+                            "load": "负载",
+                            "sgen": "静态发电机",
+                            "gen": "同步发电机",
+                            "storage": "储能",
+                            "shunt": "并联电抗器",
+                            "ward": "Ward 模型",
+                            "xward": "扩展 Ward 模型",
+                            "motor": "电机",
+                            "ext_grid": "外部电网",
+                            "switch": "开关"
+                        }],
+                        "tree_connectors": "显示连接器",
+                        "connectors": ["连接器", "颜色说明"],
+                        "bus_df": {
+                            "title": "母线列表",
+                            "legend": ["列说明",["母线名称",["类型","主","辅助","Moff"],"运行电压","开/关","最小电压", "最大电压"]]
+                        }
+                    }
+            },
+            "gens":
+            {
+                "title": "发电机",
+                "new_item": "添加新元素",
+                "select_item": "选择要添加的元素",
+                "item":
+                {
+                    "sgen":{
+                        "name": "静态发电机",
+                        "titles": ["属性","电压","连接母线"],
+                        "labels": ["名称","数量","活动发电机","电压","比例","无功功率"],
+                        "bus_params":{
+                            "voltage": ["低","中","高","超高"],
+                            "level": ["主","辅助","Moff"]
+                        },
+                        "buttons": ["新静态发电机"," 删除发电机", "添加发电机"]
+                    },
+                    "gen":{
+                        "name":"活动且可控发电机",
+                        "titles": ["属性","电压","连接母线"],
+                        "labels": ["名称","数量","活动发电机","平衡","可控","有功功率","节点额定电压",
+                                   "无功功率","额定视在功率","比例"],
+                        "bus_params":{
+                            "voltage": ["低","中","高","超高"],
+                            "level": ["主","辅助","Moff"]
+                        },
+                        "buttons": ["新静态发电机"," 删除发电机", "添加发电机"]
+                    },
+                    "storage":
+                    {
+                        "name":"电池"
+                    }
+                }
+            },
+            "passive":
+            {
+                "title": "被动元件"
+            },
+            "sensors":
+            {
+                "title":"传感器、控制器、限制"
+            }
+        },
+        "messages":
+        {
+            "no_grid": "电网尚未保存"
+        }
+    },
+    "plant_manager":{
+        "title": "电站管理与分析",
+        "selection": ["选择电站","地点","电站"],
+        "buttons": ["执行","保存","全部","组件","电网", "地点","模拟"],
+        "display_setup": ["光伏组件","电网","地点","示意图","描述","配置","分析"],
+        "messages":{
+            "no_plant_found": ["没有电站","/data 中未找到文件夹"],
+            "folder_error": "文件夹错误"
+        }
+    }
+}

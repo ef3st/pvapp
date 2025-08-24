@@ -1,18 +1,17 @@
 
-<!-- [![CI](https://img.shields.io/github/actions/workflow/status/ef3st/solartracker/ci.yml?branch=main&label=CI)](https://github.com/ef3st/solartracker/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/ef3st/solartracker?label=coverage)](https://codecov.io/gh/ef3st/solartracker)
-[![Last Commit](https://img.shields.io/github/last-commit/ef3st/solartracker)](https://github.com/ef3st/solartracker/commits/main) -->
+<!-- [![CI](https://img.shields.io/github/actions/workflow/status/ef3st/pvapp/ci.yml?branch=main&label=CI)](https://github.com/ef3st/pvapp/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/ef3st/pvapp?label=coverage)](https://codecov.io/gh/ef3st/pvapp)
+[![Last Commit](https://img.shields.io/github/last-commit/ef3st/pvapp)](https://github.com/ef3st/pvapp/commits/main) -->
 
 
-<!-- > Solar Tracking software for a PV implant. Written in python, the iplant is model with pvlib -->
-
+<!-- > Solar Tracking software for a PV plant. Written in python, the iplant is model with pvlib -->
 
 # 🖼️ Basic Guide to the GUI
 
 *PVApp* is divided in four main pages and two utily pages:
 1. ***Home***: (You are here!). Basic commands and a summury of what PVApp does and eventually some important future updaes.
 > **Manager and Analyser Pages**
-2. ***Plants***: Here you can find main details about the plants grouped in a table. Moreover a map shows you the actual positions of implants. Here you can also add plants, setting basic properties of PV module, inverters and mounting system.
+2. ***Plants***: Here you can find main details about the plants grouped in a table. Moreover a map shows you the actual positions of plants. Here you can also add plants, setting basic properties of PV module, inverters and mounting system.
 3. ***Plants comparison***: This page provides an overview and detailed comparative analysis of simulation parameters for the PV plants selected by the user. Comparisons can be performed on a seasonal, annual on averaged or summend parameter values, but also on on hourly basis, over a time range that spans either the entire simulation or a user-defined interval.
 4. ***Plant Manager***: From this page, it is possible setting the electrical grid of the plant, changing plant setup, both for module and site, and analyses the simulation results both for PV arrays and entire grid. 
   
@@ -50,7 +49,7 @@ poetry run pytest --cov=src --cov-report=term
 ```
 ---
 
- ## 💡 Implant simulation
+ ## 💡 Plant simulation
 
 1. Define Site Location
 2. Create Time Series
@@ -91,5 +90,5 @@ These steps are incorporated by the PVLib toolbox using modular programming and 
 >                      'close-button':{'':''},
 >                      'link':{'':''}}
 >
->            custom_notification_box(icon='info', textDisplay=f"Simulation for {implant["name"]} in site {site["name"]} done", externalLink='more info', url='#', styles=styles, key="foo")
+>            custom_notification_box(icon='info', textDisplay=f"Simulation for {plant["name"]} in site {site["name"]} done", externalLink='more info', url='#', styles=styles, key="foo")
 >           

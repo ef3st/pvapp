@@ -1,0 +1,362 @@
+{
+    "main": {
+      "menu": ["Início", "Usinas", "Comparar Usinas", "Gestão da Usina","Guia","Registros"],
+      "buttons": {
+        "simulate": "Simular tudo",
+        "language": "Idioma"
+      }
+    },
+    "log": {
+        "title": "Registro",
+        "subtitle": "Exibir registros do sistema",
+        "buttons": {
+            "clear_log": "Limpar registro"
+        },
+        "messages": {
+            "log_cleared": "Registro limpo com sucesso",
+            "log_not_found": "Nenhum registro encontrado"
+        }
+    },
+    "plots":{
+        "variable_description": {
+            "poa_global": "(W/m²) Irradiância global no plano do módulo (direta + difusa)",
+            "poa_direct": "(W/m²) Irradiância direta no plano do módulo",
+            "poa_diffuse": "(W/m²) Irradiância difusa no plano do módulo",
+            "aoi": "(graus) Ângulo de incidência entre o sol e a superfície do módulo",
+            "effective_irradiance": "(W/m²) Irradiância efetiva corrigida por perdas angulares e espectrais",
+            "ac_v_mp": "(V) AC: Tensão no ponto de máxima potência",
+            "ac_i_mp": "(A) AC: Corrente no ponto de máxima potência",
+            "ac_p_mp": "(W) AC: Potência no ponto de máxima potência",
+            "ac_i_sc": "(A) AC: Corrente de curto-circuito",
+            "ac_v_oc": "(V) AC: Tensão em circuito aberto",
+            "ac_i_x": "Desconhecido",
+            "ac_i_xx": "Desconhecido",
+            "dc_v_mp": "(V) DC: Tensão no ponto de máxima potência",
+            "dc_i_mp": "(A) DC: Corrente no ponto de máxima potência",
+            "dc_p_mp": "(W) DC: Potência no ponto de máxima potência",
+            "dc_i_sc": "(A) DC: Corrente de curto-circuito",
+            "dc_v_oc": "(V) DC: Tensão em circuito aberto",
+            "dc_i_x": "Desconhecido",
+            "dc_i_xx": "Desconhecido",
+            "diode_voltage": "(V) Tensão nos terminais do diodo interno",
+            "shunt_current": "(A) Corrente perdida por resistência de derivação",
+            "cell_teperature": "(°C) Temperatura da célula fotovoltaica",
+            "temp_module": "(°C) Temperatura traseira do módulo",
+            "dc_power": "(W) Potência em corrente contínua na saída do módulo/sistema",
+            "ac_power": "(W) Potência em corrente alternada após o inversor",
+            "losses": "(%) Fator total de perdas do sistema (se modelado)",
+            "zenith": "(graus) Ângulo zenital do sol",
+            "azimuth": "(graus) Azimute solar",
+            "airmass": "(-) Massa de ar relativa (comprimento óptico na atmosfera)",
+            "clearsky_ghi": "(W/m²) Irradiância global horizontal (céu claro)",
+            "clearsky_dni": "(W/m²) Irradiância direta normal (céu claro)",
+            "clearsky_dhi": "(W/m²) Irradiância difusa horizontal (céu claro)"
+        }
+    },
+    "plants":{
+        "title": "Usinas",
+        "df_title":["Local","Endereço","Cidade","Usina","Módulo","Inversor","Montagem","Coordenadas","lat","lon","Simulação"],
+        "map":{
+            "title": "Mapa"
+        },
+        "buttons": {
+            "add_plant": "Adicionar usina",
+            "remove_plant": "Remover usina"
+        },
+        "info": {
+            "plants_not_found": "Nenhuma usina encontrada"
+        },
+        "messages":{
+            "no_plant_found": ["Nenhuma usina","Nenhuma pasta encontrada em /data"],
+            "folder_error": "Erro de pasta"
+        }
+    },
+
+    "plants_comparison":{
+        "title": "Comparação de Usinas",
+        "subtitle":{
+            "select_plants": "Selecione as usinas para comparar",
+            "plots": "Gráficos",
+            "time_distribution": "Valores em função do tempo",
+            "periodic": "Valores médios e resumidos por período"    
+        },
+        "buttons":{
+            "select_all": "Selecionar tudo",
+            "deselect_all":"Desmarcar tudo",
+            "sum": "Soma",
+            "mean": "Média",
+            "choose_var": "Selecionar variável para exibir",
+            "choose_variable": "Escolher variável",
+            "periods": "Escolher período",
+            "option":  {
+                "label": "Intervalo",
+                "options": ["Anual","Diário"]
+            },
+            "choose_date": "Escolher data",
+            "interval": "Escolher intervalo"
+        },
+        "plots":{
+            "periodic": {
+                "legend": "Usinas",
+                "x": "Período"
+            }
+        },
+        "messages":{
+            "no_plant_found": ["Nenhuma usina","Crie uma usina na página \"Usinas\""],
+            "folder_error": "Erro de pasta"
+        }
+    },
+    "plant_performance":
+    {
+        "title": "Análise da Usina FV",
+        "subtitle": {
+            "plant_config": "Configuração da usina",
+            "site": "Local",
+            "plant": "Usina",
+            "coordinates": "Coordenadas",
+            "performance": "Desempenho",
+            "periodic": "Valores médios e resumidos por período",
+            "time_distribution": "Valores em função do tempo",
+            "search_plant": "Pesquisar usina",
+            "altitude_tz": "Altitude e Fuso horário",
+            "address": "Endereço"
+        },
+        "buttons":{
+            "site":{
+                "name": "Nome do local",
+                "address": "Endereço",
+                "city": "Cidade",
+                "coordinates": "Coordenadas",
+                "lat": "Latitude",
+                "lon":"Longitude",
+                "altitude": "Altitude",
+                "timezone": "Fuso horário"
+            },
+            "plant":{
+                "name": "Nome da usina",
+                "module": {
+                    "title": "Módulo",
+                    "origin": "Fonte",
+                    "model": "Modelo",
+                    "details": "Mostrar detalhes do módulo",
+                    "name": "Nome"
+                },
+                "inverter": {
+                    "title": "Inversor",
+                    "origin": "Fonte",
+                    "model": "Modelo",
+                    "details": "Mostrar detalhes do inversor",
+                    "name": "Nome"
+                },
+                "mount":{
+                    "title": "Montagem da usina",
+                    "type": "Tipo de montagem"
+                }
+            },
+            "save": "Salvar alterações",
+            "simulate": "Simular",
+            "choose_variable": "Escolher variável",
+            "sum": "Soma",
+            "mean": "Média",
+            "periods": "Escolher período",
+            "option":  {
+                "label": "Intervalo",
+                "options": ["Anual","Diário"]
+            },
+            "choose_date": "Escolher data",
+            "interval": "Escolher intervalo"
+        }
+    },
+    "module_manager":
+    {
+        "title": "Análise da Usina FV",
+        "subtitle": {
+            "plant_config": "Configuração da usina",
+            "site": "Local",
+            "plant": "Usina",
+            "coordinates": "Coordenadas",
+            "performance": "Desempenho",
+            "periodic": "Valores médios e resumidos por período",
+            "time_distribution": "Valores em função do tempo",
+            "search_plant": "Pesquisar usina",
+            "altitude_tz": "Altitude e Fuso horário",
+            "address": "Endereço"
+        },
+        "buttons":{
+            "site":{
+                "name": "Nome do local",
+                "address": "Endereço",
+                "city": "Cidade",
+                "coordinates": "Coordenadas",
+                "lat": "Latitude",
+                "lon":"Longitude",
+                "altitude": "Altitude",
+                "timezone": "Fuso horário"
+            },
+            "plant":{
+                "name": "Nome da usina",
+                "module": {
+                    "title": "Módulo",
+                    "origin": "Fonte",
+                    "model": "Modelo",
+                    "details": "Mostrar detalhes do módulo",
+                    "name": "Nome"
+                },
+                "inverter": {
+                    "title": "Inversor",
+                    "origin": "Fonte",
+                    "model": "Modelo",
+                    "details": "Mostrar detalhes do inversor",
+                    "name": "Nome"
+                },
+                "mount":{
+                    "title": "Montagem da usina",
+                    "type": "Tipo de montagem"
+                }
+            },
+            "save": "Salvar alterações",
+            "simulate": "Simular",
+            "choose_variable": "Escolher variável",
+            "sum": "Soma",
+            "mean": "Média",
+            "periods": "Escolher período",
+            "option":  {
+                "label": "Intervalo",
+                "options": ["Anual","Diário"]
+            },
+            "choose_date": "Escolher data",
+            "interval": "Escolher intervalo"
+        }
+    },
+    "grid_manager":
+    {
+        "title": "Gestão da Rede",
+        "buttons": {
+            "save_grid": "Salvar rede"
+        },
+        "tabs":
+        {
+            "links":
+            {
+                "title": "Barras, linhas e transformadores",
+                "new_item": "Adicionar novo elemento",
+                "select_item": "Selecionar elemento para adicionar",
+                "item":
+                {
+                    "bus":
+                    {
+                        "name": "Barra",
+                        "titles": ["Geral","Tensão"],
+                        "in_service": "Nó ativo",
+                        "bus_level": ["Principal","Auxiliar", "Moff"],
+                        "voltage":["Baixa", "Média", "Alta", "Muito alta"],
+                        "constraints": ["Definir limites de tensão","Tensão (kV)","mín (kV)", "máx (kV)"],
+                        "buttons": ["Nova barra"," Remover barra", "Adicionar barras"]
+                    },
+                    "link":
+                    {
+                        "name": "Linha",
+                        "buses": ["BARRA DE SAÍDA", "BARRA DE CHEGADA"],
+                        "bus_identity": ["Nome da Barra", "Índice da Barra"],
+                        "bus_level": ["Principal","Auxiliar", "Moff"],
+                        "line_params": ["Tipo de linha","Comprimento","Nome"],
+                        "buttons": ["Nova linha"," Remover linha", "Adicionar linhas"],
+                        "infos": ["INFORMAÇÕES","Linha","Barra de saída", "Barra de chegada"],
+                        "no_bus_error": "Nenhuma barra criada",
+                        "errors": ["Conexão disponível", 
+                        "Mesmas barras na conexão", "Tensões diferentes",
+                        "Conexão já existente"]
+                    },
+                    "transformer":
+                    {
+                        "name": "Transformador"
+                    }
+                },
+                "manager":
+                    {
+                        "title": "Gestão de Barras e Linhas",
+                        "icon_label": ["Legenda de ícones",{
+                            "bus": "Nó",
+                            "line": "Linha",
+                            "trafo": "Transformador",
+                            "trafo3w": "Transformador de 3 enrolamentos",
+                            "impedance": "Impedância",
+                            "dcline": "Linha em corrente contínua",
+                            "load": "Carga",
+                            "sgen": "Gerador estático",
+                            "gen": "Gerador síncrono",
+                            "storage": "Armazenamento",
+                            "shunt": "Reatância em derivação",
+                            "ward": "Modelo Ward",
+                            "xward": "Modelo Ward estendido",
+                            "motor": "Motor",
+                            "ext_grid": "Rede externa",
+                            "switch": "Interruptor"
+                        }],
+                        "tree_connectors": "Mostrar conectores",
+                        "connectors": ["Conectores", "Legenda de cores"],
+                        "bus_df": {
+                            "title": "Lista de Barras",
+                            "legend": ["Legenda das colunas",["Nome da Barra",["Tipo","Principal","Auxiliar","Moff"],"Tensão de operação","ON/OFF","Tensão mínima suportada", "Tensão máxima suportada"]]
+                        }
+                    }
+            },
+            "gens":
+            {
+                "title": "Geradores",
+                "new_item": "Adicionar novo elemento",
+                "select_item": "Selecionar elemento para adicionar",
+                "item":
+                {
+                    "sgen":{
+                        "name": "Gerador estático",
+                        "titles": ["Propriedades","Tensão","Barra conectada"],
+                        "labels": ["Nome","Quantidade","Gerador ativo","Tensão","Escala","Potência reativa"],
+                        "bus_params":{
+                            "voltage": ["Baixa","Média","Alta","Muito alta"],
+                            "level": ["Principal","Auxiliar","Moff"]
+                        },
+                        "buttons": ["Novo gerador estático"," Remover gerador", "Adicionar geradores"]
+                    },
+                    "gen":{
+                        "name":"Gerador ativo e controlável",
+                        "titles": ["Propriedades","Tensão","Barra conectada"],
+                        "labels": ["Nome","Quantidade","Gerador ativo","Slack","Controlável","Potência ativa","Tensão nominal (no nó)",
+                                   "Potência reativa","Potência aparente nominal","Escala"],
+                        "bus_params":{
+                            "voltage": ["Baixa","Média","Alta","Muito alta"],
+                            "level": ["Principal","Auxiliar","Moff"]
+                        },
+                        "buttons": ["Novo gerador estático"," Remover gerador", "Adicionar geradores"]
+                    },
+                    "storage":
+                    {
+                        "name":"Bateria"
+                    }
+                }
+            },
+            "passive":
+            {
+                "title": "Elementos passivos"
+            },
+            "sensors":
+            {
+                "title":"Sensores, controladores, limites"
+            }
+        },
+        "messages":
+        {
+            "no_grid": "A rede ainda não foi salva"
+        }
+    },
+    "plant_manager":{
+        "title": "Gestão e análise da Usina",
+        "selection": ["Selecionar usina","Local","Usina"],
+        "buttons": ["Executar","Salvar","Tudo","Módulo","Rede", "Local","Simulação"],
+        "display_setup": ["Módulo FV","Rede","Local","Esquema","Descrição","Configuração","Análise"],
+        "messages":{
+            "no_plant_found": ["Nenhuma usina","Nenhuma pasta encontrada em /data"],
+            "folder_error": "Erro de pasta"
+        }
+    }
+}

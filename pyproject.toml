@@ -1,5 +1,5 @@
 [project]
-name = "solartracker"
+name = "PVApp"
 version = "0.1.0"
 description = ""
 authors = [
@@ -35,7 +35,7 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{include = "solartracker", from = "src"}]
+packages = [{include = "pvapp", from = "src"}]
 
 
 [tool.poetry.group.dev.dependencies]

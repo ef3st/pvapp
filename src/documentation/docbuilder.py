@@ -105,7 +105,7 @@ class DocBundlerConfig:
     project_root: Path
     readme_path: Path = Path("README.md")
     docs_dir: Path = Path("docs")
-    title: str = "Project Documentation"
+    title: str = "PVApp \n Project Documentation"
     author: Optional[str] = None
     css: str = DEFAULT_CSS
     include_toc: bool = True
@@ -473,7 +473,7 @@ def _run_streamlit():  # pragma: no cover
     project_root = st.text_input("Project root", value=str(Path.cwd()))
     readme_path = st.text_input("README path", value="README.md")
     docs_dir = st.text_input("Docs folder", value="docs")
-    title = st.text_input("PDF title", value="Project Documentation")
+    title = st.text_input("PDF title", value=f"PVApp {"\n"} Project Documentation")
     author = st.text_input("Author (optional)", value="")
     subtitle = st.text_input("Subtitle", value="GUIDE FOR USERS AND PROGRAMMERS")
     icon_url = st.text_input(
