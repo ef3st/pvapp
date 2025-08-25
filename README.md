@@ -1,12 +1,49 @@
 
-<!-- [![CI](https://img.shields.io/github/actions/workflow/status/ef3st/pvapp/ci.yml?branch=main&label=CI)](https://github.com/ef3st/pvapp/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/ef3st/pvapp?label=coverage)](https://codecov.io/gh/ef3st/pvapp)
-[![Last Commit](https://img.shields.io/github/last-commit/ef3st/pvapp)](https://github.com/ef3st/pvapp/commits/main) -->
+# PVApp 
+
+![Python](https://img.shields.io/badge/python-3.10-blue.svg) [![Docs](https://img.shields.io/badge/docs-readthedocs-blue)](https://pandapower.readthedocs.io/) [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://pvlib-python.readthedocs.io/) [![Docs](https://img.shields.io/badge/docs-streamlit.dev-blue)](https://docs.streamlit.io/)  
+
+[![Last Commit](https://img.shields.io/github/last-commit/ef3st/solartracker)](https://github.com/ef3st/solartracker/commits/main)  
+
+An accademic photovoltaic systems and grids simulator based on `pvlib` and `pandapower` packages. Created in python in the backend and a *user friendly* **GUI** (written thanks to `streamlit` package) is aviable to create and manage projects simulator. 
 
 
-<!-- > Solar Tracking software for a PV plant. Written in python, the iplant is model with pvlib -->
+# Table of Content
 
-# The Project
+---
+
+# Introduction
+PVapp was born originally to study
+
+
+
+---
+
+# Architecture
+
+---
+
+# Installation
+
+
+--- 
+# Usage
+    
+---
+# Configuration
+
+---
+# Run & Deployment
+
+---
+# Testing
+
+---
+# Documentation
+
+---
+# Author
+Lorenzo Pepa
 
 # 🖼️ Basic Guide to the GUI
 
@@ -24,7 +61,7 @@
 >> - Select a displayed document
 >> - Finally, try again with the desired starting folder.  
 6. ***Logs***: in this page is possible to check for errors, informative and warning messages. Look at the icon of this page to see the status of the App and the presence of messages
-In the sidebare (on the left) you can select these pages. With the "⚙️" button but you can also change language and setting the auto-save and auto-simulation options, with which operate these operation at each change in the plant setup. The "🔥 Simulate All", insteand, allow to simulate everything in one shot.
+In the sidebare (on the left) you can select these pages. With the "⚙️" button but you can also change language and setting the auto-save and auto-simulation options, with which operate these operation at each change in the plant setup. The "🔥 Simulate All", insteand, allow to simulate e   verything in one shot.
 
 ---
 # 👨‍💻Programming
