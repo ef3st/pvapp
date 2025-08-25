@@ -4,8 +4,8 @@ from pathlib import Path
 import pandas as pd
 from analysis.plantanalyser import PlantAnalyser
 import plotly.express as px
-from ..page import Page
-from ...utils.plots import plots
+from gui.pages import Page
+from gui.utils.plots import plots
 
 
 class PlantsComparisonPage(Page):
@@ -109,8 +109,8 @@ class PlantsComparisonPage(Page):
 
         sac.alert(
             self.T("title"),
-            variant="quote-light",
-            color="blue",
+            variant="quote",
+            color="skyblue",
             size=35,
             icon=sac.BsIcon("bar-chart-steps", color="lime"),
         )

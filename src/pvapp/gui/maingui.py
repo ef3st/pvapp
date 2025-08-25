@@ -28,7 +28,7 @@ import streamlit_antd_components as sac
 
 
 # Internal imports
-from simulation import simulator
+from backend.simulation import simulator
 
 # Pages
 from .pages.home import home
@@ -301,142 +301,147 @@ def _build_notifications_tag(n_logs: Dict[str, int]):
 
 def _sidebar_menu(plant_manager_names: List[str]) -> str:
     """Render the left-bar menu and return the selected ROUTE KEY (stable)."""
+    sidebar_mode = st.session_state.get("sidebar", "main")
+    if sidebar_mode == "main":
+        # ---------- App status & log badges ----------
+        status, n_logs = LogsPage().app_status
+        notification_icon = [
+            "app",
+            "app-indicator",
+            "exclamation-triangle-fill",
+            "exclamation-circle-fill",
+            "x-circle-fill",
+        ]
+        log_color = ["#467146", "#6170d5", "#dfbe6a", "#df6a6a", "#ea36cf"]
 
-    # ---------- App status & log badges ----------
-    status, n_logs = LogsPage().app_status
-    notification_icon = [
-        "app",
-        "app-indicator",
-        "exclamation-triangle-fill",
-        "exclamation-circle-fill",
-        "x-circle-fill",
-    ]
+        # ---------- Translated labels ----------
+        base_options: List[str] = T("menu")
+        if not isinstance(base_options, list) or len(base_options) < 6:
+            base_options = [
+                "Home",
+                "Plants",
+                "Comparison",
+                "Plant Manager",
+                "Guide",
+                "Logs",
+            ]
 
-    # ---------- Translated labels ----------
-    base_options: List[str] = T("menu")
-    if not isinstance(base_options, list) or len(base_options) < 6:
-        base_options = [
-            "Home",
-            "Plants",
-            "Comparison",
-            "Plant Manager",
-            "Guide",
-            "Logs",
+        beta_enabled = st.session_state.get("beta_tools", False)
+        beta_options = (
+            ["Real-time monitor  (beta)", "Grid manager (beta)"] if beta_enabled else []
+        )
+        options = base_options + beta_options
+
+        # ---------- Stable keys (same order as options) ----------
+        base_keys = ["home", "plants", "compare", "plant_manager", "guide", "logs"]
+        beta_keys = ["realtime_beta", "grid_beta"] if beta_enabled else []
+        route_keys = base_keys[: len(base_options)] + beta_keys
+
+        # ---------- Icons / colors ----------
+        icons = [
+            "house",
+            "buildings",
+            "bar-chart-steps",
+            "building-fill-gear",
+            "journal-text",
+            notification_icon[status],
+        ]
+        icons = icons[: len(base_options)] + (
+            ["activity", "diagram-3"] if beta_enabled else []
+        )
+        color_map = {
+            "home": "green",
+            "plants": "white",
+            "compare": "skyblue",
+            "plant_manager": "orange",
+            "guide": "green",
+            "logs": log_color[status],
+            "realtime_beta": "blue",
+            "grid_beta": "blue",
+        }
+
+        # ---------- Plant Manager children ----------
+        if isinstance(plant_manager_names, str):
+            plant_manager_names = [plant_manager_names]
+        elif not isinstance(plant_manager_names, list):
+            plant_manager_names = []
+        pm_labels = (plant_manager_names + ["", "", ""])[:3]
+        pm_keys = ["pm_setup", "pm_topology", "pm_geo"]
+        pm_icons = ["sun", "diagram-3", "compass"]
+        pm_children = [
+            sac.MenuItem(lbl, icon=ico) for lbl, ico in zip(pm_labels, pm_icons)
         ]
 
-    beta_enabled = st.session_state.get("beta_tools", False)
-    beta_options = (
-        ["Real-time monitor  (beta)", "Grid manager (beta)"] if beta_enabled else []
-    )
-    options = base_options + beta_options
+        # ---------- Children aligned with options ----------
+        children = []
+        for key in route_keys:
+            children.append(pm_children if key == "plant_manager" else None)
 
-    # ---------- Stable keys (same order as options) ----------
-    base_keys = ["home", "plants", "compare", "plant_manager", "guide", "logs"]
-    beta_keys = ["realtime_beta", "grid_beta"] if beta_enabled else []
-    route_keys = base_keys[: len(base_options)] + beta_keys
+        # ---------- Build label<->key maps ----------
+        label2key = {lbl: key for lbl, key in zip(options, route_keys)}
+        key2label = {key: lbl for lbl, key in zip(options, route_keys)}
+        for lbl, k in zip(pm_labels, pm_keys):
+            if lbl:
+                label2key[lbl] = k
+                key2label[k] = lbl
 
-    # ---------- Icons / colors ----------
-    icons = [
-        "house",
-        "buildings",
-        "bar-chart-steps",
-        "building-fill-gear",
-        "journal-text",
-        notification_icon[status],
-    ]
-    icons = icons[: len(base_options)] + (
-        ["activity", "diagram-3"] if beta_enabled else []
-    )
-    color_map = {
-        "home": "red",
-        "plants": "white",
-        "compare": "blue",
-        "plant_manager": "orange",
-        "guide": "green",
-        "logs": "red",
-        "realtime_beta": "blue",
-        "grid_beta": "blue",
-    }
+        # ---------- Session init ----------
+        st.session_state.setdefault("route_key", "home")  # stable route we control
+        ui_key = "option_menu"  # component stores LABEL here
+        st.session_state.setdefault(ui_key, base_options[0])
+        # track language to detect changes
+        curr_lang = st.session_state.get("current_lang", DEFAULT_LANG)
+        last_lang = st.session_state.get("last_lang", curr_lang)
 
-    # ---------- Plant Manager children ----------
-    if isinstance(plant_manager_names, str):
-        plant_manager_names = [plant_manager_names]
-    elif not isinstance(plant_manager_names, list):
-        plant_manager_names = []
-    pm_labels = (plant_manager_names + ["", "", ""])[:3]
-    pm_keys = ["pm_setup", "pm_topology", "pm_geo"]
-    pm_icons = ["sun", "diagram-3", "compass"]
-    pm_children = [sac.MenuItem(lbl, icon=ico) for lbl, ico in zip(pm_labels, pm_icons)]
+        # ---------- Sync ONLY on language change or invalid label ----------
+        need_resync = False
+        if last_lang != curr_lang:
+            need_resync = True
+        elif st.session_state.get(ui_key) not in label2key:
+            need_resync = True
 
-    # ---------- Children aligned with options ----------
-    children = []
-    for key in route_keys:
-        children.append(pm_children if key == "plant_manager" else None)
+        if st.session_state["route_key"] not in key2label:
+            # route_key has no label in this language -> fallback
+            st.session_state["route_key"] = "home"
 
-    # ---------- Build label<->key maps ----------
-    label2key = {lbl: key for lbl, key in zip(options, route_keys)}
-    key2label = {key: lbl for lbl, key in zip(options, route_keys)}
-    for lbl, k in zip(pm_labels, pm_keys):
-        if lbl:
-            label2key[lbl] = k
-            key2label[k] = lbl
+        if need_resync:
+            desired_label = key2label[st.session_state["route_key"]]
+            st.session_state[ui_key] = desired_label
+            st.session_state["last_lang"] = curr_lang  # update tracker
 
-    # ---------- Session init ----------
-    st.session_state.setdefault("route_key", "home")  # stable route we control
-    ui_key = "option_menu"  # component stores LABEL here
-    st.session_state.setdefault(ui_key, base_options[0])
-    # track language to detect changes
-    curr_lang = st.session_state.get("current_lang", DEFAULT_LANG)
-    last_lang = st.session_state.get("last_lang", curr_lang)
+        # ---------- Accent color ----------
+        current_key = st.session_state["route_key"]
+        parent_for_color = "plant_manager" if current_key in pm_keys else current_key
+        accent = color_map.get(parent_for_color, "blue")
 
-    # ---------- Sync ONLY on language change or invalid label ----------
-    need_resync = False
-    if last_lang != curr_lang:
-        need_resync = True
-    elif st.session_state.get(ui_key) not in label2key:
-        need_resync = True
+        # ---------- Render (component returns a LABEL) ----------
+        selected_label = sac.menu(
+            [
+                sac.MenuItem(
+                    lbl,
+                    icon=ico,
+                    tag=(
+                        _build_notifications_tag(n_logs)
+                        if (lbl == base_options[5])
+                        else None
+                    ),
+                    children=child,
+                )
+                for lbl, ico, child in zip(options, icons, children)
+            ],
+            variant="left-bar",
+            key=ui_key,  # component reads/writes a LABEL
+            open_all=True,
+            color=accent,
+            return_index=False,  # returns LABEL
+        )
 
-    if st.session_state["route_key"] not in key2label:
-        # route_key has no label in this language -> fallback
-        st.session_state["route_key"] = "home"
-
-    if need_resync:
-        desired_label = key2label[st.session_state["route_key"]]
-        st.session_state[ui_key] = desired_label
-        st.session_state["last_lang"] = curr_lang  # update tracker
-
-    # ---------- Accent color ----------
-    current_key = st.session_state["route_key"]
-    parent_for_color = "plant_manager" if current_key in pm_keys else current_key
-    accent = color_map.get(parent_for_color, "blue")
-
-    # ---------- Render (component returns a LABEL) ----------
-    selected_label = sac.menu(
-        [
-            sac.MenuItem(
-                lbl,
-                icon=ico,
-                tag=(
-                    _build_notifications_tag(n_logs)
-                    if (lbl == base_options[5])
-                    else None
-                ),
-                children=child,
-            )
-            for lbl, ico, child in zip(options, icons, children)
-        ],
-        variant="left-bar",
-        key=ui_key,  # component reads/writes a LABEL
-        open_all=True,
-        color=accent,
-        return_index=False,  # returns LABEL
-    )
-
-    # Map LABEL -> stable KEY, update our stable key
-    selected_key = label2key.get(selected_label, "home")
-    if selected_key != st.session_state["route_key"]:
-        st.session_state["route_key"] = selected_key
-
+        # Map LABEL -> stable KEY, update our stable key
+        selected_key = label2key.get(selected_label, "home")
+        if selected_key != st.session_state["route_key"]:
+            st.session_state["route_key"] = selected_key
+    else:
+        selected_key = sac.menu(**guide.menu_kwargs())
     return selected_key
 
 
@@ -475,9 +480,9 @@ def streamlit() -> None:
     # Page routing (uses STABLE KEYS)
     # ------------------------------
     sidebar_mode = st.session_state.get("sidebar", "main")
-    route_key = selected  # stable key from _sidebar_menu
 
     if sidebar_mode == "main":
+        route_key = selected  # stable key from _sidebar_menu
         if route_key == "home":
             home.render()
 
@@ -509,9 +514,10 @@ def streamlit() -> None:
             st.error(f"Unknown route: {route_key}")
 
     elif sidebar_mode == "guide":
-        placeholder = st.container()
-        with placeholder:
-            guide_selected = sac.menu(**guide.menu_kwargs())  # returns index or None
+        # placeholder = st.container()
+        # with placeholder:
+        #     guide_selected = sac.menu(**guide.menu_kwargs())  # returns index or None
+        guide_selected = selected
         if guide_selected == 0:
             st.session_state["sidebar"] = "main"
             st.rerun()

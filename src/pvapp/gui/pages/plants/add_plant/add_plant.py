@@ -1,14 +1,16 @@
 import streamlit as st
+import streamlit_antd_components as sac
 import json
 from pathlib import Path
+
 import pydeck as pdk
 from geopy.geocoders import Nominatim
 import geopy.exc as geoExept
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
-from simulation.simulator import Simulator
-from ....utils.plots.plots import pv3d
-import streamlit_antd_components as sac
+
+from backend.simulation import Simulator
+from gui.utils.plots import pv3d
 
 
 def load_sites_df(base_path=Path("data/")) -> pd.DataFrame:

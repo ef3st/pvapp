@@ -22,14 +22,14 @@ from streamlit.errors import StreamlitAPIException
 from bidict import bidict
 
 from ...page import Page
-from pandapower_network.pvnetwork import (
+from backend.pandapower_network.pvnetwork import (
     PlantPowerGrid,
     BusParams,
     LineParams,
     GenParams,
     SGenParams,
 )
-from utils.logger import get_logger
+from tools.logger import get_logger
 import pandas as pd
 
 

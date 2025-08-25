@@ -1,11 +1,13 @@
 import streamlit as st
-import pandas as pd
+import streamlit_antd_components as sac
 import json
 from pathlib import Path
+
+import pandas as pd
 import pydeck as pdk
+
 from .add_plant import add_plant
-from ..page import Page
-import streamlit_antd_components as sac
+from gui.pages import Page
 
 
 class PlantsPage(Page):
@@ -90,7 +92,7 @@ class PlantsPage(Page):
                 # st.title("🏛️ " + self.T("title"))
                 sac.alert(
                     self.T("title"),
-                    variant="quote-light",
+                    variant="quote",
                     color="white",
                     size=35,
                     icon=sac.BsIcon("buildings", color="cyan"),
@@ -114,7 +116,7 @@ class PlantsPage(Page):
             # st.title("🏛️ " + self.T("title"))
             sac.alert(
                 self.T("title"),
-                variant="quote-light",
+                variant="quote",
                 color="white",
                 size=35,
                 icon=sac.BsIcon("buildings", color="cyan"),

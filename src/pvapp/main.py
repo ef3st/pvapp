@@ -1,4 +1,4 @@
-from utils.logger import setup_logger, get_logger
+from tools.logger import setup_logger, get_logger
 import argparse
 
 

@@ -9,7 +9,7 @@ import streamlit as st
 import pandas as pd
 import streamlit_antd_components as sac
 
-from ..page import Page
+from gui.pages import Page
 from .module.module import ModuleManager
 from .grid.grid import GridManager
 from .site.site import SiteManager
@@ -142,7 +142,7 @@ class PlantManager(Page):
         # st.title("🖥️ " + self.T("title"))
         sac.alert(
             self.T("title"),
-            variant="quote-light",
+            variant="quote",
             color="orange",
             size=35,
             icon=sac.BsIcon("building-fill-gear", color="white"),
@@ -363,7 +363,7 @@ class PlantManager(Page):
             if should_run_sim and isinstance(subfolder, Path):
                 with b:
                     with st.spinner("Simulating", show_time=True):
-                        from simulation.simulator import Simulator
+                        from backend.simulation import Simulator
 
                         Simulator(subfolder).run()
                 st.session_state["enable_sim"] = False
@@ -406,7 +406,7 @@ class PlantManager(Page):
 
         subfolder = st.session_state.get("subfolder")
         if isinstance(subfolder, Path):
-            from simulation.simulator import Simulator
+            from backend.simulation import Simulator
 
             Simulator(subfolder).run()
             st.session_state["enable_sim"] = False
@@ -473,7 +473,7 @@ class PlantManager(Page):
             raise ValueError(f"Invalid display index: {display}")
 
 
-# from ..page import Page
+# from pages import Page
 # import json
 # from pathlib import Path
 # import streamlit as st

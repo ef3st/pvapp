@@ -1,6 +1,6 @@
 from pvlib.location import Location
 from typing import Tuple, Optional
-from utils.logger import get_logger
+from tools.logger import get_logger
 
 
 class Site:

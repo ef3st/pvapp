@@ -1,6 +1,6 @@
 import streamlit as st
 from ..utils.translation.traslator import translate
-from utils.logger import get_logger
+from tools.logger import get_logger
 
 
 class Page:

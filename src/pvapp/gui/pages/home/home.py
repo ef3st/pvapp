@@ -1,7 +1,7 @@
 import streamlit as st
 from pathlib import Path
 import streamlit_antd_components as sac
-from ...utils.graphics.md_render import MarkdownStreamlitPage
+from gui.utils.graphics.md_render import MarkdownStreamlitPage
 
 
 import os
@@ -24,13 +24,13 @@ def render():
     sac.result(
         "PVApp",
         description="***PV Plant Simulator and Analyser***",
-        icon=sac.BsIcon("sun", color="red", size=50),
+        icon=sac.BsIcon("sun", color="green", size=50),
     )
     sac.divider("HOME", align="center", icon=sac.BsIcon("house-door"))
 
     # sac.alert("Home: *PV Plant Analyser*",variant="quote-light", color="red", size=35, icon=sac.BsIcon("house-door",color="blue"))
     MarkdownStreamlitPage(
-        "README.md", mode="native", page_title=""
+        "README.md", mode="native", page_title="PVApp Home"
     ).render()  # st.markdown(content, unsafe_allow_html=True)
     # if readme_path.exists():
     #     with readme_path.open("r", encoding="utf-8") as f:

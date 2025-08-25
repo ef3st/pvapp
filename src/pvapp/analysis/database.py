@@ -1,7 +1,7 @@
 import pandas as pd
 from pvlib.modelchain import ModelChainResult
 from IPython.display import display
-from utils.logger import get_logger
+from tools.logger import get_logger
 from typing import Optional
 
 

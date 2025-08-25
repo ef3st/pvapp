@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 import pandas as pd
 from pvlib.pvsystem import retrieve_sam
-from simulation.simulator import Simulator
+from backend.simulation.simulator import Simulator
 from analysis.plantanalyser import PlantAnalyser
 import pydeck as pdk
 from ....utils.plots import plots

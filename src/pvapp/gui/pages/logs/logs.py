@@ -1,13 +1,13 @@
 import json
 import re
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Iterable
 
 import pandas as pd
 import streamlit as st
 import streamlit_antd_components as sac
 from enum import IntEnum
-from ..page import Page
+from gui.pages import Page
 
 
 # ============================================================
@@ -27,7 +27,7 @@ _LOG_RE = re.compile(
     r"(?P<msg>.*)$"
 )
 
-# Severity mapping -> icon + label (kept as-is to preserve UI)
+# Severity mapping -> icon + label
 _SEVERITY_ICON = {
     "INFO": "ℹ️ INFO",
     "WARNING": "⚠️ WARNING",
@@ -52,9 +52,7 @@ _SEV_ICON = {
 
 
 class Status(IntEnum):
-    """
-    Enum to represent the status of a log record.
-    """
+    """Enum to represent the status of a log record."""
 
     OK = 0
     INFO = 1
@@ -81,27 +79,8 @@ def _extract_caps_severity(sev_text: str) -> Optional[str]:
     return m.group(1) if m else None
 
 
-def _worst_severity_for_file(df: pd.DataFrame, filename: str) -> Optional[List[str]]:
-    """
-    Return the list of uppercase severities present for that file (preserves existing logic),
-    or None if the file is not present in the DataFrame.
-    """
-    sub = df.loc[df["origin file"] == filename, "severity"]
-    if sub.empty:
-        return None
-    sev_vals = [_extract_caps_severity(x) for x in sub]
-    sev_vals = [s for s in sev_vals if s in _SEV_ORDER]
-    if not sev_vals:
-        return None
-    # NOTE: The original logic returned the list, not the single worst one.
-    # We keep that behavior to avoid altering the UI semantics.
-    return sev_vals
-
-
 def _unique_tags(tags: List[sac.Tag]) -> List[sac.Tag]:
-    """
-    Deduplicate Tag objects by their meaningful properties.
-    """
+    """Deduplicate Tag objects by their meaningful properties."""
     seen = set()
     unique_list: List[sac.Tag] = []
     for tag in tags:
@@ -112,24 +91,86 @@ def _unique_tags(tags: List[sac.Tag]) -> List[sac.Tag]:
     return unique_list
 
 
+def _dir_contains_py(path: Path) -> bool:
+    """Return True if directory contains at least one .py file (recursively)."""
+    try:
+        next(path.rglob("*.py"))
+        return True
+    except StopIteration:
+        return False
+
+
+def _iter_tree_items_for_dir(
+    root: Path,
+    df: pd.DataFrame,
+    rel_start: Optional[Path] = None,
+) -> List[sac.TreeItem]:
+    """
+    Recursively build sac.TreeItem list for a given directory.
+    - Folders are included only if they (recursively) contain at least one .py file.
+    - Files are included if they end with .py.
+    - Tagging is computed from df using the file basename (origin file in logs).
+    """
+    items: List[sac.TreeItem] = []
+    rel_here = rel_start if rel_start is not None else Path("")
+
+    # Files directly under current directory
+    files = sorted([p for p in root.iterdir() if p.is_file() and p.suffix == ".py"])
+    for f in files:
+        basename = f.name  # logs use only basename (e.g. database.py)
+        tag = _file_tag_from_df(df, basename)
+        items.append(sac.TreeItem(basename, icon="file", tag=tag))
+
+    # Child directories with at least one .py inside
+    dirs = sorted(
+        [
+            d
+            for d in root.iterdir()
+            if d.is_dir() and d.name != "__pycache__" and _dir_contains_py(d)
+        ]
+    )
+    for d in dirs:
+        children = _iter_tree_items_for_dir(d, df, rel_here / d.name)
+        # Only add folder if it has visible children
+        if children:
+            items.append(sac.TreeItem(d.name, icon="folder", children=children))
+
+    return items
+
+
+def _count_tree_nodes(items: List[sac.TreeItem]) -> int:
+    """Return total number of nodes (folders + files) for sac.tree index preselection."""
+    total = 0
+    stack: List[sac.TreeItem] = items[:]
+    while stack:
+        node = stack.pop()
+        total += 1
+        for ch in getattr(node, "children", []) or []:
+            stack.append(ch)
+    return total
+
+
 def _file_tag_from_df(df: pd.DataFrame, filename: str):
     """
     Build the per-file Tag(s):
-      - Red/orange icon tag(s) for WARNING/ERROR/CRITICAL (as in original logic)
-      - Otherwise returns 'py' default tag (no visual change from original behavior).
+      - Red/orange icon tag(s) for WARNING/ERROR/CRITICAL
+      - Otherwise None (default look)
     """
-    sevs = _worst_severity_for_file(df, filename)
-    if sevs is not None:
-        tags = []
-        for sev in sevs:
-            if sev in _SEV_ICON:
-                color, icon_name = _SEV_ICON[sev]
-                tags.append(
-                    sac.Tag("", color=color, size="xs", icon=sac.BsIcon(icon_name))
-                )
-        return _unique_tags(tags)
-    # Fallback: let the component render its default (unchanged from original)
-    return None
+    # Compute present severities for that filename
+    sub = df.loc[df["origin file"] == filename, "severity_raw"]
+    if sub.empty:
+        return None
+
+    sevs = sorted(set(s for s in sub if s in _SEV_ORDER))
+    if not sevs:
+        return None
+
+    tags = []
+    for sev in sevs:
+        if sev in _SEV_ICON:
+            color, icon_name = _SEV_ICON[sev]
+            tags.append(sac.Tag("", color=color, size="xs", icon=sac.BsIcon(icon_name)))
+    return _unique_tags(tags)
 
 
 # ============================================================
@@ -141,33 +182,32 @@ class LogsPage(Page):
     """
     Streamlit page to visualize and filter application logs.
 
-    Notes:
-    - Logic and UI flow preserved exactly as in the original implementation.
-    - Code organization, typing, and docstrings improved for clarity.
+    Key improvements:
+    - Robust session_state use
+    - Robust origin split (rsplit)
+    - Severity handled with raw + label columns (filter on raw, show label)
+    - Dynamic trees per src/pvapp/{analysis,backend,gui,tools}
     """
 
     def __init__(self) -> None:
         super().__init__("log")
         self.logs: Union[str, List[str]] = []
         self.path: Path = Path("logs/pvapp.log")
+        self.code_base: Path = Path("src/pvapp")  # root code folder
 
     # -----------------------------
     # Data Loading & Parsing
     # -----------------------------
     def load_logs(self) -> None:
-        """
-        Load the log file content into self.logs as a string.
-        """
+        """Load the log file content into self.logs as a string."""
         try:
             with open(self.path, "r", encoding="utf-8") as file:
                 self.logs = file.read()
         except FileNotFoundError:
-            self.logs = ["No logs found."]
+            self.logs = "No logs found."
 
-    def _normalize_severity(self, raw: str) -> str:
-        """
-        Strip ANSI codes and normalize to the 'icon + label' format.
-        """
+    def _normalize_severity_label(self, raw: str) -> str:
+        """Strip ANSI codes and map to 'icon + label' format."""
         clean = _ANSI_RE.sub("", raw).strip()
         m = re.match(r"([A-Za-z]+)", clean)
         if not m:
@@ -182,7 +222,8 @@ class LogsPage(Page):
     ) -> pd.DataFrame:
         """
         Parse log text (or file) into a DataFrame:
-        columns = ['date-time', 'logger name', 'severity', 'origin file', 'line', 'description'].
+        columns = ['date-time', 'logger name', 'severity_raw', 'severity_label',
+                   'origin file', 'line', 'description'].
         """
         if from_path:
             with open(log_source, "rb") as f:
@@ -211,16 +252,25 @@ class LogsPage(Page):
 
                 dt = m.group("dt").strip()
                 logger = m.group("logger").strip()
-                severity = self._normalize_severity(m.group("severity"))
+                severity_label = self._normalize_severity_label(m.group("severity"))
                 origin = m.group("origin").strip()
                 msg = m.group("msg")
-                file_name, line_str = origin.split(":")
+
+                # robust split: handle paths with ':' (e.g., Windows)
+                try:
+                    file_name, line_str = origin.rsplit(":", 1)
+                except ValueError:
+                    file_name, line_str = origin, ""
+
+                # raw level for filtering
+                severity_raw = _extract_caps_severity(severity_label) or "DEBUG"
 
                 current = {
                     "date-time": dt,
                     "logger name": logger,
-                    "severity": severity,
-                    "origin file": file_name,
+                    "severity_raw": severity_raw,
+                    "severity_label": severity_label,
+                    "origin file": Path(file_name).name,
                     "line": line_str,
                     "description": msg,  # extended if subsequent lines belong here
                 }
@@ -241,7 +291,8 @@ class LogsPage(Page):
             columns=[
                 "date-time",
                 "logger name",
-                "severity",
+                "severity_raw",
+                "severity_label",
                 "origin file",
                 "line",
                 "description",
@@ -249,344 +300,59 @@ class LogsPage(Page):
         )
 
     # -----------------------------
-    # UI Trees (GUI / BACK-END)
+    # Dynamic Trees (analysis / backend / gui / tools)
     # -----------------------------
-    def gui_tree(self, df: pd.DataFrame) -> List[str]:
+    def _build_category_tree(
+        self, df: pd.DataFrame, category: str, key_suffix: str
+    ) -> List[str]:
         """
-        Build the GUI tree and return the selected file names.
+        Build a tree for a given top-level category under src/pvapp/{category}.
+        Returns the selected file basenames ('.py') from the tree.
         """
-        items = [
-            sac.TreeItem(
-                "GUI",
-                icon="folder",
-                children=[
-                    sac.TreeItem(
-                        "pages",
-                        icon="folder",
-                        children=[
-                            sac.TreeItem("beta", icon="folder"),
-                            sac.TreeItem(
-                                "home",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "home.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(df, "home.py"),
-                                    )
-                                ],
-                            ),
-                            sac.TreeItem(
-                                "plant_performance",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "plant_performance.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(
-                                            df, "plant_performance.py"
-                                        ),
-                                    )
-                                ],
-                            ),
-                            sac.TreeItem(
-                                "plants",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "add_plant",
-                                        icon="folder",
-                                        children=[
-                                            sac.TreeItem(
-                                                "add_plant.py",
-                                                icon="file",
-                                                tag=_file_tag_from_df(
-                                                    df, "add_plant.py"
-                                                ),
-                                            )
-                                        ],
-                                    ),
-                                    sac.TreeItem(
-                                        "plants.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(df, "plants.py"),
-                                    ),
-                                ],
-                            ),
-                            sac.TreeItem(
-                                "plants_comparison",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "plants_comparison.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(
-                                            df, "plants_comparison.py"
-                                        ),
-                                    )
-                                ],
-                            ),
-                            sac.TreeItem(
-                                "logs",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "logs.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(df, "logs.py"),
-                                    )
-                                ],
-                            ),
-                            sac.TreeItem(
-                                "plant_manager",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "plant_manager.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(df, "plant_manager.py"),
-                                    )
-                                ],
-                            ),
-                            sac.TreeItem(
-                                "grid",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "grid_tab.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(df, "grid_tab.py"),
-                                    ),
-                                    sac.TreeItem(
-                                        "grid.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(df, "grid.py"),
-                                    ),
-                                ],
-                            ),
-                            sac.TreeItem(
-                                "module",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "module.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(df, "module.py"),
-                                    )
-                                ],
-                            ),
-                            sac.TreeItem(
-                                "site",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "plant_manager.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(df, "plant_manager.py"),
-                                    )
-                                ],
-                            ),
-                            sac.TreeItem(
-                                "__init__.py",
-                                icon="file",
-                                tag=_file_tag_from_df(df, "__init__.py"),
-                            ),
-                            sac.TreeItem(
-                                "page.py",
-                                icon="file",
-                                tag=_file_tag_from_df(df, "page.py"),
-                            ),
-                        ],
-                    ),
-                    sac.TreeItem(
-                        "utils",
-                        icon="folder",
-                        children=[
-                            sac.TreeItem("graphics", icon="folder"),
-                            sac.TreeItem(
-                                "plots",
-                                icon="folder",
-                                children=[
-                                    sac.TreeItem(
-                                        "plots.py",
-                                        icon="file",
-                                        tag=_file_tag_from_df(df, "plots.py"),
-                                    )
-                                ],
-                            ),
-                        ],
-                    ),
-                    sac.TreeItem(
-                        "translation",
-                        icon="folder",
-                        children=[
-                            sac.TreeItem(
-                                "traslator.py",
-                                icon="file",
-                                tag=_file_tag_from_df(df, "traslator.py"),
-                            )
-                        ],
-                    ),
-                    sac.TreeItem(
-                        "maingui.py",
-                        icon="file",
-                        tag=_file_tag_from_df(df, "maingui.py"),
-                    ),
-                ],
-            )
-        ]
+        base = self.code_base / category
+        if not base.exists() or not base.is_dir():
+            st.info(f"Folder '{category}' not found under {self.code_base}.")
+            return []
 
-        # keep same open_all, checkbox, size, and index list (31)
+        # root items for the category
+        items = _iter_tree_items_for_dir(base, df)
+
+        if not items:
+            st.caption(f"No .py files found under '{category}'.")
+            return []
+
+        total_nodes = _count_tree_nodes(items)
+        # Pre-select all nodes (like original behavior)
         selected = sac.tree(
-            items,
+            [sac.TreeItem(category.upper(), icon="folder", children=items)],
             open_all=True,
             checkbox=True,
             size="xs",
-            index=[i for i in range(31)],
+            index=list(range(total_nodes + 1)),  # +1 for the category root
             on_change=self.load_logs,
-            key="gui_tree",
+            key=f"tree_{key_suffix}",
         )
-        return selected
 
-    def backend_tree(self, df: pd.DataFrame) -> List[str]:
-        """
-        Build the BACK-END tree and return the selected file names.
-        """
-        mounts = [
-            sac.TreeItem(
-                "MOUNT",
-                icon="folder",
-                children=[
-                    sac.TreeItem(
-                        "developement",
-                        icon="folder",
-                        children=[
-                            sac.TreeItem(
-                                "custommount.py",
-                                icon="file",
-                                tag=_file_tag_from_df(df, "custommount.py"),
-                            ),
-                            sac.TreeItem(
-                                "tracking.py",
-                                icon="file",
-                                tag=_file_tag_from_df(df, "tracking.py"),
-                            ),
-                        ],
-                    )
-                ],
-            ),
+        # Keep only basenames ending with .py
+        selected_files = [
+            s for s in selected if isinstance(s, str) and s.endswith(".py")
         ]
-
-        pvplantmanager = [
-            sac.TreeItem(
-                "PV PLANT MANAGER",
-                icon="folder",
-                children=[
-                    sac.TreeItem(
-                        "pvplantmanager.py",
-                        icon="file",
-                        tag=_file_tag_from_df(df, "pvplantmanager.py"),
-                    )
-                ],
-            )
-        ]
-
-        simulation = [
-            sac.TreeItem(
-                "SIMULATION",
-                icon="folder",
-                children=[
-                    sac.TreeItem(
-                        "simulator.py",
-                        icon="file",
-                        tag=_file_tag_from_df(df, "simulator.py"),
-                    ),
-                    sac.TreeItem(
-                        "nature.py", icon="file", tag=_file_tag_from_df(df, "nature.py")
-                    ),
-                ],
-            )
-        ]
-
-        analysis = [
-            sac.TreeItem(
-                "ANALYSIS",
-                icon="folder",
-                children=[
-                    sac.TreeItem(
-                        "database.py",
-                        icon="file",
-                        tag=_file_tag_from_df(df, "database.py"),
-                    ),
-                    sac.TreeItem(
-                        "plantanalyser.py",
-                        icon="file",
-                        tag=_file_tag_from_df(df, "plantanalyser.py"),
-                    ),
-                ],
-            )
-        ]
-
-        utils = [
-            sac.TreeItem(
-                "UTILS",
-                icon="folder",
-                children=[
-                    sac.TreeItem(
-                        "plant_results_visualizer.py",
-                        icon="file",
-                        tag=_file_tag_from_df(df, "plant_results_visualizer.py"),
-                    ),
-                    sac.TreeItem(
-                        "logger.py", icon="file", tag=_file_tag_from_df(df, "logger.py")
-                    ),
-                ],
-            )
-        ]
-
-        main = [
-            sac.TreeItem("main.py", icon="file", tag=_file_tag_from_df(df, "main.py"))
-        ]
-
-        items = [
-            sac.TreeItem(
-                "BACK-END",
-                icon="folder",
-                children=(
-                    mounts + pvplantmanager + simulation + analysis + utils + main
-                ),
-            )
-        ]
-
-        # keep same open_all, checkbox, size, and index list (17)
-        selected = sac.tree(
-            items,
-            open_all=True,
-            checkbox=True,
-            size="xs",
-            index=[i for i in range(17)],
-            on_change=self.load_logs,
-            key="back_end_tree",
-        )
-        return selected
+        return selected_files
 
     # -----------------------------
     # Rendering
     # -----------------------------
     def render(self) -> None:
-        """
-        Render the Logs page with filters, trees, and log table.
-        """
+        """Render the Logs page with filters, trees, and log table."""
         self.load_logs()
         if not self.logs:
             st.warning(self.T("log_not_found"))
             return
-
-        # st.title(self.T("title"))
+        log_color = ["#3BC83B", "#4F66FF", "#f7c036", "#d03d3d", "#c700ea"]
         sac.alert(
             self.T("title"),
-            variant="quote-light",
-            color="red",
+            variant="quote",
+            color=log_color[self.app_status[0]],
             size=35,
             icon=sac.BsIcon("menu-up", color="red", size=30),
         )
@@ -611,10 +377,11 @@ class LogsPage(Page):
             help="If enabled, start date and time are set to the (presumed) start of the last execution",
         )
 
-        if use_last_run:
-            start_guess = st.session_state.notification_time
-            if start_guess is None:
-                start_guess = min_dt
+        notif = st.session_state.get("notification_time")
+        notif = pd.to_datetime(notif, errors="coerce") if notif is not None else pd.NaT
+
+        if use_last_run and pd.notna(notif):
+            start_guess = notif
         else:
             start_guess = min_dt
 
@@ -626,8 +393,8 @@ class LogsPage(Page):
         with b:
             l, r = st.columns([1, 3])
 
-            # Severity pills (keep behavior and component as-is)
-            severities = list(sorted(log_df["severity"].dropna().unique()))
+            # Severity pills — filter on raw, display label later
+            severities = list(sorted(log_df["severity_raw"].dropna().unique()))
             sel_sev = l.pills(
                 "Severity",
                 options=severities,
@@ -637,7 +404,7 @@ class LogsPage(Page):
                 key="log_severity",
             )
 
-            # Time filter expander (unchanged logic)
+            # Time filter expander
             with r.expander("Time Filter", icon="🕐", expanded=True):
                 c1, c2 = st.columns([1.2, 1])
 
@@ -656,16 +423,12 @@ class LogsPage(Page):
                     else:
                         start_date = end_date = date_range
 
-                # Default times based on bounds/selection
                 from datetime import time, datetime as dtmod
 
                 default_t_start = (
                     start_guess.time()
                     if start_date == start_guess.date()
                     else time(0, 0, 0)
-                )
-                default_t_end = (
-                    max_dt.time() if end_date == max_dt.date() else time(23, 59, 59)
                 )
 
                 with c2:
@@ -675,121 +438,126 @@ class LogsPage(Page):
                         on_change=self.load_logs,
                         key="log_start_time_filter",
                     )
-                # with c3:
-                # t_end = st.time_input("End Time", value=default_t_end,on_change=self.load_logs, key="log_end_time_filter")
-
-                # origins = list(sorted(log_df["origin file"].dropna().unique()))
-                # sel_orig = st.multiselect("File di origine", options=origins, default=origins)
 
             start_dt = pd.to_datetime(dtmod.combine(start_date, t_start))
-            # end_dt = pd.to_datetime(dtmod.combine(end_date,t_end))
-            end_dt = None
 
-        # Trees (GUI / BACK-END)
+        # -----------------------------
+        # Trees per category (tabs)
+        # -----------------------------
         with a:
-            backend_tab, gui_tab = st.tabs(["BACK-END", "GUI"], width="stretch")
+            tabs = st.tabs(["analysis", "backend", "gui", "tools"], width="stretch")
 
-            start = st.session_state.notification_time
-            if start is None:
-                start = min_dt
+            # We restrict logs to those >= start_guess for tree tagging to reflect latest run
+            start_for_tags = notif if pd.notna(notif) else min_dt
+            last_logs = log_df[(log_df["date-time"] >= start_for_tags)].copy()
 
-            last_logs = log_df[(log_df["date-time"] >= start)].copy()
+            selected_files_all: List[str] = []
 
-            with gui_tab:
-                gui_selected_files = self.gui_tree(last_logs)
+            with tabs[0]:
+                sel_analysis = self._build_category_tree(
+                    last_logs, "analysis", "analysis"
+                )
+                selected_files_all.extend(sel_analysis)
 
-            with backend_tab:
-                backend_selected_files = self.backend_tree(last_logs)
+            with tabs[1]:
+                sel_backend = self._build_category_tree(last_logs, "backend", "backend")
+                selected_files_all.extend(sel_backend)
 
-        # Apply filters
+            with tabs[2]:
+                sel_gui = self._build_category_tree(last_logs, "gui", "gui")
+                selected_files_all.extend(sel_gui)
+
+            with tabs[3]:
+                sel_tools = self._build_category_tree(last_logs, "tools", "tools")
+                selected_files_all.extend(sel_tools)
+
+        # Ensure stable session state for filters (without end time for now)
         if "log_filters" not in st.session_state:
             st.session_state["log_filters"] = (
                 start_dt,
-                end_dt,
-                sel_sev,
-                gui_selected_files,
-                backend_selected_files,
+                tuple(sel_sev),
+                tuple(sorted(set(selected_files_all))),
             )
         if (
             start_dt,
-            end_dt,
-            sel_sev,
-            gui_selected_files,
-            backend_selected_files,
+            tuple(sel_sev),
+            tuple(sorted(set(selected_files_all))),
         ) != st.session_state["log_filters"]:
             st.session_state["log_filters"] = (
                 start_dt,
-                end_dt,
-                sel_sev,
-                gui_selected_files,
-                backend_selected_files,
+                tuple(sel_sev),
+                tuple(sorted(set(selected_files_all))),
             )
             st.rerun()
-        filered_logs_df = log_df[
-            (log_df["date-time"] >= start_dt)
-            # & (log_df["date-time"] <= end_dt)
-            & (log_df["severity"].isin(sel_sev))
-            & (log_df["origin file"].isin(gui_selected_files + backend_selected_files))
-        ].copy()
+
+        # Apply filters
+        if selected_files_all:
+            filtered_logs_df = log_df[
+                (log_df["date-time"] >= start_dt)
+                & (log_df["severity_raw"].isin(sel_sev))
+                & (log_df["origin file"].isin(selected_files_all))
+            ].copy()
+        else:
+            # If nothing selected, show nothing (explicit)
+            filtered_logs_df = log_df.iloc[0:0].copy()
 
         # -----------------------------
         # Display
         # -----------------------------
         with b:
-            filered_logs_df.sort_values("date-time", ascending=False, inplace=True)
-            st.caption(f"{len(filered_logs_df)} records out of {len(log_df)} total")
-            st.dataframe(filered_logs_df, use_container_width=True)
-            if st.button("Clean logs"):
-                st.session_state.notification_time = pd.Timestamp.now()
-                st.rerun()
-            # if st.button("Restore logs"):
-            #     st.session_state.notification_time = st.session_state.start_time
-            #     st.rerun()
+            filtered_logs_df.sort_values("date-time", ascending=False, inplace=True)
+            st.caption(f"{len(filtered_logs_df)} records out of {len(log_df)} total")
 
+            # Show friendly label but keep raw for internal logic
+            display_df = filtered_logs_df.copy()
+            display_df["severity"] = display_df["severity_label"]
+            display_df = display_df.drop(columns=["severity_raw", "severity_label"])
+
+            st.dataframe(display_df, use_container_width=True)
+
+            if st.button("Clean logs"):
+                st.session_state["notification_time"] = pd.Timestamp.now()
+                st.toast("Filtro spostato all'istante attuale")
+                st.rerun()
+
+    # -----------------------------
+    # App Status
+    # -----------------------------
     @property
     def app_status(self) -> tuple[Status, dict[str, int]]:
-        import pandas as pd
-
+        """Return (overall Status, counts per CRITICAL/ERROR/WARNING) since last notification_time."""
         self.load_logs()
         log_df = self.parse_logs_to_dataframe(self.logs, from_path=False).copy()
         log_df["date-time"] = pd.to_datetime(log_df["date-time"], errors="coerce")
         log_df = log_df.dropna(subset=["date-time"])
 
-        # start può essere stringa o datetime: uniforma
-        start = pd.to_datetime(st.session_state.notification_time, errors="coerce")
+        # start may be missing or not set yet
+        start = pd.to_datetime(
+            st.session_state.get("notification_time"), errors="coerce"
+        )
+        if pd.isna(start):
+            if log_df.empty:
+                return Status.OK, {"CRITICAL": 0, "ERROR": 0, "WARNING": 0}
+            start = log_df["date-time"].min()
 
         last_logs = log_df[log_df["date-time"] >= start].copy()
 
-        # 2) Normalizza la severità: rimuovi emoji/spazi e tieni solo il livello
-        #    Esempi possibili: "❌ ERROR", "⚠️ WARNING", "🔷 DEBUG"
-        last_logs["level"] = (
-            last_logs["severity"]
-            .astype(str)
-            .str.extract(r"(CRITICAL|ERROR|WARNING|INFO|DEBUG)", expand=False)
-            .str.upper()
-            .fillna("DEBUG")  # fallback prudente
-        )
-        counts = (
-            last_logs["level"]
-            .value_counts()
-            .reindex(["CRITICAL", "ERROR", "WARNING"], fill_value=0)
+        # Compute levels from severity_label (already normalized)
+        levels = last_logs["severity_raw"].astype(str).str.upper()
+        if levels.empty:
+            return Status.OK, {"CRITICAL": 0, "ERROR": 0, "WARNING": 0}
+
+        counts = levels.value_counts().reindex(
+            ["CRITICAL", "ERROR", "WARNING"], fill_value=0
         )
         n_logs = {
             "CRITICAL": int(counts["CRITICAL"]),
             "ERROR": int(counts["ERROR"]),
             "WARNING": int(counts["WARNING"]),
         }
-        # 3) Scegli il peggiore
-        priority = {"CRITICAL": 4, "ERROR": 3, "WARNING": 2, "INFO": 1, "DEBUG": 0}
-        worst = last_logs["level"].map(priority).max()
-        last_logs["level"] = (
-            last_logs["severity"]
-            .astype(str)
-            .apply(lambda s: re.search(r"(CRITICAL|ERROR|WARNING)", s.upper()))
-            .apply(lambda m: m.group(1) if m else None)
-        )
 
-        # Conta solo quelli che ti interessano
+        priority = {"CRITICAL": 4, "ERROR": 3, "WARNING": 2, "INFO": 1, "DEBUG": 0}
+        worst = int(levels.map(priority).max())
 
         if worst >= priority["CRITICAL"]:
             return Status.CRITICAL, n_logs

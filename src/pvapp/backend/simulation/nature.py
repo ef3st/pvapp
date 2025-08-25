@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 import pvlib
 from typing import Dict, Union
-from utils.logger import get_logger
+from tools.logger import get_logger
 from typing import Optional
 
 

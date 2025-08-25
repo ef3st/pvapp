@@ -12,7 +12,7 @@ Main Features:
 - Configurable log levels management
 
 Use examples:
-    >>> from src.utils.logger import setup_logger, get_logger
+    >>> from src.tools.logger import setup_logger, get_logger
     >>> setup_logger('jarvis', log_level='INFO')
     >>> logger = get_logger('jarvis')
     >>> logger.info('Application started successfully')

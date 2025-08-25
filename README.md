@@ -6,6 +6,8 @@
 
 <!-- > Solar Tracking software for a PV plant. Written in python, the iplant is model with pvlib -->
 
+# The Project
+
 # 🖼️ Basic Guide to the GUI
 
 *PVApp* is divided in four main pages and two utily pages:
