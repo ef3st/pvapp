@@ -1,20 +1,20 @@
 ```mermaid
 flowchart TD
-    A[Streamlit UI\nsrc/pvapp/gui] --> B[Plant Manager & Pages\nplant_manager/, pages/]
-    B --> C[PV Simulation (pvlib)\npvlib_plant_model/, simulation/]
-    C --> D[Grid Modeling (pandapower)\npandapower_network/, grid/]
-    D --> E[Analysis & Validation\nanalysis/, mount/validated/]
-    B --> F[Mount models\nmount/development/, mount/validated/]
-    E --> G[Plots & Graphics\nplots/, utils/graphics/]
-    E --> H[Translation & Imaging\ntranslation/, imaging/]
-    A --> L[Logs\nlogs/]
-    
+    A["Streamlit UI (src/pvapp/gui)"] --> B["Plant Manager & Pages"]
+    B --> C["PV Simulation (pvlib)\n(pvlib_plant_model, simulation)"]
+    C --> D["Grid Modeling (pandapower)\n(pandapower_network, grid)"]
+    D --> E["Analysis & Validation\n(analysis, mount/validated)"]
+    B --> F["Mount models\n(mount/development, mount/validated)"]
+    E --> G["Plots & Graphics\n(plots, utils/graphics)"]
+    E --> H["Translation & Imaging\n(translation, imaging)"]
+    A --> L["Logs"]
+
     subgraph Runtime_data
-      I[data/, logs/]
+      I["data/, logs/"]
     end
-    
-    A -. config .-> J[backend/ & utils\nmd_render.py, feedback_form.py]
-    K[tools\n docbuilder.py, logger.py] --> J
+
+    A -. config .-> J["backend & utils\n(md_render.py, feedback_form.py)"]
+    K["tools\n(docbuilder.py, logger.py)"] --> J
     J --> C
     J --> D
 
