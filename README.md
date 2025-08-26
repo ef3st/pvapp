@@ -1,4 +1,25 @@
+```mermaid
+flowchart TD
+    A["Streamlit UI (src/pvapp/gui)"] --> B["Plant Manager & Pages"]
+    B --> C["PV Simulation (pvlib)\n(pvlib_plant_model, simulation)"]
+    C --> D["Grid Modeling (pandapower)\n(pandapower_network, grid)"]
+    D --> E["Analysis & Validation\n(analysis, mount/validated)"]
+    B --> F["Mount models\n(mount/development, mount/validated)"]
+    E --> G["Plots & Graphics\n(plots, utils/graphics)"]
+    E --> H["Translation & Imaging\n(translation, imaging)"]
+    A --> L["Logs"]
 
+    subgraph Runtime_data
+      I["data/, logs/"]
+    end
+
+    A -. config .-> J["backend & utils\n(md_render.py, feedback_form.py)"]
+    K["tools\n(docbuilder.py, logger.py)"] --> J
+    J --> C
+    J --> D
+
+
+```
 <!-- [![CI](https://img.shields.io/github/actions/workflow/status/ef3st/pvapp/ci.yml?branch=main&label=CI)](https://github.com/ef3st/pvapp/actions)
 [![Coverage](https://img.shields.io/codecov/c/github/ef3st/pvapp?label=coverage)](https://codecov.io/gh/ef3st/pvapp)
 [![Last Commit](https://img.shields.io/github/last-commit/ef3st/pvapp)](https://github.com/ef3st/pvapp/commits/main) -->
