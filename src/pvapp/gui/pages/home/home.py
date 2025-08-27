@@ -40,11 +40,8 @@ def render():
     )
 
     # sac.alert("Home: *PV Plant Analyser*",variant="quote-light", color="red", size=35, icon=sac.BsIcon("house-door",color="blue"))
-    MarkdownStreamlitPage(
-        "README.md", mode="native", page_title="PVApp Home"
-    ).render_native_with_mermaid(
-        mermaid_theme="dark",  # "dark", "forest", "neutral", "base"
-        mermaid_height=None,  # None = altezza stimata automaticamente
+    MarkdownStreamlitPage("README.md", page_title="PVApp Home").render_advanced(
+        inline_images=True, enable_mermaid=True
     )  # st.markdown(content, unsafe_allow_html=True)
     # if readme_path.exists():
     #     with readme_path.open("r", encoding="utf-8") as f:

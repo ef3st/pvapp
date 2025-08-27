@@ -43,7 +43,7 @@ class PVSystemManager:
     ):
         if self.system:
             self.logger.warning(
-                f"{self.name}: an plant has been already setted. NO CREATION OF THE IMPLANT WITH {module} and {inverter}"
+                f"{self.name}: a plant has been already setted. NO CREATION OF THE IMPLANT WITH {module} and {inverter}"
             )
             return
 
