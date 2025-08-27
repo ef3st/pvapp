@@ -37,6 +37,7 @@ from .pages.plants_comparison.plants_comparison import PlantsComparisonPage
 from .pages.plant_manager.plant_manager import PlantManager
 from .pages.logs.logs import LogsPage, _SEV_ICON
 from .pages.guide import guide
+from .utils.graphics.feedback_form import write_to_developer
 
 
 # -----------------------------------------------------------------------------
@@ -473,6 +474,8 @@ def streamlit() -> None:
             st.divider()
             st.toggle("💾 Auto-Save", key="auto_save")
             st.toggle("🔥 Auto-Simulate", key="auto_sim")
+
+        write_to_developer()
 
         # Navigation menu
 

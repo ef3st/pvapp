@@ -98,3 +98,23 @@ The project is organized into modules reflecting its main functionalities:
 ---
 
 This architecture and the choice of libraries allow the project to effectively address the typical challenges of energy analysis and PV plant simulation, while providing a modern and accessible user experience.
+```mermaid
+flowchart TD
+    A["Streamlit UI (src/pvapp/gui)"] --> B["Plant Manager & Pages"]
+    B --> C["PV Simulation (pvlib)\n(pvlib_plant_model, simulation)"]
+    C --> D["Grid Modeling (pandapower)\n(pandapower_network, grid)"]
+    D --> E["Analysis & Validation\n(analysis, mount/validated)"]
+    B --> F["Mount models\n(mount/development, mount/validated)"]
+    E --> G["Plots & Graphics\n(plots, utils/graphics)"]
+    E --> H["Translation & Imaging\n(translation, imaging)"]
+    A --> L["Logs"]
+
+    subgraph Runtime_data
+      I["data/, logs/"]
+    end
+
+    A -. config .-> J["backend & utils\n(md_render.py, feedback_form.py)"]
+    K["tools\n(docbuilder.py, logger.py)"] --> J
+    J --> C
+    J --> D
+```
