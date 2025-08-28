@@ -26,11 +26,19 @@ class PlantsPage(Page):
             site_path = subfolder / "site.json"
             plant_path = subfolder / "plant.json"
             simulation_path = subfolder / "simulation.csv"
+            grid_path = subfolder / "grid.json"
+            array_path = subfolder / "array.json"
             if not site_path.exists() or not plant_path.exists():
                 continue
             simulated = False
+            grid = False
+            array = False
             if simulation_path.exists():
                 simulated = True
+            if grid_path.exists():
+                grid = True
+            if array_path.exists():
+                array = True
             try:
                 with site_path.open() as f:
                     site = json.load(f)
@@ -49,6 +57,8 @@ class PlantsPage(Page):
                         titles[8]: site["coordinates"].get("lat"),
                         titles[9]: site["coordinates"].get("lon"),
                     },
+                    "Grid": "✅" if grid else "❌",
+                    "Array": "✅" if array else "❌",
                     titles[10]: "✅" if simulated else "❌",
                 }
                 rows.append(row)
@@ -58,31 +68,14 @@ class PlantsPage(Page):
                 continue
 
         if not rows:
-
-            rows.append(
-                {}
-                # {
-                #     titles[0]: "",
-                #     titles[1]: "",
-                #     titles[2]: "",
-                #     titles[3]: "",
-                #     titles[4]: "",
-                #     titles[5]: "",
-                #     titles[6]: "",
-                #     titles[7]: {
-                #         titles[8]: 0,
-                #         titles[9]: 0,
-                #     },
-                #     titles[10]: "❌",
-                # }
-            )
+            rows.append({})
         return pd.DataFrame(rows)
 
     def render(self):
         if "adding_plant" not in st.session_state:
             st.session_state.adding_plant = False
 
-        if st.session_state.adding_plant:
+        if st.session_state.adding_plant:  # PAGE WITH ADD SECTION
             main, lateral = st.columns([7, 5])
 
             with lateral:
@@ -107,13 +100,15 @@ class PlantsPage(Page):
                     sac.result(messages[0], description=messages[1], status="empty")
                 else:
                     titles = self.T("df_title")
-                    columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]]
+                    columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]] + [
+                        "Grid",
+                        "Array",
+                    ]
                     st.dataframe(df[columns_to_show], use_container_width=True)
 
                     self._render_map(df)
             return
-        else:
-            # st.title("🏛️ " + self.T("title"))
+        else:  # PAGE WITHOUT ADD SECTION
             sac.alert(
                 self.T("title"),
                 variant="quote",
@@ -152,27 +147,16 @@ class PlantsPage(Page):
                     variant="light",
                     icon=sac.BsIcon("info-circle"),
                 )
-                # sac.alert("Command not perfomed yet", description="To delete a plant, delete its folder in /data after check the name of site and Plant in site.json and plant.json",closable=True)
-
-                # st.warning(
-                #     "Non abbiate fretta, ci stiamo lavorando: per cancellare un impianto, cancellate la cartella relativa in data/ (⚠️NON CANCELLATE /data⚠️ - solo la cartella dell'impianto da eliminare)"
-                # )
-            # col1, col2, space = st.columns([2, 2, 15])
-            # if col1.button("➕ " + self.T("buttons.add_plant")):
-            #     st.session_state.adding_plant = True
-            #     st.rerun()
-            # if col2.button("➖ " + self.T("buttons.remove_plant")):
-            #     st.warning(
-            #         "Non abbiate fretta, ci stiamo lavorando: per cancellare un impianto, cancellate la cartella relativa in data/ (⚠️NON CANCELLATE /data⚠️ - solo la cartella dell'impianto da eliminare)"
-            #     )
-
             if df.empty:
                 messages = self.T("messages.no_plant_found")
                 sac.result(messages[0], description=messages[1], status="empty")
                 return
             # Show table with selected columns
             titles = self.T("df_title")
-            columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]]
+            columns_to_show = [titles[i] for i in [0, 3, 4, 5, 6, 10]] + [
+                "Grid",
+                "Array",
+            ]
             st.dataframe(df[columns_to_show], use_container_width=True)
 
             self._render_map(df)
@@ -199,7 +183,7 @@ class PlantsPage(Page):
                 continue
 
         if not rows:
-            st.info("ℹ️ Nessun impianto valido per la mappa.")
+            st.info("ℹ️ No valid Plant for the map")
             return
 
         df_map = pd.DataFrame(rows)

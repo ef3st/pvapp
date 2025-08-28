@@ -348,9 +348,9 @@ class PlantPowerGrid:
 
         Args:
             element: Currently only 'bus' is supported.
-            index: Bus index to select.
-            name: Bus name to select.
-            column: If empty, returns the full row (as DataFrame slice).
+            index (int | None): Bus index to select.
+            name (str | None): Bus name to select.
+            column (str): If empty, returns the full row (as DataFrame slice).
                     If 'index', returns the index int.
                     If a column name (e.g. 'vn_kv'), returns that value.
 
