@@ -125,9 +125,28 @@ Developer is working to create a better pre-configuration setup with TOML.
 ---
 
 # Installation
+### Requirements
+- **Python** ≥ 3.10  
+- **Poetry** ≥ 1.6  
+- **Git** (solo se installi da repository)
 
+### Setup
+Clone the repository and install dependencies with Poetry:
 
+```bash
+git clone https://github.com/yourname/pvapp.git
+cd pvapp
+poetry install
+```
+
+This will create and manage a virtual environment automatically.  
+To activate it manually:
+```bash
+poetry shell
+```
 --- 
+
+
 # Usage
     
 ---
@@ -135,20 +154,17 @@ Developer is working to create a better pre-configuration setup with TOML.
 
 ---
 # Run & Deployment
-
+Once installed, you can run the application in two modes:  
+- GUI mode (Streamlit): lunch the graphical interface:
 ```bash
-# run streamlit
-make streamlit
+poetry run pvapp gui --info
+```
+> This will start a local Streamlit server and open the web interface in your browser.
+> Optional log levels: --debug, --info, --warning, --critical.
 
-# Intall with poetry
-poetry install
-
-# Linting with Ruff
-poetry run ruff check src/
-
-# Testing + coverage
-poetry run pytest --cov=src --cov-report=term
-
+- Development mode: run the simulation logic without the GUI:
+```bash
+poetry run pvapp dev --debug
 ```
 
 ---

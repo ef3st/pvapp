@@ -127,6 +127,11 @@ def simulate_all(folder: Path = Path("data/")) -> None:
             st.warning(f"Simulation failed for {subfolder.name}: {exc}")
         finally:
             progress.progress(i / total, text=f"{i}/{total} simulations completed")
+            st.toast(
+                f"Simulation completed  for {subfolder.name}: {exc}",
+                icon="✅",
+                duration=2000,
+            )
 
     progress.empty()
     sac.alert(

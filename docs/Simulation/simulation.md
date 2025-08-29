@@ -4,7 +4,7 @@
 
 # Photovoltaic Simulations with pvlib
 
-## 1) Theory: what a PV performance model does
+## Theory: what a PV performance model does
 
 A grid-connected PV simulation predicts AC power at the point of interconnection from weather and system specs. The pipeline, conceptually:
 
@@ -51,66 +51,64 @@ A grid-connected PV simulation predicts AC power at the point of interconnection
 
 ---
 
-## 2) pvlib: how the code mirrors the theory
-
-### 2.1 Core building blocks
-
-```python
-import pvlib
-from pvlib.location import Location
-
-site = Location(latitude=44.50, longitude=11.35, tz="Europe/Rome", altitude=50)
-times = pd.date_range(start="2024-07-01 00:00", end="2024-07-07 23:00", freq="1h", tz=site.tz)
-solar_pos = site.get_solarposition(times)
-
-# Clear-sky as fallback
-clearsky = site.get_clearsky(times, model="ineichen")  # DNI, GHI, DHI
-```
-
-...
-
-# 8) Minimal end-to-end example
-
-```python
-import pandas as pd
-from pvlib.location import Location
-from pvlib.pvsystem import PVSystem, retrieve_sam
-from pvlib.modelchain import ModelChain
-
-# Site & time
-site = Location(44.50, 11.35, 'Europe/Rome', altitude=50)
-times = pd.date_range('2024-06-01', '2024-06-07', freq='15min', tz=site.tz)
-solpos = site.get_solarposition(times)
-weather = site.get_clearsky(times, 'ineichen')  # replace with measured data
-weather['temp_air'] = 25.0
-weather['wind_speed'] = 1.0
-
-# Components (CEC)
-cec_modules = retrieve_sam('CECMod')
-cec_inverters = retrieve_sam('cecinverter')
-module = cec_modules.iloc[0]
-inverter = cec_inverters.iloc[0]
-
-system = PVSystem(
-    surface_tilt=28, surface_azimuth=180,
-    module_parameters=module,
-    inverter_parameters=inverter,
-    temperature_model_parameters={'a': -3.47, 'b': -0.0594, 'deltaT': 3},
-    modules_per_string=12, strings_per_inverter=3, albedo=0.2
-)
-
-mc = ModelChain(
-    system, site,
-    transposition_model='haydavies',
-    aoi_model='sapm', spectral_model='no_loss',
-    temperature_model='sapm',
-    dc_model='cec', ac_model='sandia'
-)
-
-mc.run_model(weather)
-ac_power = mc.results.ac  # W
-energy = ac_power.resample('1D').sum()/1000  # kWh per day
-```
+> ## How the code mirrors the theory
+> 
+> ###  Core building blocks
+> 
+> ```python
+> import pvlib
+> from pvlib.location import Location
+> 
+> site = Location(latitude=44.50, longitude=11.35, tz="Europe/Rome", altitude=50)
+> times = pd.date_range(start="2024-07-01 00:00", end="2024-07-07 23:00", freq="1h", tz=site.tz)
+> solar_pos = site.get_solarposition(times)
+> 
+> # Clear-sky as fallback
+> clearsky = site.get_clearsky(times, model="ineichen")  # DNI, GHI, DHI
+> ```
+> 
+> ### Minimal end-to-end example
+> 
+> ```python
+> import pandas as pd
+> from pvlib.location import Location
+> from pvlib.pvsystem import PVSystem, retrieve_sam
+> from pvlib.modelchain import ModelChain
+> 
+> # Site & time
+> site = Location(44.50, 11.35, 'Europe/Rome', altitude=50)
+> times = pd.date_range('2024-06-01', '2024-06-07', freq='15min', tz=site.tz)
+> solpos = site.get_solarposition(times)
+> weather = site.get_clearsky(times, 'ineichen')  # replace with measured data
+> weather['temp_air'] = 25.0
+> weather['wind_speed'] = 1.0
+> 
+> # Components (CEC)
+> cec_modules = retrieve_sam('CECMod')
+> cec_inverters = retrieve_sam('cecinverter')
+> module = cec_modules.iloc[0]
+> inverter = cec_inverters.iloc[0]
+> 
+> system = PVSystem(
+>     surface_tilt=28, surface_azimuth=180,
+>     module_parameters=module,
+>     inverter_parameters=inverter,
+>     temperature_model_parameters={'a': -3.47, 'b': -0.0594, 'deltaT': 3},
+>     modules_per_string=12, strings_per_inverter=3, albedo=0.2
+> )
+> 
+> mc = ModelChain(
+>     system, site,
+>     transposition_model='haydavies',
+>     aoi_model='sapm', spectral_model='no_loss',
+>     temperature_model='sapm',
+>     dc_model='cec', ac_model='sandia'
+> )
+> 
+> mc.run_model(weather)
+> ac_power = mc.results.ac  # W
+> energy = ac_power.resample('1D').sum()/1000  # kWh per day
+>```
 
 
 

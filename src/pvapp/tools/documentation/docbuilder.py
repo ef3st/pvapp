@@ -1,17 +1,25 @@
 """
+! L'ho creato con CHAT GPT, non controllato, ma funziona
 DocBundler: merges README.md and all .md files inside /docs (recursively)
-into a single PDF, embedding referenced images inline.
+into a single document. Images referenced by Markdown are embedded inline for
+PDF and DOCX via HTML conversion.
 
-Backends supported (pick what's easiest on your machine):
+Backends supported for PDF (pick what's easiest on your machine):
   - playwright  (Chromium headless; no native libs. Run: `poetry add playwright` + `poetry run playwright install chromium`)
   - weasyprint  (HTML→PDF; needs Cairo/Pango/GDK-PixBuf system libs)
   - pdfkit      (needs wkhtmltopdf installed system-wide; set WKHTMLTOPDF_BINARY on Windows if needed)
   - pypandoc    (needs Pandoc and usually LaTeX for PDF)
 
+Additional export formats (select in the Streamlit app):
+  - DOCX (Word)  → requires `pypandoc` and a system Pandoc
+  - HTML         → always available (fallback)
+  - Markdown     → concatenated .md sources
+  - TXT (plain)  → text extracted from the generated HTML
+
 Run as Streamlit app:
   streamlit run doc_bundler.py
 
-Inside the app: choose backend, click "Generate PDF" (or use the HTML fallback) and download.
+Inside the app: set options, choose export formats, click "Genera" and download.
 """
 
 from __future__ import annotations
@@ -118,7 +126,7 @@ class DocBundlerConfig:
     )
 
 
-class DocBundler:  # updated to include Pygments CSS + robust image resolver
+class DocBundler:  # updated to include Pygments CSS + robust image resolver + multi-export
     def __init__(self, config: DocBundlerConfig):
         self.cfg = config
         self.root = self.cfg.project_root.resolve()
@@ -204,6 +212,82 @@ class DocBundler:  # updated to include Pygments CSS + robust image resolver
     def build_html_string(self) -> str:
         """Return the full HTML string (useful for manual PDF printing or debugging)."""
         return self._render_full_html()
+
+    def build_markdown_string(self) -> str:
+        """Concatenate README + docs into a single Markdown string (simple join)."""
+        parts: List[str] = []
+        # Cover page as Markdown
+        cover = [
+            f"# {self.cfg.title}",
+            (f"\n**{self.cfg.subtitle}**\n" if self.cfg.subtitle else ""),
+            (f"\nAuthor: {self.cfg.author}\n" if self.cfg.author else ""),
+            f"\n_Project: {self.root.name} — {self.root}_\n",
+            "\n---\n",
+        ]
+        parts.append("".join(cover))
+
+        def _read(p: Path) -> str:
+            try:
+                return p.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                return f"\n> [Could not read {p}]\n"
+
+        if self.readme_path.exists():
+            parts.append(_read(self.readme_path))
+        if self.docs_dir.exists():
+            for md_path in self._iter_markdown_files(self.docs_dir):
+                parts.append(f"\n\n---\n\n")
+                parts.append(_read(md_path))
+        return "\n\n".join(parts).strip() + "\n"
+
+    def build_text_string(self) -> str:
+        """Plain text extracted from the generated HTML."""
+        html = self._render_full_html()
+        soup = BeautifulSoup(html, "html.parser")
+        text = soup.get_text("\n")
+        return "\n".join(line.rstrip() for line in text.splitlines())
+
+    def build_export(self, fmt: str) -> Tuple[bytes, str, str]:
+        """Return (data, file_ext, mime) for the given format.
+        Supported fmt: 'pdf', 'html', 'md' (markdown), 'docx', 'txt'.
+        """
+        fmt_l = (fmt or "").strip().lower()
+        if fmt_l == "pdf":
+            data = self.build_pdf_bytes()
+            return data, "pdf", "application/pdf"
+        elif fmt_l == "html":
+            s = self.build_html_string().encode("utf-8")
+            return s, "html", "text/html"
+        elif fmt_l in {"md", "markdown"}:
+            s = self.build_markdown_string().encode("utf-8")
+            return s, "md", "text/markdown"
+        elif fmt_l in {"docx", "word"}:
+            if not _BACKENDS.get("pypandoc"):
+                raise RuntimeError(
+                    "DOCX export requires 'pypandoc' and a system Pandoc installation."
+                )
+            import pypandoc  # type: ignore
+
+            html = self.build_html_string()
+            out_path = self.root / "_docbundler_temp.docx"
+            pypandoc.convert_text(
+                html, to="docx", format="html", outputfile=str(out_path)
+            )
+            data = out_path.read_bytes()
+            try:
+                out_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            return (
+                data,
+                "docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        elif fmt_l in {"txt", "text"}:
+            s = self.build_text_string().encode("utf-8")
+            return s, "txt", "text/plain"
+        else:
+            raise RuntimeError(f"Unsupported export format: {fmt}")
 
     # ---- Internals ---- #
     def _render_full_html(self) -> str:
@@ -354,7 +438,7 @@ class DocBundler:  # updated to include Pygments CSS + robust image resolver
             except Exception:
                 pass
             if clean.startswith("/"):
-                # Absolute-like path -> relative to project root and docs root
+                # Absolute-like path → relative to project root and docs root
                 candidates.append((self.root / clean.lstrip("/")).resolve())
                 candidates.append((self.docs_dir / clean.lstrip("/")).resolve())
             else:
@@ -466,14 +550,16 @@ class DocBundler:  # updated to include Pygments CSS + robust image resolver
 def _run_streamlit():  # pragma: no cover
     import streamlit as st
 
-    st.set_page_config(page_title="DocBundler PDF", layout="centered")
-    st.title("📄 DocBundler: README + docs ➜ PDF")
-    st.write("Merge README.md and /docs/**/*.md into a single downloadable PDF.")
+    st.set_page_config(page_title="DocBundler Export", layout="centered")
+    st.title("📄 DocBundler: README + docs ➜ Multi-format Export")
+    st.write(
+        "Merge README.md and /docs/**/*.md into a single downloadable document (PDF / DOCX / HTML / MD / TXT)."
+    )
 
     project_root = st.text_input("Project root", value=str(Path.cwd()))
     readme_path = st.text_input("README path", value="README.md")
     docs_dir = st.text_input("Docs folder", value="docs")
-    title = st.text_input("PDF title", value=f"PVApp {"\n"} Project Documentation")
+    title = st.text_input("PDF title", value="PVApp \\n Project Documentation")
     author = st.text_input("Author (optional)", value="")
     subtitle = st.text_input("Subtitle", value="GUIDE FOR USERS AND PROGRAMMERS")
     icon_url = st.text_input(
@@ -482,7 +568,7 @@ def _run_streamlit():  # pragma: no cover
     )
     include_toc = st.checkbox("Include TOC", value=True)
 
-    # Backend selector
+    # Backend selector (for PDF only)
     avail = [k for k, v in _BACKENDS.items() if v]
     backend = st.selectbox(
         "PDF backend",
@@ -491,67 +577,61 @@ def _run_streamlit():  # pragma: no cover
         help=f"Available now: {', '.join(avail) or 'none'}.",
     )
 
+    # Export formats
+    export_options = ["pdf", "html", "md", "txt"] + (
+        ["docx"] if _BACKENDS.get("pypandoc") else []
+    )
+    chosen_formats = st.multiselect(
+        "Formati da esportare",
+        options=export_options,
+        default=["pdf"],
+        help=(
+            "DOCX richiede 'pypandoc' + Pandoc installato a livello di sistema. "
+            "PDF richiede uno dei backend sopra elencati."
+        ),
+    )
+
     st.caption(
-        "Tip: For Playwright, run `poetry add playwright` and then `poetry run playwright install chromium`."
+        "Tip: For Playwright, run `poetry add playwright` and then `poetry run playwright install chromium`.\n"
+        "DOCX export needs Pandoc installed on your system."
     )
 
     st.divider()
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Generate PDF"):
-            try:
-                cfg = DocBundlerConfig(
-                    project_root=Path(project_root),
-                    readme_path=Path(readme_path),
-                    docs_dir=Path(docs_dir),
-                    title=title,
-                    author=author or None,
-                    subtitle=subtitle or None,
-                    cover_icon=icon_url or None,
-                    include_toc=include_toc,
-                    backend=backend,
-                )
-                bundler = DocBundler(cfg)
-                pdf_bytes = bundler.build_pdf_bytes()
-                st.success("PDF ready!")
-                st.download_button(
-                    label="⬇️ Download PDF",
-                    data=pdf_bytes,
-                    file_name=f"{Path(project_root).name or 'documentation'}.pdf",
-                    mime="application/pdf",
-                )
-            except Exception as e:
-                import traceback
+    if st.button("Genera"):
+        try:
+            cfg = DocBundlerConfig(
+                project_root=Path(project_root),
+                readme_path=Path(readme_path),
+                docs_dir=Path(docs_dir),
+                title=title,
+                author=author or None,
+                subtitle=subtitle or None,
+                cover_icon=icon_url or None,
+                include_toc=include_toc,
+                backend=backend,
+            )
+            bundler = DocBundler(cfg)
 
-                st.error(f"Error while generating PDF: {e}")
-                st.code(traceback.format_exc())
-                st.info("Detected backends: " + (", ".join(avail) or "none"))
-    with col2:
-        if st.button("Export HTML (fallback)"):
-            try:
-                cfg = DocBundlerConfig(
-                    project_root=Path(project_root),
-                    readme_path=Path(readme_path),
-                    docs_dir=Path(docs_dir),
-                    title=title,
-                    author=author or None,
-                    include_toc=include_toc,
-                    backend=backend,
-                )
-                bundler = DocBundler(cfg)
-                html_str = bundler.build_html_string()
-                st.success("HTML ready!")
-                st.download_button(
-                    label="⬇️ Download HTML",
-                    data=html_str.encode("utf-8"),
-                    file_name=f"{Path(project_root).name or 'documentation'}.html",
-                    mime="text/html",
-                )
-            except Exception as e:
-                import traceback
+            st.success("File pronti! Scarica qui sotto:")
+            base_name = f"{Path(project_root).name or 'documentation'}"
+            for fmt in chosen_formats:
+                try:
+                    data, ext, mime = bundler.build_export(fmt)
+                    st.download_button(
+                        label=f"⬇️ Scarica {ext.upper()}",
+                        data=data,
+                        file_name=f"{base_name}.{ext}",
+                        mime=mime,
+                        key=f"dl-{ext}",
+                    )
+                except Exception as sub_e:
+                    st.error(f"Errore nell'esportazione {fmt.upper()}: {sub_e}")
+        except Exception as e:
+            import traceback
 
-                st.error(f"Error while exporting HTML: {e}")
-                st.code(traceback.format_exc())
+            st.error(f"Errore: {e}")
+            st.code(traceback.format_exc())
+            st.info("Rilevati backend: " + (", ".join(avail) or "none"))
 
 
 if __name__ == "__main__":  # pragma: no cover
@@ -561,11 +641,18 @@ if __name__ == "__main__":  # pragma: no cover
 
         _run_streamlit()
     except ModuleNotFoundError:
-        # Fallback: quick local HTML for CLI testing
+        # Fallback: quick local outputs for CLI testing
         cfg = DocBundlerConfig(project_root=Path.cwd())
         bundler = DocBundler(cfg)
         html = bundler.build_html_string()
         Path("bundle_preview.html").write_text(html, encoding="utf-8")
+        # Also emit a merged markdown and a txt preview
+        Path("bundle_preview.md").write_text(
+            bundler.build_markdown_string(), encoding="utf-8"
+        )
+        Path("bundle_preview.txt").write_text(
+            bundler.build_text_string(), encoding="utf-8"
+        )
         print(
-            "Created bundle_preview.html — open it in the browser or use Streamlit for PDF."
+            "Created bundle_preview.html / .md / .txt — open in the browser or use Streamlit for PDF/DOCX."
         )

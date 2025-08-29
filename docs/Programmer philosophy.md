@@ -1,7 +1,7 @@
 # 🧑‍💻 Developer Philosophy
 
 ## Source Code Structure (`src/pvapp`)
-To build this app, developer aimed to
+More than 10 thousand code (you can count them with ```make count_lines``` in the command line) lines that make up this project are realized with specific aims:
 - **Modularity**: Clear separation between simulation logic, data management, and presentation.
 - **Scalability**: Each module can be extended or replaced without impacting the rest of the system.
 - **Maintainability**: Clear structure, use of standard and well-documented libraries.
