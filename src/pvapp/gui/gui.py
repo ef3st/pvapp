@@ -123,14 +123,13 @@ def simulate_all(folder: Path = Path("data/")) -> None:
     for i, subfolder in enumerate(subdirs, start=1):
         try:
             simulator.Simulator(subfolder).run()
-        except Exception as exc:  # Keep UI resilient
-            st.warning(f"Simulation failed for {subfolder.name}: {exc}")
+        except Exception as e:  # Keep UI resilient
+            st.warning(f"Simulation failed for {subfolder.name}: {e}")
         finally:
             progress.progress(i / total, text=f"{i}/{total} simulations completed")
             st.toast(
-                f"Simulation completed  for {subfolder.name}: {exc}",
+                f"Simulation completed  for {subfolder.name}",
                 icon="✅",
-                duration=2000,
             )
 
     progress.empty()

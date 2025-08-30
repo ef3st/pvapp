@@ -130,10 +130,30 @@ class ModuleManager(Page):
         path: Path = self.plant_file.parent / "simulation.csv"
         if path.exists():
             analyser = PlantAnalyser(self.plant_file.parent)
-            plots.seasonal_plot(analyser.periodic_report(), "plant_performance")
-            plots.time_plot(analyser.numeric_dataframe(), page="plant_performance")
+            array = st.segmented_control(
+                "Array selection",
+                help="Select the array to analyse simulation results",
+                options=analyser.array_ids,
+                default=0,
+            )
+            plots.seasonal_plot(analyser.periodic_report(array), "plant_performance")
+            plots.time_plot(analyser.numeric_dataframe(array), page="plant_performance")
         else:
-            st.warning("⚠️ Simulation not perfermed")
+            st.warning("⚠️ Simulation not performed")
+
+    def render_data(self):
+        path: Path = self.plant_file.parent / "simulation.csv"
+        if path.exists():
+            analyser = PlantAnalyser(self.plant_file.parent)
+            array = st.segmented_control(
+                "Array selection",
+                help="Select the array to analyse simulation results",
+                options=analyser.array_ids,
+                default=0,
+            )
+            st.dataframe(analyser.arrays[array])
+        else:
+            st.warning("⚠️ Simulation not performed")
 
     # ========= SUMUPS =======
     def get_scheme(self): ...

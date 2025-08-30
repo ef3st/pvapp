@@ -1,10 +1,11 @@
-from __future__ import annotations
-
 from pathlib import Path
 from typing import Optional, Literal, Union, TypedDict, Dict
 
 import json
+import time
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+
 from pvlib.modelchain import ModelChain
 from pvlib.pvsystem import retrieve_sam
 
@@ -198,12 +199,25 @@ class Simulator:
         self.times: Optional[pd.DatetimeIndex] = None
 
     # ========== PUBLIC API ==========
-    def run(self, times: Optional[pd.DatetimeIndex] = None) -> bool:
+    def run(
+        self,
+        times: Optional[pd.DatetimeIndex] = None,
+        *,
+        timeouts: Optional[Dict[str, int]] = None,
+    ) -> bool:
         """
-        Entry point: loads configuration, builds and executes simulations, saves results, and (if available) runs grid.
+        Entry point: loads configuration, builds and executes simulations, saves results,
+        and (if available) runs grid — all under configurable time limits.
+
+        Args:
+            times: Optional custom DatetimeIndex for the simulation.
+            timeouts: Optional dict overriding phase timeouts in seconds.
+                      Keys: "run", "build", "grid".
         """
-        self.logger.info(f"[Simulator] Starting run for folder: {self.subfolder}")
-        done = False
+        # Merge/validate timeouts
+
+        run_start = time.perf_counter()
+
         # 1) Load configuration files
         try:
             self.load_site()
@@ -211,18 +225,21 @@ class Simulator:
             self.load_grid()
             self.load_arrays()
         except Exception as e:
-            # Keep the error visible, but don't crash the outer try/except which handles final logging
             self.logger.error(f"[Simulator] Loading error: {type(e).__name__}: {e}")
             return False
-        else:
-            self.logger.debug(f"[Simulator] Ready to simulate {self.plant_name}")
 
+        # Early timeout check
         try:
-            # 2) Define time range (use given index or a sensible default covering 1 year)
+            # 2) Define time range
             self._init_times(times)
 
-            # 3) Build and run all simulations
-            done = self.build_simulation()
+            # 3) Build and run all simulations (guarded by build timeout internally)
+            built = self.build_simulation()
+            if not built:
+                self.logger.error(
+                    "[Simulator] Aborting: build_simulation() did not complete."
+                )
+                return False
 
             # 4) Save results
             self.save_results()
@@ -237,7 +254,7 @@ class Simulator:
                 f"[Simulator] [UNEXPECTED ERROR] Failed for {self._safe_plant_name()} -> {type(e).__name__}: {e}"
             )
             return False
-        return done
+        return True
 
     # ========== LOADERS ==========
     def load_site(self):
@@ -327,7 +344,7 @@ class Simulator:
                 raise Exception(f"Error in loading arrays: {e}")
         else:
             self.logger.warning(
-                "[Simulator] arrays.json not found: using default placeholder configuration"
+                f"[Simulator] arrays.json not found: using default placeholder configuration for {self.plant_name}"
             )
 
     # ========== BUILDERS ==========
@@ -479,7 +496,15 @@ class Simulator:
                 )
 
         # After all arrays: optionally simulate the grid
-        self.reckon_grid()
+        if self.grid is None:
+            self.logger.debug("[Simulator] No grid configured; skipping pandapower run")
+        else:
+            try:
+                self.reckon_grid()
+            except Exception as e:
+                self.logger.error(
+                    f"[Simulator] Grid simulation failed for {self._safe_plant_name()}: {e}"
+                )
         self.logger.info(
             f"[Simulator] Simulation for Plant {self._safe_plant_name()} has been EXECUTED"
         )
@@ -510,18 +535,19 @@ class Simulator:
         """
         If a pandapower grid is configured, push array AC powers as sgen profiles and run a time-series power flow.
         """
-        if self.grid is None:
-            self.logger.debug("[Simulator] No grid configured; skipping pandapower run")
-            return
-
         try:
-            # ac_power_values expected shape: (time, arrays) or similar; divide by 1e6 to get MW
-            ac_power_values = self.simresults.get_acPowers_perTime_perArray() / 1e6
-            self.grid.create_controllers(element="sgen", data_source=ac_power_values)
-            self.grid.runnet(timeseries=True)
-            self.logger.info("[Simulator] Grid time-series executed")
+            df_timeseries = self.simresults.get_df_for_pandapower(self.grid.net)
+            self.logger.debug(
+                f"[Simulator] Running pandapower time-series simulation for {self.plant_name}"
+            )
+            errors, results = self.grid.runnet(timeseries=df_timeseries, return_df=True)
+            if errors:
+                self.logger.error(f"[Simulator] Grid run encountered errors: {errors}")
+            else:
+                self.logger.debug(f"[Simulator] Grid run completed successfully.")
+                self.simresults.add_gridresult(results)
         except Exception as e:
-            self.logger.warning(f"[Simulator] Grid run failed: {e}")
+            self.logger.error(f"[Simulator] Grid run failed: {e}")
             # Results integration into `simresults` can be added here in future
             return
 

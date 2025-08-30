@@ -31,6 +31,9 @@ from backend.pandapower_network.pvnetwork import (
 )
 from tools.logger import get_logger
 import pandas as pd
+from analysis.plantanalyser import PlantAnalyser
+import pydeck as pdk
+from ....utils.plots import plots
 
 
 # TODO :
@@ -204,7 +207,9 @@ def build_sac_tree_from_bus_df(
     show_connectors: bool = True,
     index: Optional[int] = None,
     return_index: bool = False,
-) -> Dict[str, Any]:
+    childrend_disabled=True,
+    with_meta: bool = True,
+) -> Dict[str, Any] | Tuple[Dict[str, Any], Dict[int, Dict[str, Any]]]:
     """
     Create `sac.tree` kwargs (items + sensible defaults) from a bus DataFrame
     that includes an "elements" column (each cell: list of connected elements).
@@ -252,39 +257,52 @@ def build_sac_tree_from_bus_df(
         icon. If `net` is provided, the element label includes the matching bus
         role(s).
     """
-
-    # Validate presence
     if bus_name_col not in bus_df.columns:
         raise ValueError(f"'{bus_name_col}' column not found in bus_df")
     if elements_col not in bus_df.columns:
         raise ValueError(f"'{elements_col}' column not found in bus_df")
-
     items: List[sac.TreeItem] = []
+    meta: Dict[int, Dict[str, Any]] = (
+        {}
+    )  # preorder index -> {"type": str, "index": int, "label": str}
+    running_idx = 0  # preorder counter aligned to sac.tree
 
     def _label_for_element(
         etype: str, eid: Optional[int], name_hint: Optional[str], role: Optional[str]
     ) -> str:
-        """
-        Build a readable label like: 'line 5 (from_bus)' or 'L5 (lv_bus)'.
-        """
         base = name_hint or (f"{etype} {eid}" if eid is not None else etype)
-        if role:
-            return f"{base} ({role})"
-        return base
+        return f"{base} ({role})" if role else base
+
+    # helper per creare TreeItem + aggiornare meta con indice preorder
+    def _make_item(
+        label: str,
+        icon: str,
+        payload: Optional[Tuple[str, Optional[int]]],
+        children: Optional[List[sac.TreeItem]] = None,
+        disabled: bool = False,
+    ) -> sac.TreeItem:
+        nonlocal running_idx, meta
+        node = sac.TreeItem(
+            label, icon=sac.BsIcon(icon), children=children or [], disabled=disabled
+        )
+        # registra meta solo se richiesto
+        if with_meta:
+            etype, eid = payload or (None, None)
+            meta[running_idx] = {"type": etype, "index": eid, "label": label}
+        running_idx += 1
+        return node
 
     for _, row in bus_df.reset_index(drop=True).iterrows():
         bus_idx = int(row[bus_index_col]) if bus_index_col else int(row.name)
-        bus_name = f"[{bus_idx}]  -  " + row[bus_name_col]
+        bus_label = f"[{bus_idx}]  -  {row[bus_name_col]}"
         icon_bus = ICON_MAP.get("bus", "diagram-3")
-
         children: List[sac.TreeItem] = []
         for el in row[elements_col] or []:
             etype, eid, name_hint = normalize_element_spec(el)
             if not etype:
                 continue
-            if not show_connectors:
-                if etype in CONNECTION_ELEMENTS:
-                    continue
+            if not show_connectors and etype in CONNECTION_ELEMENTS:
+                continue
             role = (
                 element_role_for_bus(net, etype, eid, bus_idx)
                 if net is not None
@@ -292,26 +310,22 @@ def build_sac_tree_from_bus_df(
             )
             label = _label_for_element(etype, eid, name_hint, role)
             icon = ICON_MAP.get(etype, "box")
-            children.append(
-                sac.TreeItem(
-                    label,
-                    icon=sac.BsIcon(icon),
-                    disabled=True,
-                )
+            # child payload = (etype, eid)
+            child_item = _make_item(
+                label, icon, (etype, eid), children=None, disabled=childrend_disabled
             )
-
-        # Build one TreeItem per bus with element children
+            children.append(child_item)
+        # bus payload = ("bus", bus_idx)
         items.append(
-            sac.TreeItem(
-                str(bus_name),
-                icon=sac.BsIcon(icon_bus),
+            _make_item(
+                str(bus_label),
+                icon_bus,
+                ("bus", bus_idx),
                 children=children,
                 disabled=False,
             )
         )
-
-    # Return kwargs ready for sac.tree(...)
-    return dict(
+    kwargs = dict(
         items=items,
         open_all=open_all,
         show_line=show_line,
@@ -320,6 +334,57 @@ def build_sac_tree_from_bus_df(
         return_index=return_index,
         index=index,
     )
+    return (kwargs, meta) if with_meta else kwargs
+
+
+def resolve_tree_selection(
+    tree_output: Union[int, str, None],
+    meta: Dict[int, Dict[str, Any]],
+    *,
+    return_index: bool,
+) -> Optional[Tuple[str, int]]:
+    """
+    Translate sac.tree() selection into (etype, eid).
+
+    Parameters
+    ----------
+    tree_output : int | str | None
+        The value returned by sac.tree(...). If return_index=True -> int (preorder position).
+        If return_index=False -> str (label of the selected node).
+        Can be None if nothing selected.
+    meta : dict
+        Meta map produced by `build_sac_tree_from_bus_df(..., with_meta=True)`.
+        Keys are preorder indices; values include {"type","index","label"}.
+    return_index : bool
+        Must match the 'return_index' you used for sac.tree.
+
+    Returns
+    -------
+    (etype, eid) | None
+        - etype: "bus", "line", "sgen", "trafo", ...
+        - eid:   integer index of the element in pp net tables
+        None if selection is empty or cannot be resolved.
+    """
+    if tree_output is None:
+        return None
+
+    if return_index:
+        # tree_output è l'indice preorder
+        info = meta.get(int(tree_output))
+        if not info or info["type"] is None or info["index"] is None:
+            return None
+        return (str(info["type"]), int(info["index"]))
+
+    # return_index == False: tree_output è un'etichetta
+    selected_label = str(tree_output)
+    for _, info in meta.items():
+        if (
+            info.get("label") == selected_label
+            and info.get("type") is not None
+            and info.get("index") is not None
+        ):
+            return (str(info["type"]), int(info["index"]))
+    return None
 
 
 # ================  SGEN TYPES =================
@@ -584,12 +649,50 @@ class GridManager(Page):
 
         return changed
 
-    def render_analysis(self) -> None:
-        sac.result(
-            "UI for Analysis of the grid not yet created",
-            "We suggest a coffee in the meanwhile",
-            status="warning",
-        )
+    def render_analysis(self):
+        path: Path = self.grid_file.parent / "simulation.csv"
+        if path.exists():
+            kwargs, meta = build_sac_tree_from_bus_df(
+                self.grid.summarize_buses(),
+                bus_name_col="name",
+                elements_col="elements",
+                net=self.grid.net,
+                childrend_disabled=False,
+                with_meta=True,
+            )
+            selected = sac.tree(key="analysis_tree", **kwargs)
+            picked = resolve_tree_selection(
+                selected, meta, return_index=kwargs["return_index"]
+            )
+            if picked:
+                etype, eid = picked
+                # st.write(f"Selected: {etype} #{eid}")
+                analyser = PlantAnalyser(self.grid_file.parent)
+                periodic_report: pd.DataFrame = analyser.periodic_report(
+                    etype=etype, idx=eid
+                )
+                if periodic_report is None or periodic_report.empty:
+                    st.warning("No data available for the selected element")
+                else:
+                    plots.seasonal_plot(periodic_report, "plant_performance")
+                numeric = analyser.numeric_dataframe(etype=etype, idx=eid)
+                if numeric is None or numeric.empty:
+                    st.warning("No numeric data available for the selected element")
+                else:
+                    plots.time_plot(numeric, page="plant_performance")
+            else:
+                st.write("No valid selection")
+
+        else:
+            st.warning("⚠️ Simulation not performed")
+
+    def render_data(self):
+        path: Path = self.grid_file.parent / "simulation.csv"
+        if path.exists():
+            analyser = PlantAnalyser(self.grid_file.parent)
+            st.dataframe(analyser.grid)
+        else:
+            st.warning("⚠️ Simulation not performed")
 
     # =========== SUMMARIES ==========
     def get_scheme(self):
@@ -1163,6 +1266,7 @@ class GridManager(Page):
                 elements_col="elements",
                 net=self.grid.net,
                 show_connectors=show_connectors,
+                with_meta=False,
             )
             selected = sac.tree(key="original_tree", **kwargs)
 
