@@ -1,33 +1,37 @@
 # 📓Quick Start Guide
 
----
+- !["How to build a Plant"](#️-how-to-build-a-plant)
+- !["How to build the Grid"](#-how-to-build-the-grid)
 
-## 🏗️ How To build a Plant
+---
 > ***RULES to read this steps***  
-> Since this guide is in english, but the PVApp has also the option to select italian, the commands name in the latter language will be inside "[...]"  
 > - Buttons are identified with `*button name*`  
 > - Input sections are identified with `_input name_`  
 > - Variables or parameters are written in the form `variable_name`  
 > - Names of files in this guide are identify with italics like *`File Name`*, while folders with bold and italics as ***`Folder name`***
 
-### 1. Go to *Plants* [*Impianti*] page  
+## 🏗️ How To build a Plant
+
+### 1. Go to *Plants* page  
 From here, the user can have an overview of all plants created.
 ![Plants-Page](/docs/img/Plant_page.png) 
 
 
 ### 2. Press  `*Add Plant*` 
-On the top rigth, below the title, click `*Add Plant*`[`*Aggiungi Impianto*`]. Then a section on the rigth will be open to set the PV system (see image below). 
-![Add-Section](/docs/img/Add_Plant.png)  
-The user is going to complete six steps:  
-1. ![Site](#3-set-the-site): setting names and address of the city. Currently, only Italy is aviable to set correctly the site informations (No updates are predicted for now!).
-2. ![Location](#4-set-the-location):
-3. ![Module](#5-set-the-moudule):
-4. ![Inverter](#6-set-the-inverter):
-5. ![Mount](#7-set-the-mount):
-6. ![Save](#8-save):
+On the top right, below the title, click `*Add Plant*`. A side panel will open to configure the PV system (see image).  
+![Add-Section](/docs/img/Add_Plant.png)
+
+You will go through **six steps**:
+
+1. [**Site**](#3-set-the-site) — enter the site name and address (city and district). If the site already exists, simply select it for automatic filling.
+2. [**Location**](#4-set-the-location) — verify/update the **coordinates** (lat/lon), **altitude**, and **time zone**; a map helps you check the data.
+3. [**Module**](#5-set-the-module) — select a **module** (CEC/Sandia database or **Custom**) and define its parameters (e.g., `pdc0`, `γ_pdc`).
+4. [**Inverter**](#6-set-the-inverter) — choose an **inverter** (CEC database or **Custom**) and set the minimal parameters (e.g., `pdc0`).
+5. [**Mount**](#7-set-the-mount) — select the **mount type** (Fixed or Single-Axis) and configure its geometrical parameters (tilt, azimuth, etc.).
+6. [**Save**](#8-save) — final recap: assign a **name** to the plant and save (optionally start the simulation).
 
 ### 3. Set the *Site*
-To add a new site, select *Other* [*Altro*] in `_Site Name_`. Then write a Name of the site in `_New Name_` (e.g. "Rossi Srl") and the address in the form "Via Matteotti, 5" in `_Address_` with the city below in `_City_` and the province in `_District_`. 
+To add a new site, select *Other* in `_Site Name_`. Then write a Name of the site in `_New Name_` (e.g. "Rossi Srl") and the address in the form "Via Matteotti, 5" in `_Address_` with the city below in `_City_` and the province in `_District_`. 
 > If the Site already exists, just select it in `_Site Name_`. Fields will be automatically completed  
 >
 Then click `*Next*` in the bottom of the form.
@@ -89,3 +93,115 @@ The mount types aviable are 2 selectable in `_Select Mount Type_` box.  On the b
 ### 8. Save
 The user can check the setup created and choose a name for the plant in the final saving form.
 ![Saving-Form](/docs/img/save_form.png)
+
+---
+
+## ⚡ How To build the Grid
+
+The **Grid** is the electrical network that connects the PV plant to the external system.  
+It is built on top of a *pandapower* network and must include at least:
+- **Buses** → nodes where elements connect.  
+- **Links** (e.g. lines) → connections between buses.  
+- **At least one voltage source** (a `gen` with *Slack = ON* or an `ext_grid`) → required for power flow initialization.  
+- **Optional generators** (`sgen`, typically PV arrays) → inject the plant’s power into the grid.  
+
+❗ *Without at least these components (bus, link, slack, sgen), the grid is not simulable.*
+
+---
+
+
+
+### 1. Go to *Grid* page  
+Open the plant first, then select the **Grid** page. Here you can create and manage the electrical network with *pandapower* via the in-app UI.  
+<!-- ![Grid-Page](/docs/img/Grid_page.png) -->
+>
+---
+
+### 2. Tabs overview  
+The page is split into tabs (top of the page):
+- **Links** → buses, lines (and transformers soon).  
+- **Generators** → `sgen` (PV or other static generators) and `gen` (voltage-controlled / slack).  
+- **Passive** → (coming soon).  
+- **Sensors** → (coming soon).
+
+---
+
+### 3. Add Buses
+Open the **Links** tab and expand `*New item*`.
+
+1. Choose **Bus** in the chip selector.  
+2. Fill the form `_Name_`, `_Bus level_` (b/n/m), `_In service_`.  
+3. Set the **voltage level** (LV/MV/HV/EHV). The numeric `vn_kv` is auto-filled accordingly.  
+4. (Optional) Enable min/max voltage limits with `_Set limits_`.  
+5. If you need multiple identical buses, set `_Quantity_`.  
+6. Click `*Add*`.
+
+---
+
+### 4. Add Lines (connect buses)
+Still in **Links → New item**, choose **Line**.
+
+1. Select the **start bus** and **end bus**.  
+2. Set `_Std type_`, `_Length (km)_`, `_Name_`.  
+3. The UI performs an **availability check**:  
+   - ✅ `0` Link available  
+   - ❌ `1` Same bus  
+   - ❌ `2` Different voltages  
+   - ❌ `3` Already present  
+4. Click `*Add*` to create the line.
+
+---
+
+### 5. Inspect & Edit (Managers)
+- **Bus Manager (tree)** → shows buses with their connected elements. Click a bus to open the edit dialog.  
+- **Connections View** → compact list of links with voltage-color coding. Click a link name to open its dialog.  
+
+---
+
+### 6. Add Generators (Active elements)
+Switch to the **Generators** tab.
+
+#### A. Add PV or other SGen
+1. Choose **SGen**.  
+2. Fill `_Name_`, `_p_mw_`, `_scaling_`, `_q_mvar_` (if not PV).  
+3. Select **SGen type**:  
+   - *PV*: shows `_module_per_string_` and `_strings_per_inverter_`.  
+   - *Others*: generic PQ injection.  
+4. Select the `_Bus_` where it connects.  
+5. Click `*Add*`.
+
+#### B. Add Gen (Slack or Voltage-controlled)
+1. Choose **Gen**.  
+2. Toggle `_Slack_` to define if this is the **reference source**.  
+   - *Slack = ON*: set `_vm_pu_`.  
+   - *Slack = OFF*: set `_p_mw_`, `_q_mvar_`/limits, `_vm_pu_`.  
+3. Pick the `_Bus_`.  
+4. Click `*Add*`.
+
+*(Storage: coming soon.)*
+
+---
+
+### 7. Save your work
+Click `*Save*`. This writes:
+- *`grid.json`* → full pandapower net (buses, lines, gens, sgens…).  
+- *`arrays.json`* → PV array metadata linked to created `sgen`.
+
+---
+
+### 8. Quick Checklist (minimal working grid)
+1. Create **two buses**: e.g. `PCC_0p4kV` (slack side) and `INV_0p4kV`.  
+2. Add a **line** between them.  
+3. Add a **slack gen** at `PCC_0p4kV`.  
+4. Add an **SGen PV** at `INV_0p4kV`.  
+5. `*Save*`.
+
+This is enough for a valid power flow simulation.
+
+---
+
+### 9. Troubleshooting
+- ❌ *Line not available*: same bus, different voltages, or already linked.  
+- ⚡ *No convergence*: ensure at least one slack/ext_grid and that all buses are connected.  
+- 🟡 *PV arrays*: sizing data (`_module_per_string_`, `_strings_per_inverter_`) are stored in *arrays.json*.  
+

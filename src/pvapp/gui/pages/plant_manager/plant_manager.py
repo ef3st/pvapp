@@ -226,6 +226,7 @@ class PlantManager(Page):
                             labels_display[5], icon=sac.BsIcon("gear-wide-connected")
                         ),
                         sac.TabsItem(labels_display[6], icon=sac.BsIcon("graph-up")),
+                        sac.TabsItem(icon=sac.BsIcon("123")),
                     ],
                     size="sm",
                     align="center",
@@ -469,6 +470,8 @@ class PlantManager(Page):
                     self.save_all()
         elif display == 1:  # Analysis view
             manager.render_analysis()
+        elif display == 2:  # Data view
+            manager.render_data()
         else:
             raise ValueError(f"Invalid display index: {display}")
 

@@ -46,10 +46,12 @@ streamlit:
 	poetry run streamlit run src/pvapp/main.py --logger.level=debug gui
 
 downloader-doc: 
-	poetry run streamlit run src/documentation/docbuilder.py
+	poetry run streamlit run src\pvapp\tools\documentation\docbuilder.py
 
 developer:
 	poetry run python src/pvapp/main.py dev
 
 count_lines:
 	cloc . --include-ext=py
+
+

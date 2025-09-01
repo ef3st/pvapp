@@ -34,6 +34,7 @@ data/
 output/
 results/
 garbage/
+.streamlit/secrets.toml
 
 
 # Pytest
