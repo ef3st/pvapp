@@ -38,6 +38,8 @@ class PlantAnalyser:
         idx: Optional[int] = None,
     ):
         if array is not None:
+            if array not in self.array_ids:
+                return self.arrays
             data = self.arrays[array]
         else:
             if etype and idx is not None:
@@ -89,6 +91,8 @@ class PlantAnalyser:
         idx: Optional[int] = None,
     ):
         if array is not None:
+            if array not in self.array_ids:
+                return pd.DataFrame()
             data = self.arrays[array]
         else:
             if etype and idx is not None:

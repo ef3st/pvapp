@@ -7,7 +7,7 @@ import pandapower as pp
 from pandapower import toolbox as tb  # noqa: F401  # kept if you used it elsewhere
 from pandapower.timeseries import run_timeseries, DFData
 from pandapower.control import ConstControl
-from tools.logger import get_logger
+from tools.logger import get_logger, log_performance
 from .TypedDict_elements_params import *
 
 
@@ -36,8 +36,7 @@ class PlantPowerGrid:
       - Avoid raising on normal "not found" lookups; return None where sensible.
     """
 
-    # ------------------------ Lifecycle / IO ------------------------
-
+    # ======================== Lifecycle ========================
     def __init__(self, path: Optional[str] = None) -> None:
         """
         Initialize an empty pandapower network. Optionally load from JSON.
@@ -76,7 +75,7 @@ class PlantPowerGrid:
         pp.to_json(self.net, path)
         return self
 
-    # ------------------------ CRUD: Buses & Links ------------------------
+    # ======================== CRUD: Buses & Links ========================
 
     def create_bus(self, bus: BusParams) -> int:
         """
@@ -219,7 +218,7 @@ class PlantPowerGrid:
 
         return links
 
-    # ------------------------ CRUD: Generators & Others ------------------------
+    # =======================- CRUD: Generators & Others ========================
 
     def add_active_element(
         self,
@@ -259,7 +258,7 @@ class PlantPowerGrid:
     def add_sensors(self):  # control
         raise NotImplementedError
 
-    # ------------------------ Lookups & Accessors ------------------------
+    # =========================Lookups & Accessors ========================
 
     def get_element(
         self,
@@ -330,7 +329,7 @@ class PlantPowerGrid:
         """Alias of get_available_lines (kept for backward compatibility)."""
         return self.get_available_lines()
 
-    # ------------------------ Counts / Small summaries ------------------------
+    # ======================== Counts / Small summaries ========================
 
     def get_n_nodes_links(self) -> int:
         """Return the number of buses."""
@@ -353,7 +352,7 @@ class PlantPowerGrid:
         """Placeholder for sensors/controllers count."""
         return None
 
-    # ------------------------ Simulation / Plot ------------------------
+    # ======================== Simulation / Plot ========================
     def runnet(
         self,
         timeseries: Union[pd.DataFrame, None] = None,
@@ -419,7 +418,7 @@ class PlantPowerGrid:
         from pandapower.control import ConstControl
 
         t0 = time.perf_counter()
-        self.logger.info(
+        self.logger.debug(
             "[runnet] Enter | return_df=%s | timeseries_is_df=%s",
             return_df,
             isinstance(timeseries, pd.DataFrame),
@@ -442,6 +441,7 @@ class PlantPowerGrid:
                 "res_ext_grid.q_mvar",
             ]
 
+        @log_performance("[PlantPowerGrid.runnet]_collect_with_outputwriter()")
         def _collect_with_outputwriter(
             selects: List[str], index: pd.Index
         ) -> pd.DataFrame:
@@ -499,9 +499,6 @@ class PlantPowerGrid:
                 ow.log_variable(t, c)
 
             # Use *label-based* time steps so DFData.loc[...] resolves correctly
-            self.logger.info(
-                "[runnet] Calling run_timeseries() with OutputWriter (label-based time_steps)"
-            )
             run_timeseries(self.net, time_steps=list(index))
 
             # Consolidate OutputWriter logs into a single wide DataFrame
@@ -548,7 +545,7 @@ class PlantPowerGrid:
         try:
             if isinstance(timeseries, pd.DataFrame):
                 # ---- Time-series mode ----
-                self.logger.info(
+                self.logger.debug(
                     "[runnet] Timeseries mode | steps=%d | columns=%d",
                     len(timeseries),
                     timeseries.shape[1],
@@ -608,20 +605,20 @@ class PlantPowerGrid:
                 if return_df:
                     # Capture results via OutputWriter using label-based time steps
                     results_df = _collect_with_outputwriter(selectors, timeseries.index)
-                    self.logger.info(
+                    self.logger.debug(
                         "[runnet] Collected time-series results_df | shape=%s",
                         getattr(results_df, "shape", None),
                     )
                 else:
                     # Fast path: run TS without building a DataFrame (still label-based)
-                    self.logger.info(
+                    self.logger.debug(
                         "[runnet] Running pandapower.run_timeseries(...) (no DF capture)"
                     )
                     run_timeseries(self.net, time_steps=list(timeseries.index))
 
             else:
                 # ---- Steady-state mode ----
-                self.logger.info("[runnet] Steady-state mode (single runpp)")
+                self.logger.debug("[runnet] Steady-state mode (single runpp)")
                 runpp(self.net)
 
                 if return_df:
@@ -668,7 +665,7 @@ class PlantPowerGrid:
             errors.append(str(e))
         finally:
             t1 = time.perf_counter()
-            self.logger.info(
+            self.logger.debug(
                 "[runnet] Exit | elapsed=%.3fs | return_df=%s | errors=%d",
                 (t1 - t0),
                 return_df,
@@ -677,107 +674,6 @@ class PlantPowerGrid:
 
         return (errors, results_df) if return_df else errors
 
-        # # ---------- helpers ----------
-        # def _collect_step_results(net, selectors: List[str]) -> pd.Series:
-        #     """Flatten selected res_* tables for the current step into a 1-row Series (tupled columns)."""
-        #     out = {}
-        #     for sel in selectors:
-        #         try:
-        #             tbl, col = sel.split(".", 1)
-        #         except ValueError:
-        #             continue  # skip malformed selector
-        #         df = getattr(net, tbl, None)
-        #         if df is None or df.empty or col not in df.columns:
-        #             continue
-        #         # create tupled columns per element index
-        #         for idx, val in df[col].items():
-        #             try:
-        #                 eidx = int(idx)
-        #             except Exception:
-        #                 eidx = idx
-        #             out[(tbl, col, eidx)] = float(val) if pd.notna(val) else float("nan")
-        #     return pd.Series(out, dtype="float64")
-
-        # def _default_selectors() -> List[str]:
-        #     return [
-        #         "res_bus.vm_pu", "res_bus.va_degree",
-        #         "res_line.loading_percent", "res_line.pl_mw",
-        #         "res_trafo.loading_percent",
-        #         "res_sgen.p_mw", "res_sgen.q_mvar",
-        #         "res_load.p_mw", "res_load.q_mvar",
-        #         "res_ext_grid.p_mw", "res_ext_grid.q_mvar",
-        #     ]
-
-        # errors: List[str] = self.check_prerequisites()
-        # if errors:
-        #     return (errors, None) if return_df else errors
-
-        # selectors = selectors or _default_selectors()
-        # results_df: Optional[pd.DataFrame] = None
-
-        # try:
-        #     if isinstance(timeseries, pd.DataFrame):
-        #         # ---- Time-series with PV profiles (no OutputWriter; we collect in-memory) ----
-        #         dfdata = timeseries
-        #         # Build a DFData + controllers for p and (if present) q
-        #         data_source = DFData(dfdata)
-        #         p_cols = [c for c in dfdata.columns if isinstance(c, tuple) and len(c) == 3 and c[0] == "sgen" and c[1] == "p_mw"]
-        #         q_cols = [c for c in dfdata.columns if isinstance(c, tuple) and len(c) == 3 and c[0] == "sgen" and c[1] == "q_mvar"]
-
-        #         if not p_cols:
-        #             raise ValueError("No ('sgen','p_mw', idx) columns found in timeseries DataFrame.")
-
-        #         sgen_idxs_p = [c[2] for c in p_cols if c[2] in self.net.sgen.index]
-        #         ConstControl(self.net, element="sgen", element_index=sgen_idxs_p,
-        #                      variable="p_mw", data_source=data_source, profile_name=p_cols)
-
-        #         if q_cols:
-        #             sgen_idxs_q = [c[2] for c in q_cols if c[2] in self.net.sgen.index]
-        #             ConstControl(self.net, element="sgen", element_index=sgen_idxs_q,
-        #                          variable="q_mvar", data_source=data_source, profile_name=q_cols)
-
-        #         if return_df:
-        #             # Manually loop to capture results per step (ensures an in-memory DataFrame)
-        #             rows = []
-        #             for ts in dfdata.index:
-        #                 # Controllers pull profiles automatically at each step if we pass explicit time_steps=[k]
-        #                 # However run_timeseries manages the loop internally; to keep full control, we do manual apply:
-        #                 # Apply profiles ourselves for this timestamp:
-        #                 # NOTE: DFData provides .df; we read row by row and write to net
-        #                 row = dfdata.loc[ts]
-        #                 # set p
-        #                 for (e, var, idx) in p_cols:
-        #                     if idx in self.net.sgen.index:
-        #                         self.net.sgen.at[idx, "p_mw"] = float(row[(e, var, idx)])
-        #                 # set q if present
-        #                 for (e, var, idx) in q_cols:
-        #                     if idx in self.net.sgen.index:
-        #                         self.net.sgen.at[idx, "q_mvar"] = float(row[(e, var, idx)])
-
-        #                 pp.runpp(self.net)
-        #                 rows.append(_collect_step_results(self.net, selectors))
-        #             results_df = pd.DataFrame(rows, index=dfdata.index)
-        #             results_df = results_df.reindex(sorted(results_df.columns, key=lambda t: (t[0], t[1], t[2])), axis=1)
-        #         else:
-        #             # If you don't need the DataFrame, let pandapower handle the TS loop
-        #             run_timeseries(self.net)
-        #     else:
-        #         # ---- Single steady-state run ----
-        #         pp.runpp(self.net)
-        #         if return_df:
-        #             one = _collect_step_results(self.net, selectors)
-        #             results_df = pd.DataFrame([one], index=[0])
-        #             results_df = results_df.reindex(sorted(results_df.columns, key=lambda t: (t[0], t[1], t[2])), axis=1)
-
-        # except pp.LoadflowNotConverged:
-        #     self.logger.warning("[PlantPowerGrid] Power flow did not converge!")
-        #     errors.append("Power flow did not converge!")
-        # except Exception as e:
-        #     self.logger.error(f"[PlantPowerGrid] Error running power flow: {e}")
-        #     errors.append(str(e))
-
-        # return (errors, results_df) if return_df else errors
-
     def show_grid(self):
         """
         (Placeholder) Build a plotly figure and return (fig, errors).
@@ -785,13 +681,14 @@ class PlantPowerGrid:
         Note:
             Current implementation returns (None, errors) unless you enable the plotting code.
         """
-        # from pandapower.plotting.plotly import simple_plotly
-        # from pandapower.plotting.generic_geodata import create_generic_coordinates
+        from pandapower.plotting.plotly import simple_plotly
+        from pandapower.plotting.generic_geodata import create_generic_coordinates
+
         errors = self.runnet()
         fig = None
-        # if not errors:
-        #     create_generic_coordinates(self.net, overwrite=True)
-        #     fig = simple_plotly(self.net, respect_switches=True, auto_open=False)
+        if not errors:
+            create_generic_coordinates(self.net, overwrite=True)
+            fig = simple_plotly(self.net, respect_switches=True, auto_open=False)
         return fig, errors
 
     def is_plot_ready(self) -> bool:
@@ -822,7 +719,7 @@ class PlantPowerGrid:
 
         return True
 
-    # ------------------------ Controllers / Profiles ------------------------
+    # ======================== Controllers / Profiles =========================
 
     def update_sgen_power(
         self, type: Optional[str] = None, power: Optional[float] = None
@@ -870,7 +767,7 @@ class PlantPowerGrid:
             drop_same_existing_ctrl=True,
         )
 
-    # ------------------------ Validation / Readiness ------------------------
+    # ======================== Validation / Readiness ========================
 
     def check_prerequisites(self) -> List[str]:
         """
@@ -928,7 +825,7 @@ class PlantPowerGrid:
 
         return errors
 
-    # ------------------------ Summaries / Projections ------------------------
+    # ======================== Summaries / Projections ========================
 
     def summarize_buses(self) -> pd.DataFrame:
         """

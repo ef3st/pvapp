@@ -696,13 +696,16 @@ class GridManager(Page):
 
     # =========== SUMMARIES ==========
     def get_scheme(self):
-        sac.alert(
-            "Scheme info",
-            "Scheme not yet available. Take a coffee in the meanwhile",
-            size="md",
-            variant="quote",
-            icon=True,
+        import pandapower.plotting.plotly as pplotly
+
+        fig = pplotly.simple_plotly(
+            self.grid.net,
+            on_map=False,
+            respect_switches=True,
+            showlegend=True,
+            auto_open=False,
         )
+        st.plotly_chart(fig)
 
     def get_description(self) -> None:
         """Show a compact textual resume of the grid."""

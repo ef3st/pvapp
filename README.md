@@ -2,13 +2,9 @@
 # PVApp 
 #### ***The Photovoltaic Plant Simulator and Analyser***  
 
-![Python](https://img.shields.io/badge/python-3.10-blue.svg) ![Pandapower](https://img.shields.io/badge/pandapower-%3E=2.14-blue?logo=python&logoColor=white) ![pvlib](https://img.shields.io/badge/pvlib-%3E=0.13-green?logo=python&logoColor=white)
-<!-- 
- [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://pvlib-python.readthedocs.io/) [![Docs](https://img.shields.io/badge/docs-streamlit.dev-blue)](https://docs.streamlit.io/)   -->
-
-<!-- [![Last Commit](https://img.shields.io/github/last-commit/ef3st/solartracker)](https://github.com/ef3st/solartracker/commits/main)   -->
->
-An accademic photovoltaic systems and grids simulator based on `pvlib` and `pandapower` packages. Created in python in the backend and a *user friendly* **GUI** (written thanks to `streamlit` package) is aviable to create and manage projects simulator. 
+![Python](https://img.shields.io/badge/python-3.10-blue.svg) ![Pandapower](https://img.shields.io/badge/pandapower-%3E=2.14-blue?logo=python&logoColor=white) ![pvlib](https://img.shields.io/badge/pvlib-%3E=0.13-green?logo=python&logoColor=white) 
+> 
+An accademic photovoltaic systems and grids simulator based on `pvlib` and `pandapower` packages. A *user friendly* **GUI** (written thanks to `streamlit` package) is aviable to create and manage projects and simulations. 
 
 
 # Table of Contents
@@ -30,17 +26,17 @@ An accademic photovoltaic systems and grids simulator based on `pvlib` and `pand
 # Introduction  
 
 PVapp was originally created to design and optimize a solar tracker, a mechanical (or electromechanical) system that orients photovoltaic (PV) panels to maintain the best possible incidence angle with sunlight. Over time, the project evolved into a broader platform for simulating and testing solutions within PV systems, including their integration into more complex electrical networks.  
-
+>
 The main goal of PVapp is to provide users with a powerful, flexible, and transparent tool to **simulate** how design choices, modifications, or innovative technologies can affect the performance of both the PV system and the electrical grid it connects to.  
-
+>
 With the graphical interface (GUI), users can easily set up a project (the *Plant*) by defining:  
-- the geographical information of the installation (*Site*),  
-- the technical features of PV modules (*Module*),  
-- and the inverter characteristics (*Inverter*).  
+- the geographical data of the installation (defined *Site* below),  
+- the technical features of PV modules (defined *Module* below),  
+- and the inverters characteristics (defined *Inverter* below).  
 >
 Since PVapp runs in a local web environment, it is compatible with all operating systems.  
-In the documentation, users can also learn how a *Plant* is stored. Although it is technically possible to create configuration files manually, this is not recommended: the GUI was designed both as a simplification for non-Python users and as a safeguard against configuration errors that may lead to unreliable results.  
-
+Through documentation, users can also learn how a *Plant* is stored. Although it is technically possible to create configuration files manually, this is not recommended: the GUI was designed both as a simplification for non-Python users and as a safeguard against configuration errors that may lead to unreliable results.  
+>
 PVapp continues to improve, and users are welcome to suggest enhancements through the dedicated feedback form available in the left sidebar.  
 
 >

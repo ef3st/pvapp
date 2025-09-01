@@ -42,15 +42,15 @@ Hence, the software is organized into four parts, reflecting its main functional
 
 ```mermaid
 flowchart TD
-  %% ====== Mount
+
   PV["pvlib"]
   A[Fixed Mount]
   B[Single Axis Mount]
   C[Validated]
-  D[Developement]
+  D[Development]
 
-  B -.copied.-> C
-  C -.copied.-> D
+  B -. copied .-> C
+  C -. copied .-> D
 
   M(Mount)
   A --> M
@@ -58,67 +58,64 @@ flowchart TD
   C --> M
   D --> M
 
-  PV -.default.-> A
-  PV -.default.-> B
+  PV -. default .-> A
+  PV -. default .-> B
 
-  %% ====== PVSystemManager
   subgraph PVSystemManager [PVSystemManager class]
     init[__init__] --> SETPV[set_pv_components method]
   end
 
   SETPV --> Point
-  linkStyle 8 stroke:#0f0,stroke-dasharray: 8 8;
-
   M --> SETPV
-  linkStyle 9 stroke:#0f0,stroke-dasharray: 8 8;
 
   S["Site class"] --> init
-  CustI[Custom prop] -..-> I[inverter] 
-  ModData[Custom prop/Official Databases] -..-> Mod[module]
+  CustI[Custom prop] -.-> I[inverter]
+  ModData[Custom prop/Official Databases] -.-> Mod[module]
 
-  I --> Syst(*System*)
+  I --> Syst(System)
   Mod --> Syst
-  Syst(System) --> SETPV
-
-  N["Nature class"] --> Sim
+  Syst --> SETPV
 
   ARR(Array) --> CONFIGPV
-  linkStyle 18 stroke:#0f0,stroke-dasharray: 8 8;
 
-  %% ====== Simulator
   subgraph Simulator [Simulator class]
-    Point[PVManager attr] -- |Site| --> MC[BuildModelChain fct]
-    Point -- |System| --> MC[BuildModelChain fct]
+    Point[PVManager] -- Site --> MC["BuildModelChain (from modelchain.py)"]
+    Point -- System --> MC
     CONFIGPV[configure_pvsystem] --> MC
 
+    Grid[PlantPowerGrid attr]
+    Store["SimulationResults helper"]
+
     subgraph build_simulation [build_simulation method]
-      MC["BuildModelChain (from modelchain.py)"]
       Sim[simulate method]
-      RG[reckon_grid method]
-      Sim ---- GG[Add Grid?]
-      linkStyle 22 stroke:#0f0,stroke-dasharray: 3 3;
+      GG{Add Grid?}
+      RG[merge_grid method]
+      COLLECT[collect_results method]
     end
 
     MC --> Sim
-    linkStyle 23 stroke:#0f0,stroke-dasharray: 3 3;
 
+    Sim --> GG
 
-    Grid[PlantPowerGrid attr] --> GG
+    Grid --> GG
+    GG -- Yes --> RG
+    GG -- No --> COLLECT
 
-    GG -.Yes.- RG
-    GG -. No .- Save[save_results method]
-    linkStyle 25 stroke:#0f0,stroke-dasharray: 3 3;
+    RG --> COLLECT
 
-    RG --> Save
-    linkStyle 26 stroke:#0f0,stroke-dasharray: 3 3;
-    linkStyle 27 stroke:#0f0,stroke-dasharray: 3 3;
+    COLLECT --> Save
+
+    Save --> Done[return bool]
+    Store --> Save
   end
 
-  %% ====== pandapower
-  PP["pandapower"] -..-> PPG["PlantPowerGrid class"]
+  N["Nature class"] --> Sim
+
+  PP["pandapower"] -.-> PPG["PlantPowerGrid class"]
   EP[Grid Elements Params] --> PPG
   PPG --> Grid
-  linkStyle 30 stroke:#0f0,stroke-dasharray: 8 8;
+
+  Grid -. "runnet()" .-> RG
 
 
 ```  

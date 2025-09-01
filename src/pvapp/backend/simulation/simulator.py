@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 from pvlib.modelchain import ModelChain
 from pvlib.pvsystem import retrieve_sam
 
-from tools.logger import get_logger
+from tools.logger import get_logger, log_performance
 from backend.pvlib_plant_model import PVSystemManager, Site, BuildModelChain
 from backend.pandapower_network.pvnetwork import PlantPowerGrid
 from analysis.database import SimulationResults
@@ -50,7 +50,7 @@ class Simulator:
     - load_component(component: Literal["module", "inverter"])
     - build_simulation() -> None
     - simulate(modelchain: ModelChain) -> None
-    - reckon_grid() -> None
+    - merge_grid() -> None
     - save_results() -> None
     - _init_times(times: Optional[pd.DatetimeIndex]) -> None
     - _safe_plant_name() -> str
@@ -144,12 +144,12 @@ class Simulator:
       - create pvsystem + modelchain
       - `simulate()` with synthetic weather
       - push results into `simresults`
-      Finally, call `reckon_grid()`.
+      Finally, call `merge_grid()`.
 
     simulate(modelchain: ModelChain) -> None:
       Build synthetic weather via `Nature` and run the pvlib ModelChain.
 
-    reckon_grid() -> None:
+    merge_grid() -> None:
       If grid present, map AC power time series to sgens, create controllers,
       and run a pandapower time-series.
 
@@ -199,11 +199,10 @@ class Simulator:
         self.times: Optional[pd.DatetimeIndex] = None
 
     # ========== PUBLIC API ==========
+    @log_performance("Run_simulation")
     def run(
         self,
         times: Optional[pd.DatetimeIndex] = None,
-        *,
-        timeouts: Optional[Dict[str, int]] = None,
     ) -> bool:
         """
         Entry point: loads configuration, builds and executes simulations, saves results,
@@ -211,8 +210,6 @@ class Simulator:
 
         Args:
             times: Optional custom DatetimeIndex for the simulation.
-            timeouts: Optional dict overriding phase timeouts in seconds.
-                      Keys: "run", "build", "grid".
         """
         # Merge/validate timeouts
 
@@ -227,6 +224,9 @@ class Simulator:
         except Exception as e:
             self.logger.error(f"[Simulator] Loading error: {type(e).__name__}: {e}")
             return False
+        self.logger.info(
+            f"[Simulator] Configuration loaded successfully for {self._safe_plant_name()}"
+        )
 
         # Early timeout check
         try:
@@ -278,7 +278,7 @@ class Simulator:
                 altitude=data_site["altitude"],
                 tz=data_site["tz"],
             )
-            self.logger.info(f"[Simulator] Site loaded: {self.site.name}")
+            self.logger.debug(f"[Simulator] Site loaded: {self.site.name}")
         except KeyError as e:
             raise KeyError(f"Missing site key: {e}")
         except json.JSONDecodeError as e:
@@ -306,7 +306,7 @@ class Simulator:
         }
         self.inverter = self.load_component("inverter")
 
-        self.logger.info(
+        self.logger.debug(
             f"[Simulator] Plant setup loaded for '{self.pv_setup_data.get('name','<unnamed>')}'"
         )
 
@@ -318,7 +318,7 @@ class Simulator:
         if grid_path.exists():
             try:
                 self.grid = PlantPowerGrid(grid_path)
-                self.logger.info("[Simulator] Grid configuration loaded")
+                self.logger.debug("[Simulator] Grid configuration loaded")
             except Exception as e:
                 raise Exception(f"Error in loading grid: {e}")
         else:
@@ -335,7 +335,7 @@ class Simulator:
             try:
                 with arrays_path.open() as f:
                     self.arrays = json.load(f)
-                self.logger.info(
+                self.logger.debug(
                     f"[Simulator] Arrays configuration loaded: {len(self.arrays)} arrays"
                 )
             except json.JSONDecodeError as e:
@@ -343,7 +343,8 @@ class Simulator:
             except Exception as e:
                 raise Exception(f"Error in loading arrays: {e}")
         else:
-            self.logger.warning(
+            self.arrays = {"0": {"modules_per_string": 1, "strings_per_inverter": 1}}
+            self.logger.info(
                 f"[Simulator] arrays.json not found: using default placeholder configuration for {self.plant_name}"
             )
 
@@ -500,17 +501,18 @@ class Simulator:
             self.logger.debug("[Simulator] No grid configured; skipping pandapower run")
         else:
             try:
-                self.reckon_grid()
+                self.merge_grid()
             except Exception as e:
                 self.logger.error(
                     f"[Simulator] Grid simulation failed for {self._safe_plant_name()}: {e}"
                 )
         self.logger.info(
-            f"[Simulator] Simulation for Plant {self._safe_plant_name()} has been EXECUTED"
+            f"[Simulator] Simulation for Plant {self._safe_plant_name()} has been EXECUTED successfully"
         )
         return True
 
     # ========== EXECUTORS ==========
+    @log_performance("pvlib_simulation")
     def simulate(self, modelchain: ModelChain):
         """
         Run pvlib's ModelChain using synthetic weather generated by `Nature`.
@@ -531,7 +533,8 @@ class Simulator:
         weather = nature.weather_simulation(temp_air=25, wind_speed=1)
         modelchain.run_model(weather)
 
-    def reckon_grid(self):
+    @log_performance("pandapower_simulation")
+    def merge_grid(self):
         """
         If a pandapower grid is configured, push array AC powers as sgen profiles and run a time-series power flow.
         """
@@ -561,7 +564,7 @@ class Simulator:
                 return
             self.simresults.save(self.subfolder)
             self.logger.info(
-                f"[Simulator] Results for {self._safe_plant_name()} SAVED in /{self.subfolder}/simulation.csv"
+                f"[Simulator] Results for {self._safe_plant_name()} SAVED in /{self.subfolder}/simulation.csv successfully"
             )
         except Exception as e:
             self.logger.error(f"[Simulator] Failed to save results: {e}")

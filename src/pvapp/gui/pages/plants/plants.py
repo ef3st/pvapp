@@ -27,7 +27,7 @@ class PlantsPage(Page):
             plant_path = subfolder / "plant.json"
             simulation_path = subfolder / "simulation.csv"
             grid_path = subfolder / "grid.json"
-            array_path = subfolder / "array.json"
+            array_path = subfolder / "arrays.json"
             if not site_path.exists() or not plant_path.exists():
                 continue
             simulated = False

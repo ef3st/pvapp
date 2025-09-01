@@ -136,7 +136,7 @@ class PlantsComparisonPage(Page):
             dfs = []
             for row in self.df_selected.itertuples(index=True):
                 if (row.subfolder / "simulation.csv").exists():
-                    df = PlantAnalyser(row.subfolder).periodic_report()
+                    df = PlantAnalyser(row.subfolder).periodic_report(0)
                     df["plant"] = row.label
                     dfs.append(df)
 
@@ -153,7 +153,7 @@ class PlantsComparisonPage(Page):
             dfs = []
             for row in self.df_selected.itertuples(index=True):
                 if (row.subfolder / "simulation.csv").exists():
-                    df = PlantAnalyser(row.subfolder).numeric_dataframe()
+                    df = PlantAnalyser(row.subfolder).numeric_dataframe(array=0)
                     df["plant"] = row.label
                     dfs.append(df)
 

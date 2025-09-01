@@ -49,6 +49,8 @@ sys.dont_write_bytecode = True
 # Default i18n folder
 I18N_DIR = Path("src/pvapp/gui/i18n/")
 DEFAULT_LANG = "en"
+DEFAULT_AUTOSAVE = True
+DEFAULT_AUTOSIMULATE = False
 
 
 # -----------------------------------------------------------------------------
@@ -159,8 +161,8 @@ def _init_session_state() -> None:
 
     # Feature toggles and defaults
     st.session_state.setdefault("beta_tools", False)
-    st.session_state.setdefault("auto_save", True)
-    st.session_state.setdefault("auto_sim", True)
+    st.session_state.setdefault("auto_save", DEFAULT_AUTOSAVE)
+    st.session_state.setdefault("auto_sim", DEFAULT_AUTOSIMULATE)
 
     # Menu index (used for retaining selection across reruns)
     st.session_state.setdefault("menu", 4)
