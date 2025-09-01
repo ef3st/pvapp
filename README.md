@@ -65,6 +65,22 @@ Simulation results with both `pvlib` and `pandapower` data are exported and stor
 For more details, check the documentation in `/docs` folder or in the PVApp from *Guide* page.
 Developer is working to create a better pre-configuration setup with TOML.
 
+
+
+
+
+
+# Installation & Usage
+
+## 1. Requirements
+PVApp uses **Poetry** for dependency management and **Streamlit** as the GUI framework.
+
+- **Python** ≥ 3.10  
+- **Poetry** ≥ 1.6  
+- **Git** (only required if cloning the repository)  
+- **Docker** installed and running (Docker Desktop recommended on Windows)
+
+### Project structure overview
 ```bash
 .
 ├── .github/                 # CI (GitHub Actions)
@@ -114,54 +130,94 @@ Developer is working to create a better pre-configuration setup with TOML.
 ├── tests/                   # unit/integration tests (pytest, coverage)
 ├── streamlit/               # config Streamlit (theme, secrets, ecc.)
 ├── pyproject.toml           # Poetry + tool configs (ruff/pytest/coverage)
+├── Dockerfile
+├── .dockerignore
 └── README.md
 ```
+---
+## 2. Build the Docker image
+Clone the repo:
+```bash
+git clone https://github.com/ef3st/solartracker.git
+```
+From the **project root**:
+```bash
+docker build -t pvapp .
+```
 
+If you are behind a VPN/proxy or encounter network issues:
+```bash
+docker build --network=host -t pvapp .
+```
 
 ---
 
-# Installation
-### Requirements
-- **Python** ≥ 3.10  
-- **Poetry** ≥ 1.6  
-- **Git** (solo se installi da repository)
-
-### Setup
-Clone the repository and install dependencies with Poetry:
-
+## 3. Run the application with Docker
+Start the container:
 ```bash
-git clone https://github.com/yourname/pvapp.git
-cd pvapp
+docker run --rm -p 8501:8501 pvapp
+```
+
+Open the app in your browser: [http://localhost:8501](http://localhost:8501)
+
+With environment variables:
+```bash
+docker run --rm -p 8501:8501 --env-file .env pvapp
+```
+
+---
+
+## 4. Run the CLI (optional)
+If you want to use the CLI defined in `pyproject.toml`:
+```bash
+docker run --rm pvapp pvapp gui --debug
+docker run --rm pvapp pvapp dev --info
+```
+
+Or change CMD in your Dockerfile:
+```dockerfile
+CMD ["pvapp", "gui", "--debug"]
+```
+
+---
+
+## 5. Handy commands
+- Verbose build:
+  ```bash
+  docker build -t pvapp . --progress=plain
+  ```
+- Run GUI:
+  ```bash
+  docker run --rm -p 8501:8501 pvapp
+  ```
+- Run CLI:
+  ```bash
+  docker run --rm pvapp pvapp gui --debug
+  ```
+
+---
+
+## 6. Local installation with Poetry (alternative to Docker)
+Clone the repository and install dependencies with Poetry:
+```bash
+git clone https://github.com/ef3st/solartracker.git
+cd solartracker
 poetry install
 ```
 
-This will create and manage a virtual environment automatically.  
+Poetry will create and manage a virtual environment automatically.  
 To activate it manually:
 ```bash
 poetry shell
 ```
---- 
 
-
-# Usage
-    
----
-# Configuration
-
----
-# Run & Deployment
-Once installed, you can run the application in two modes:  
-- GUI mode (Streamlit): lunch the graphical interface:
+Run the app locally:
 ```bash
-poetry run pvapp gui --info
+streamlit run src/pvapp/main.py
 ```
-> This will start a local Streamlit server and open the web interface in your browser.
-> Optional log levels: --debug, --info, --warning, --critical.
 
-- Development mode: run the simulation logic without the GUI:
-```bash
-poetry run pvapp dev --debug
-```
+> Unfortunately, as of `streamlit` version 1.10.0 and higher, Streamlit apps cannot be run from the root directory of Linux distributions. If you try to run a Streamlit app from the root directory, Streamlit will throw a FileNotFoundError: `[Errno 2] No such file or directory` error (see error [here](https://github.com/streamlit/streamlit/issues/5239)).
+
 
 ---
 # Testing

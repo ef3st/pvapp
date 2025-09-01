@@ -26,7 +26,7 @@ def main():
     if mode == "gui":
         log_level = args.log_level if args.log_level else "DEBUG"
         logger = set_logger(log_level)
-        from pvapp.gui.gui import streamlit
+        from gui.gui import streamlit
 
         streamlit()
     elif mode == "dev":
