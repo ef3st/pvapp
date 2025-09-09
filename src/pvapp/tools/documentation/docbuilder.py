@@ -1,5 +1,4 @@
 """
-! L'ho creato con CHAT GPT, non controllato, ma funziona
 DocBundler: merges README.md and all .md files inside /docs (recursively)
 into a single document. Images referenced by Markdown are embedded inline for
 PDF and DOCX via HTML conversion.
@@ -20,6 +19,9 @@ Run as Streamlit app:
   streamlit run doc_bundler.py
 
 Inside the app: set options, choose export formats, click "Genera" and download.
+------
+Note:
+    I created it with CHAT GPT, not checked, but it works
 """
 
 from __future__ import annotations
@@ -137,7 +139,14 @@ class DocBundler:  # updated to include Pygments CSS + robust image resolver + m
 
     # ---- Public API ---- #
     def build_pdf_bytes(self) -> bytes:
-        """Render full HTML and convert it to PDF using the selected backend."""
+        """
+        Render full HTML and convert it to PDF using the selected backend.
+
+        Returns:
+            bytes: The PDF data
+        ------
+        Note:
+        """
         html = self._render_full_html()
         backend = self._select_backend()
 
@@ -210,11 +219,25 @@ class DocBundler:  # updated to include Pygments CSS + robust image resolver + m
             )
 
     def build_html_string(self) -> str:
-        """Return the full HTML string (useful for manual PDF printing or debugging)."""
+        """
+        Return the full HTML string (useful for manual PDF printing or debugging).
+
+        Returns:
+            str: The full HTML string
+        ------
+        Note:
+        """
         return self._render_full_html()
 
     def build_markdown_string(self) -> str:
-        """Concatenate README + docs into a single Markdown string (simple join)."""
+        """
+        Concatenate README + docs into a single Markdown string (simple join).
+
+        Returns:
+            str: The concatenated Markdown string
+        ------
+        Note:
+        """
         parts: List[str] = []
         # Cover page as Markdown
         cover = [
@@ -241,15 +264,32 @@ class DocBundler:  # updated to include Pygments CSS + robust image resolver + m
         return "\n\n".join(parts).strip() + "\n"
 
     def build_text_string(self) -> str:
-        """Plain text extracted from the generated HTML."""
+        """
+        Plain text extracted from the generated HTML.
+
+        Returns:
+            str: The plain text
+        ------
+        Note:
+        """
         html = self._render_full_html()
         soup = BeautifulSoup(html, "html.parser")
         text = soup.get_text("\n")
         return "\n".join(line.rstrip() for line in text.splitlines())
 
     def build_export(self, fmt: str) -> Tuple[bytes, str, str]:
-        """Return (data, file_ext, mime) for the given format.
+        """
+        Return (data, file_ext, mime) for the given format.
+
         Supported fmt: 'pdf', 'html', 'md' (markdown), 'docx', 'txt'.
+
+        Args:
+            fmt (str): The export format
+
+        Returns:
+            Tuple[bytes, str, str]: (data, file_ext, mime)
+        ------
+        Note:
         """
         fmt_l = (fmt or "").strip().lower()
         if fmt_l == "pdf":
@@ -348,7 +388,17 @@ class DocBundler:  # updated to include Pygments CSS + robust image resolver + m
 """
 
     def _iter_markdown_files(self, base: Path) -> Iterable[Path]:
-        """Stable order: first by depth, then alphabetical path."""
+        """
+        Stable order: first by depth, then alphabetical path.
+
+        Args:
+            base (Path): The base directory
+
+        Returns:
+            Iterable[Path]: The markdown files
+        ------
+        Note:
+        """
         md_files: List[Tuple[int, str, Path]] = []
         for p in base.rglob("*.md"):
             if p.is_file():
@@ -513,7 +563,7 @@ class DocBundler:  # updated to include Pygments CSS + robust image resolver + m
         )
         return f"""
 <nav class="table-of-contents">
-  <h2>Indice</h2>
+  <h2>Table of Contents</h2>
   <ul>
     {lis}
   </ul>
@@ -522,7 +572,14 @@ class DocBundler:  # updated to include Pygments CSS + robust image resolver + m
 """
 
     def _pygments_css(self) -> str:
-        """Return Pygments CSS if available, otherwise empty string."""
+        """
+        Return Pygments CSS if available, otherwise empty string.
+
+        Returns:
+            str: The Pygments CSS
+        ------
+        Note:
+        """
         try:
             from pygments.formatters import HtmlFormatter  # type: ignore
 

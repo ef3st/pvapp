@@ -3,8 +3,8 @@ from .site import Site
 import pvlib
 from pvlib.pvsystem import PVSystem, Array, FixedMount, SingleAxisTrackerMount
 from tools.logger import get_logger
-from backend.mount.developement import custommount as dev
-from backend.mount.validated import custommount as valid
+from pvapp.backend.mount.developement import custommount as dev
+from pvapp.backend.mount.validated import custommount as valid
 
 
 class PVSystemManager:

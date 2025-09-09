@@ -10,9 +10,9 @@ from pvlib.modelchain import ModelChain
 from pvlib.pvsystem import retrieve_sam
 
 from tools.logger import get_logger, log_performance
-from backend.pvlib_plant_model import PVSystemManager, Site, BuildModelChain
-from backend.pandapower_network.pvnetwork import PlantPowerGrid
-from analysis.database import SimulationResults
+from pvapp.backend.pandapower_network.pvnetwork import PlantPowerGrid
+from pvapp.backend.pvlib_plant_model import PVSystemManager, Site, BuildModelChain
+from pvapp.analysis.database import SimulationResults
 from .nature import Nature
 
 

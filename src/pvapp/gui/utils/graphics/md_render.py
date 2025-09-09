@@ -5,7 +5,7 @@ import re, uuid
 
 
 class MarkdownStreamlitPage:
-    r"""
+    """
     Render a Markdown file in Streamlit **without changing the source**.
 
     What it does
@@ -27,14 +27,15 @@ class MarkdownStreamlitPage:
     default_mermaid_theme  : {'default','neutral','dark','forest','base'} = 'dark'
     default_mermaid_cdn    : str = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'
     default_mermaid_height : int | None = None  # None = smart estimate + auto-resize
+    ------
+    Note:
+        Quick start
+        -----------
+        >>> page = MarkdownStreamlitPage("docs/page.md", default_mermaid_theme="forest")
+        >>> page.render()  # uses the defaults above
 
-    Quick start
-    -----------
-    >>> page = MarkdownStreamlitPage("docs/page.md", default_mermaid_theme="forest")
-    >>> page.render()  # uses the defaults above
-
-    Or override per call:
-    >>> page.render_advanced(inline_images=True, enable_mermaid=False)
+        Or override per call:
+        >>> page.render_advanced(inline_images=True, enable_mermaid=False)
     """
 
     # --- Regexes --------------------------------------------------------------
@@ -100,7 +101,14 @@ class MarkdownStreamlitPage:
     # Public API
     # -------------------------------------------------------------------------
     def render(self) -> None:
-        """Convenience: render using constructor defaults."""
+        """
+        Convenience: render using constructor defaults.
+
+        Returns:
+            None
+        ------
+        Note:
+        """
         self.render_advanced(**self._defaults)
 
     def render_advanced(
@@ -241,7 +249,17 @@ class MarkdownStreamlitPage:
     def _iter_text_and_images_preserving_hash_refs(
         self, text: str
     ) -> Iterable[Tuple[str, Optional[Tuple[str, str, str]]]]:
-        """Yield (markdown_chunk, image_tuple) outside fenced code; hash-refs stay inline."""
+        """
+        Yield (markdown_chunk, image_tuple) outside fenced code; hash-refs stay inline.
+
+        Args:
+            text (str): The text to process
+
+        Returns:
+            Iterable[Tuple[str, Optional[Tuple[str, str, str]]]]: The chunks and images
+        ------
+        Note:
+        """
         lines = text.splitlines(keepends=True)
         out_buf: list[str] = []
         in_fence = False
@@ -321,7 +339,17 @@ class MarkdownStreamlitPage:
 
     # --- Mermaid --------------------------------------------------------------
     def _split_text_and_mermaid_blocks(self, text: str) -> list[Tuple[str, str]]:
-        """Return [("text", chunk), ("mermaid", code), ...] segments."""
+        """
+        Return [("text", chunk), ("mermaid", code), ...] segments.
+
+        Args:
+            text (str): The text to split
+
+        Returns:
+            list[Tuple[str, str]]: The segments
+        ------
+        Note:
+        """
         parts: list[Tuple[str, str]] = []
         last = 0
         for m in self._MERMAID_FENCE_RE.finditer(text):
@@ -337,7 +365,20 @@ class MarkdownStreamlitPage:
     def _estimate_mermaid_height(
         self, code: str, min_h: int = 220, max_h: int = 1800, scale: float = 1.0
     ) -> int:
-        """Smart initial height guess per diagram type; JS will auto-resize afterwards."""
+        """
+        Smart initial height guess per diagram type; JS will auto-resize afterwards.
+
+        Args:
+            code (str): The mermaid code
+            min_h (int): Minimum height
+            max_h (int): Maximum height
+            scale (float): Scale factor
+
+        Returns:
+            int: The estimated height
+        ------
+        Note:
+        """
         import re as _re, math as _math
 
         text = code.strip()
@@ -406,7 +447,17 @@ class MarkdownStreamlitPage:
     # --- Comments -------------------------------------------------------------
     @staticmethod
     def _strip_comments(text: str) -> str:
-        """Strip HTML comments and GFM one-line comments outside fenced code blocks."""
+        """
+        Strip HTML comments and GFM one-line comments outside fenced code blocks.
+
+        Args:
+            text (str): The text to strip
+
+        Returns:
+            str: The stripped text
+        ------
+        Note:
+        """
         re_gfm_line = re.compile(
             r'^\s*\[(?:\/\/|comment)\]\s*:\s*(?:#|<>)\s*(?:\((?:[^()]|\\\(|\\\))*\)|"(?:[^"\\]|\\.)*")\s*$'
         )

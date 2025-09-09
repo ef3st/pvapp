@@ -116,6 +116,9 @@ class PlantPowerGrid:
 
         Returns:
             The created line index (pandapower line table index).
+        TODO
+        ----
+        Add pp.create_line_from_parameter()
         """
         return int(pp.create_line(self.net, **line))
 

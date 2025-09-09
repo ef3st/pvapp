@@ -8,5 +8,5 @@ def translate(key: str) -> str | list:
         if isinstance(result, dict) and k in result:
             result = result[k]
         else:
-            return key  # fallback se manca qualcosa
+            return key
     return result

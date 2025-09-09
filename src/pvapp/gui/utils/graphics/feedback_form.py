@@ -24,7 +24,14 @@ import streamlit as st
 
 
 def _smtp_cfg():
-    """Legge la config da st.secrets, con fallback a variabili ambiente."""
+    """
+    Reads the config from st.secrets, with fallback to environment variables.
+
+    Returns:
+        dict: The SMTP configuration
+    ------
+    Note:
+    """
     if "smtp" in st.secrets:
         s = st.secrets["smtp"]
         return {
@@ -59,8 +66,21 @@ def send_feedback_email(
     file_name: Optional[str],
 ) -> bool:
     """
-    Invia una email al developer con i dati del form e (opzionalmente) un allegato.
-    Ritorna True se l'invio va a buon fine, False altrimenti.
+    Sends an email to the developer with the form data and (optionally) an attachment.
+
+    Args:
+        name (str): The name of the sender
+        email (str): The email of the sender
+        category (str): The category of the feedback
+        subject (str): The subject of the email
+        message (str): The message content
+        file_bytes (Optional[bytes]): The file bytes for attachment
+        file_name (Optional[str]): The file name for attachment
+
+    Returns:
+        bool: True if the sending is successful, False otherwise
+    ------
+    Note:
     """
     cfg = _smtp_cfg()
     mandatory = ["host", "port", "username", "password", "from_email", "to_email"]
@@ -133,7 +153,17 @@ def send_feedback_email(
 def feedback_form_ui(
     send_fn: Callable[[str, str, str, str, str, Optional[bytes], Optional[str]], bool],
 ) -> None:
-    """Render del form di feedback; chiama send_fn all'invio."""
+    """
+    Render of the feedback form; calls send_fn on send.
+
+    Args:
+        send_fn (Callable): The function to send the feedback
+
+    Returns:
+        None
+    ------
+    Note:
+    """
     st.markdown(
         """
         <style>
@@ -230,7 +260,17 @@ def write_to_developer(
         [str, str, str, str, str, Optional[bytes], Optional[str]], bool
     ] = send_feedback_email,
 ) -> None:
-    """Aggiunge un bottone che apre il form (modal se disponibile)."""
+    """
+    Adds a button that opens the form (modal if available).
+
+    Args:
+        send_fn (Callable): The function to send the feedback
+
+    Returns:
+        None
+    ------
+    Note:
+    """
     if "show_feedback" not in st.session_state:
         st.session_state.show_feedback = False
 

@@ -35,13 +35,15 @@ from logging.handlers import QueueHandler, QueueListener
 
 class ColoredFormatter(logging.Formatter):
     """
-    Personalized formatter to add colors at log messages
+    Personalized formatter to add colors at log messages.
 
     This class extend logging.Formatter to add colors ANSI at different
     log levels, improving message readability on console
 
     Attributes:
-        COLORS (Dict): mapping of different log levels with ANSI colors codes
+        COLORS (dict): mapping of different log levels with ANSI colors codes
+    ------
+    Note:
     """
 
     # ANSI color codes for different log levels
@@ -59,10 +61,12 @@ class ColoredFormatter(logging.Formatter):
         Format the log record adding colors.
 
         Args:
-            record: The log record to format
+            record (logging.LogRecord): The log record to format
 
         Returns:
             str: The formatted message with colors
+        ------
+        Note:
         """
         # Add color to log level
         levelname = record.levelname
@@ -107,6 +111,8 @@ def setup_logger(
         backup_count (int): Number of backup files to keep. Default: 5
         console_output (bool): If True, enables console output. Default: True
         file_output (bool): If True, enables file output. Default: True
+        use_queue (bool): If True, use queue for logging. Default: False
+        queue (Optional[Queue]): Queue for logging. Default: None
 
     Returns:
         logging.Logger: The configured logger
@@ -114,10 +120,11 @@ def setup_logger(
     Raises:
         ValueError: If log level is not valid
         OSError: If log directory cannot be created
-
-    Example:
-        >>> logger = setup_logger('jarvis', 'DEBUG', 'logs/app.log')
-        >>> logger.info('Logger configured successfully')
+    ------
+    Note:
+        Example:
+            >>> logger = setup_logger('jarvis', 'DEBUG', 'logs/app.log')
+            >>> logger.info('Logger configured successfully')
     """
 
     global _log_queue, _listener
@@ -188,10 +195,11 @@ def get_logger(name: str = "jarvis") -> logging.Logger:
 
     Returns:
         logging.Logger: The requested logger
-
-    Example:
-        >>> logger = get_logger('jarvis')
-        >>> logger.info('Using existing logger')
+    ------
+    Note:
+        Example:
+            >>> logger = get_logger('jarvis')
+            >>> logger.info('Using existing logger')
     """
     return logging.getLogger(name)
 
@@ -208,15 +216,16 @@ def log_function_call(func):
 
     Returns:
         function: The decorated function
-
-    Example:
-        >>> @log_function_call
-        >>> def process_data(data):
-        >>>     return data * 2
-        >>>
-        >>> result = process_data([1, 2, 3])
-        # Log: INFO - Call to process_data with args: ([1, 2, 3],), kwargs: {}
-        # Log: INFO - process_data completed in X.XXX seconds
+    ------
+    Note:
+        Example:
+            >>> @log_function_call
+            >>> def process_data(data):
+            >>>     return data * 2
+            >>>
+            >>> result = process_data([1, 2, 3])
+            # Log: INFO - Call to process_data with args: ([1, 2, 3],), kwargs: {}
+            # Log: INFO - process_data completed in X.XXX seconds
     """
 
     def wrapper(*args, **kwargs):
@@ -250,12 +259,13 @@ def log_performance(operation_name: str):
 
     Returns:
         function: Decorator function
-
-    Example:
-        >>> @log_performance("data_processing")
-        >>> def process_data():
-        >>>     # processing code
-        >>>     pass
+    ------
+    Note:
+        Example:
+            >>> @log_performance("data_processing")
+            >>> def process_data():
+            >>>     # processing code
+            >>>     pass
     """
 
     def decorator(func):

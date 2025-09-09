@@ -115,10 +115,10 @@ def pv3d(tilt, azimuth):
         )
     )
 
-    # === Etichette "N", "S", "E", "O" sul pavimento ===
+    # --- labels "N", "S", "E", "O" on ground ---
     labels = go.Scatter3d(
-        x=[0, 0, 1.5, -1.5],  # Est-Ovest sui +X/-X
-        y=[0.8, -0.8, 0, 0],  # Nord-Sud sui +Y/-Y
+        x=[0, 0, 1.5, -1.5],  # Est-West on +X/-X
+        y=[0.8, -0.8, 0, 0],  # North-South on +Y/-Y
         z=[0, 0, 0, 0],  # Pavimento (z=0)
         mode="text",
         text=["S", "N", "E", "O"],
@@ -131,9 +131,9 @@ def pv3d(tilt, azimuth):
     # === Layout ===
     fig.update_layout(
         scene=dict(
-            xaxis=dict(visible=False),  # Nasconde l'asse X
-            yaxis=dict(visible=False),  # Nasconde l'asse Y
-            zaxis=dict(visible=False),  # Nasconde l'asse Z
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            zaxis=dict(visible=False),
             xaxis_showgrid=False,
             yaxis_showgrid=False,
             zaxis_showgrid=False,
@@ -141,7 +141,7 @@ def pv3d(tilt, azimuth):
         scene_camera=dict(
             eye=dict(
                 x=0.8, y=0.8, z=0.5
-            )  # Valori più alti = zoom out, più bassi = zoom in
+            )  # higher values -> zoom out, lower values -> zoom in
         ),
     )
 
@@ -228,22 +228,6 @@ def seasonal_plot(df_plot, page):
                     label_visibility="collapsed",
                     key=f"{page}_season_selected",
                 )
-                # selected_seasons = []
-                # a, b = st.columns(2)
-                # i = 0
-                # for season in season_options[:]:
-                #     col = st
-                #     if i < 2:
-                #         col = a
-                #     elif i < 4:
-                #         col = b
-                #     # else:
-                #     #     st.markdown("---")
-                #     if col.toggle(
-                #         season, value=(True if season in default_seasons else False)
-                #     ):
-                #         selected_seasons.append(season)
-                #     i += 1
             if st.session_state["selected_seasons"] != selected_seasons:
                 st.session_state["selected_seasons"] = selected_seasons
         else:
@@ -330,7 +314,7 @@ def seasonal_plot(df_plot, page):
 def time_plot(data: pd.DataFrame, default=0, page=""):
     st.markdown(f"### {translate(f"{page}.subtitle.time_distribution")}")
 
-    # Colonne numeriche disponibili
+    # Avaiable numeric columns
     numeric_cols = data.select_dtypes(include="number").columns.tolist()
     default_var = "dc_p_mp"
     default_index = (
@@ -357,7 +341,7 @@ def time_plot(data: pd.DataFrame, default=0, page=""):
                 horizontal=True,
             )
 
-        # Prepara DataFrame
+        # Prepare dataframe
         df = data.copy()
         columns_to_keep = ["timestamp", variable]
         if "plant" in df.columns:
@@ -369,8 +353,8 @@ def time_plot(data: pd.DataFrame, default=0, page=""):
         min_date = df["timestamp"].min().date()
         max_date = df["timestamp"].max().date()
 
-        # Filtro in base alla modalità
-        if mode == translate(f"{page}.buttons.option.options")[0]:  # Intervallo date
+        # filter depending on mode
+        if mode == translate(f"{page}.buttons.option.options")[0]:  # date interval
             start_day, end_day = st.slider(
                 "📅 Intervallo date:",
                 min_value=min_date,
@@ -381,7 +365,7 @@ def time_plot(data: pd.DataFrame, default=0, page=""):
             mask = (df["timestamp"].dt.date >= start_day) & (
                 df["timestamp"].dt.date <= end_day
             )
-        else:  # Giorno singolo + ore
+        else:  # single day + hours
             with col3:
                 day = st.date_input(
                     f"🗓️ {translate(f"{page}.buttons.choose_date")}",
@@ -405,7 +389,7 @@ def time_plot(data: pd.DataFrame, default=0, page=""):
             return
     if variable in translate("plots.variable_description"):
         right.info(translate("plots.variable_description")[variable])
-    # Costruzione grafico adattivo
+    #
     if "plant" in df_filtered.columns:
         fig = px.line(
             df_filtered,
