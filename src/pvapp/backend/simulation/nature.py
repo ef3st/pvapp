@@ -1,81 +1,88 @@
-from pvlib.location import Location
-import pandas as pd
+from typing import Dict, Optional, Union
+
 import numpy as np
-from numpy.typing import NDArray
+import pandas as pd
 import pvlib
-from typing import Dict, Union, Optional
+from numpy.typing import NDArray
+from pvlib.location import Location
+
 from tools.logger import get_logger
 
 
+# * =============================
+# *            NATURE
+# * =============================
 class Nature:
     """
     Lightweight environment/irradiance simulator built on top of pvlib.
 
-    This class computes:
-      - Solar position (zenith, azimuth, apparent elevation)
-      - Extra-terrestrial DNI
-      - A simple, semi-empirical estimate of GHI/DNI/DHI (synthetic sky model)
-      - Plane-of-array (POA) irradiance for arbitrary surface geometry
-      - A toy weather time series (air temperature, wind speed)
+    Attributes:
+        site (Location): Site metadata (latitude, longitude, altitude, timezone).
+        times (pd.DatetimeIndex): Normalized time index used for computations.
+        solpos (pd.DataFrame): Solar position ('zenith', 'azimuth', 'apparent_elevation'), degrees.
+        dni_extra (pd.Series): Extraterrestrial normal irradiance (W/m^2).
+        aviable_energy (Dict[str, NDArray[np.float64]]): Synthetic horizontal irradiance:
+            - 'GHI' (W/m^2) Global Horizontal Irradiance
+            - 'DNI' (W/m^2) Direct Normal Irradiance
+            - 'DHI' (W/m^2) Diffuse Horizontal Irradiance
 
-    Parameters
-    ----------
-    site : pvlib.location.Location
-        Site metadata (latitude, longitude, altitude, timezone).
-    times : pandas.DatetimeIndex or pandas.Series or pandas.DataFrame
-        Time index (must be timezone-aware) for which the simulation is run.
+    Methods:
+        getPOA: Compute plane-of-array irradiance for a given surface geometry.
+        weather_simulation: Produce a toy weather time series aligned to `times`.
 
-    Attributes
-    ----------
-    site : pvlib.location.Location
-        As provided.
-    times : pandas.DatetimeIndex
-        Normalized time index used for all computations.
-    solpos : pandas.DataFrame
-        Solar position with columns like 'zenith', 'azimuth', 'apparent_elevation'.
-        Angles are in degrees.
-    dni_extra : pandas.Series
-        Extraterrestrial normal irradiance (W/m^2).
-    aviable_energy : Dict[str, NDArray[np.float64]]
-        Dictionary with synthetic irradiance components:
-        - 'GHI' : Global Horizontal Irradiance (W/m^2)
-        - 'DNI' : Direct Normal Irradiance (W/m^2)
-        - 'DHI' : Diffuse Horizontal Irradiance (W/m^2)
-
-    Notes
-    -----
-    - The attribute name `aviable_energy` keeps the original (misspelled) key
-      for backward compatibility.
-    - The sky model here is intentionally simple and not physically rigorous.
-      Use pvlib’s transposition and clear-sky models for production-grade work.
+    ---
+    Notes:
+    - The attribute name `aviable_energy` (sic) is preserved for backward compatibility.
+    - This sky model is intentionally simple and not physically rigorous; use pvlib’s
+      transposition and clear-sky models for production scenarios.
     """
 
+    # * =========================================================
+    # *                      LIFECYCLE
+    # * =========================================================
     def __init__(
-        self, site: Location, times: Union[pd.DataFrame, pd.Series, pd.DatetimeIndex]
+        self,
+        site: Location,
+        times: Union[pd.DataFrame, pd.Series, pd.DatetimeIndex],
     ) -> None:
-        self.site = site
-        # Ensure we work with a DatetimeIndex (Series/DataFrame index is used if provided)
-        self.times = (
+        """
+        Initialize the synthetic environment around a site and time index.
+
+        Args:
+            site (Location): pvlib site/location data.
+            times (Union[pd.DataFrame, pd.Series, pd.DatetimeIndex]): Time base
+                (must be timezone-aware). If a Series/DataFrame is provided, its
+                index is used.
+
+        Raises:
+            ValueError: If `times` cannot be converted to a `pd.DatetimeIndex`.
+        """
+        self.site: Location = site
+        # ? Ensure we have a DatetimeIndex (Series/DataFrame index is used if provided)
+        self.times: pd.DatetimeIndex = (
             times if isinstance(times, pd.DatetimeIndex) else pd.DatetimeIndex(times)
         )
         self._compute()
         self.logger = get_logger("pvapp")
 
+    # * =========================================================
+    # *                    CORE COMPUTATIONS
+    # * =========================================================
     def _compute(self) -> None:
         """
         Compute solar position, extraterrestrial DNI, and synthetic irradiance fields.
 
-        This method is called once during initialization. If you need to recompute
-        after changing `times` or `site`, call it explicitly.
+        Notes:
+        - Called during initialization. Re-call after changing `site` or `times`.
         """
         # Solar position (degrees). Apparent elevation accounts for refraction.
-        self.solpos = self.site.get_solarposition(self.times)
+        self.solpos: pd.DataFrame = self.site.get_solarposition(self.times)
 
         # Extra-terrestrial DNI (W/m^2)
-        self.dni_extra = pvlib.irradiance.get_extra_radiation(self.times)
+        self.dni_extra: pd.Series = pvlib.irradiance.get_extra_radiation(self.times)
 
         # Synthetic horizontal components (W/m^2)
-        self.aviable_energy = self._aviableenergy()
+        self.aviable_energy: Dict[str, NDArray[np.float64]] = self._aviableenergy()
 
     def _aviableenergy(self) -> Dict[str, NDArray[np.float64]]:
         """
@@ -85,24 +92,17 @@ class Nature:
         -----
         - GHI rises with solar apparent elevation: GHI = 1000 * sin(elev), clipped to [0, 1000].
         - Atmospheric transmittance ~ exp(-0.14 * (airmass - 1)); clipped at 1.
-        - DNI is derived from GHI and zenith with the transmittance factor:
-              DNI = (GHI / cos(zenith)) * transmittance
-          and clipped to [0, 1000].
-        - DHI is the residual on the horizontal plane:
-              DHI = GHI - DNI * cos(zenith)
-          and clipped to [0, +inf).
+        - DNI = (GHI / cos(zenith)) * transmittance, clipped to [0, 1000].
+        - DHI = GHI - DNI * cos(zenith), clipped to [0, +inf).
 
-        Returns
-        -------
-        Dict[str, NDArray[np.float64]]
-            Keys: 'GHI', 'DNI', 'DHI'. Values are numpy arrays aligned to `self.times`.
+        Returns:
+            Dict[str, NDArray[np.float64]]: Keys 'GHI', 'DNI', 'DHI', arrays aligned to `self.times`.
         """
         # Apparent solar elevation in radians (clip negatives to zero: sun below horizon -> 0)
-        elev = np.radians(self.solpos["apparent_elevation"].clip(lower=0))
+        elev = np.radians(self.solpos["apparent_elevation"].clip(lower=0.0))
 
         # Synthetic GHI as a smooth function of elevation; cap at 1000 W/m^2
-        ghi = 1000.0 * np.sin(elev)
-        ghi = ghi.clip(lower=0.0)
+        ghi = (1000.0 * np.sin(elev)).clip(lower=0.0)
 
         # Relative airmass (dimensionless); avoid airmass explosion near horizon
         airmass = pvlib.atmosphere.get_relative_airmass(
@@ -110,48 +110,35 @@ class Nature:
         )
 
         # Simple atmospheric transmittance decreasing with airmass
-        transmittance = np.exp(-0.14 * (airmass - 1.0))
-        transmittance = transmittance.clip(upper=1.0)
+        transmittance = np.exp(-0.14 * (airmass - 1.0)).clip(upper=1.0)
 
         # Compute DNI. Clip zenith to avoid cos ~ 0 near the horizon.
         zenith_clipped = self.solpos["zenith"].clip(upper=89.9)
-        dni = ghi / np.cos(np.radians(zenith_clipped)) * transmittance
+        dni = (ghi / np.cos(np.radians(zenith_clipped))) * transmittance
         dni = dni.clip(lower=0.0, upper=1000.0)
 
         # Compute DHI as horizontal residual; clip negatives to zero
-        dhi = ghi - dni * np.cos(np.radians(self.solpos["zenith"]))
-        dhi = dhi.clip(lower=0.0)
+        dhi = (ghi - dni * np.cos(np.radians(self.solpos["zenith"]))).clip(lower=0.0)
 
-        return {"GHI": ghi, "DNI": dni, "DHI": dhi}
+        return {"GHI": ghi.to_numpy(), "DNI": dni.to_numpy(), "DHI": dhi.to_numpy()}
 
+    # * =========================================================
+    # *                       PUBLIC API
+    # * =========================================================
     def getPOA(self, surface_tilt: float, surface_azimuth: float) -> pd.DataFrame:
         """
         Compute Plane-of-Array (POA) irradiance for a given surface geometry.
 
-        This wraps `pvlib.irradiance.get_total_irradiance` using the internally
-        generated synthetic irradiance components and solar position.
+        Args:
+            surface_tilt (float): Surface tilt from horizontal in degrees (0 = horizontal, 90 = vertical).
+            surface_azimuth (float): Surface azimuth in degrees (0 = North, 90 = East, 180 = South, 270 = West).
 
-        Parameters
-        ----------
-        surface_tilt : float
-            Surface tilt from horizontal in degrees (0 = horizontal, 90 = vertical).
-        surface_azimuth : float
-            Surface azimuth in degrees (0 = North, 90 = East, 180 = South, 270 = West).
+        Returns:
+            pd.DataFrame: Typical columns:
+                - 'poa_global', 'poa_direct', 'poa_diffuse',
+                  'poa_sky_diffuse', 'poa_ground_diffuse', 'aoi'.
 
-        Returns
-        -------
-        pandas.DataFrame
-            Columns typically include:
-              - 'poa_global' (W/m^2)
-              - 'poa_direct' (W/m^2)
-              - 'poa_diffuse' (W/m^2)
-              - 'poa_sky_diffuse' (W/m^2)
-              - 'poa_ground_diffuse' (W/m^2)
-              - 'aoi' (degrees, angle of incidence)
-            Exact columns may vary by pvlib version/model.
-
-        Notes
-        -----
+        Notes:
         - Uses the 'haydavies' transposition model by default.
         - Inputs/outputs are aligned to `self.times`.
         """
@@ -169,65 +156,50 @@ class Nature:
 
     def weather_simulation(
         self,
-        temp_air: Optional[np.ndarray],
-        wind_speed: Optional[np.ndarray],
+        temp_air: Optional[Union[float, NDArray[np.float64]]],
+        wind_speed: Optional[Union[float, NDArray[np.float64]]],
         seed: Optional[int] = None,
     ) -> pd.DataFrame:
         """
         Create a simple synthetic weather frame aligned to `self.times`.
 
-        The current implementation *ignores* the `temp_air` and `wind_speed`
-        inputs and instead generates:
+        The current implementation *ignores* the `temp_air` and `wind_speed` inputs
+        and instead generates:
           - A seasonal air temperature (°C):
                 T_air = 20 + 10 * sin(2π * (day_of_year - 80) / 365)
-          - A random wind speed (m/s):
-                wind = 1 + U[0, 1)
+          - A (placeholder) wind speed column taken from the input if provided,
+            otherwise left as-is (may be `None`).
 
-        Parameters
-        ----------
-        temp_air : array-like or None
-            Ignored in the current implementation. Kept for future extension.
-        wind_speed : array-like or None
-            Ignored in the current implementation. Kept for future extension.
-        seed : int, optional
-            Random seed for reproducible wind-speed samples.
+        Args:
+            temp_air (Optional[Union[float, NDArray[np.float64]]]): Ignored (kept for future extension).
+            wind_speed (Optional[Union[float, NDArray[np.float64]]]): Ignored (kept for future extension).
+            seed (Optional[int]): Random seed (reserved for future use).
 
-        Returns
-        -------
-        pandas.DataFrame
-            Index: `self.times`.
-            Columns:
-              - 'ghi' (W/m^2)
-              - 'dni' (W/m^2)
-              - 'dhi' (W/m^2)
-              - 'temp_air' (°C)
-              - 'wind_speed' (m/s)
+        Returns:
+            pd.DataFrame: Index `self.times`, columns:
+                'ghi', 'dni', 'dhi', 'temp_air', 'wind_speed'.
 
-        Notes
-        -----
-        This weather generator is a toy model intended for testing pipelines.
-        Replace it with real measurements or reanalysis data (e.g., TMY/ERA5)
-        for realistic simulations.
+        ---
+        Notes:
+        - This is a toy generator for testing pipelines. Replace with real data
+          (TMY/ERA5) for realistic simulations.
         """
+        #! Seed is reserved for future stochastic components
         if seed is not None:
             np.random.seed(seed)
 
-        # --- Synthetic seasonal temperature profile (°C) ---
-        # Peaks around day-of-year ≈ 172 (June) given the phase shift of 80 days.
-        temp_air = 20.0 + 10.0 * np.sin(
+        # -------------> Seasonal Temperature Profile <--------
+        temp_series = 20.0 + 10.0 * np.sin(
             2.0 * np.pi * (self.times.dayofyear - 80) / 365.0
         )
 
-        # --- Synthetic wind speed (m/s) ---
-        # Uniform random variation around ~1–2 m/s
-
-        # Assemble output DataFrame aligned to times
+        # -------------> Assemble Output <--------
         return pd.DataFrame(
             {
                 "ghi": self.aviable_energy["GHI"],
                 "dni": self.aviable_energy["DNI"],
                 "dhi": self.aviable_energy["DHI"],
-                "temp_air": temp_air,
+                "temp_air": temp_series,
                 "wind_speed": wind_speed,
             },
             index=self.times,

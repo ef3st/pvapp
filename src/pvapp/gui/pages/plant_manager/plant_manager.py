@@ -15,18 +15,30 @@ from .grid.grid import GridManager
 from .site.site import SiteManager
 
 
+# * =============================
+# *          PLANT MANAGER
+# * =============================
 class PlantManager(Page):
-    """Streamlit page that orchestrates site, module, and grid managers.
+    """
+    Streamlit page that orchestrates site, module, and grid managers.
 
-    This class provides a unified UI to:
-    - Scan a data directory for available plants (site + plant folders)
-    - Let the user select a plant
-    - Display and edit configuration ("Setup") or analytics ("Analysis")
-    - Save changes selectively (all / module / grid / site)
-    - Run a simulation on demand
+    Attributes:
+        grid_manager (Optional[GridManager]): Instance handling grid editing & analytics.
+        module_manager (Optional[ModuleManager]): Instance handling PV module/inverter setup.
+        site_manager (Optional[SiteManager]): Instance handling site/location setup.
 
-    Notes
-    -----
+    Methods:
+        load_all_plants: Scan a data directory for available plants.
+        select_plant: Render selectors and return the chosen plant folder.
+        render: Top-level page renderer (tabs, actions).
+        top_buttons: Render and handle Save/Simulate actions.
+        save_all: Programmatic save across managers (for auto-save).
+        sim_all: Programmatic simulate for the active plant (for auto-sim).
+        show_sumup: Optional summaries per tab (scheme/description).
+        show_display: Dispatch to managers (Setup / Analysis / Data).
+
+    ---
+    Notes:
     - Session state keys used:
         - "change": List[bool] of length 3, flags for [module, grid, site]
         - "subfolder": Path to the active plant directory
@@ -37,7 +49,11 @@ class PlantManager(Page):
     - The class assumes each plant folder contains both `site.json` and `plant.json`.
     """
 
+    # * =========================================================
+    # *                        LIFECYCLE
+    # * =========================================================
     def __init__(self) -> None:
+        """Initialize Plant Manager page and default session state."""
         super().__init__("plant_manager")
 
         # Initialize session-state defaults to avoid KeyError later.
@@ -55,24 +71,21 @@ class PlantManager(Page):
         self.module_manager: Optional[ModuleManager] = None
         self.site_manager: Optional[SiteManager] = None
 
-    # ---------------------------------------------------------------------
-    # Data discovery & selection
-    # ---------------------------------------------------------------------
+    # * =========================================================
+    # *               DATA DISCOVERY & SELECTION
+    # * =========================================================
     def load_all_plants(self, folder: Path = Path("data/")) -> pd.DataFrame:
-        """Return a dataframe of available plants discovered under *folder*.
+        """
+        Return a dataframe of available plants discovered under *folder*.
 
         Each valid plant is a subfolder that contains both `site.json` and
         `plant.json`. Basic metadata is aggregated for UI selection.
 
-        Parameters
-        ----------
-        folder : Path
-            Base directory to scan. Defaults to `data/`.
+        Args:
+            folder (Path): Base directory to scan. Defaults to `data/`.
 
-        Returns
-        -------
-        pd.DataFrame
-            Columns: [site_name, plant_name, subfolder]
+        Returns:
+            pd.DataFrame: Columns: [site_name, plant_name, subfolder]
         """
         data: List[Dict[str, Any]] = []
         if not folder.exists():
@@ -100,20 +113,17 @@ class PlantManager(Page):
                             "subfolder": subfolder,
                         }
                     )
-                except (
-                    Exception
-                ) as e:  # Broad by design: surface any file/JSON issues to the UI.
+                except Exception as e:  # Surface any file/JSON issues to the UI.
                     st.error(f"Error reading '{subfolder.name}': {e}")
 
         return pd.DataFrame(data)
 
     def select_plant(self) -> Optional[Path]:
-        """Render the site/plant selectors and return the chosen subfolder.
+        """
+        Render the site/plant selectors and return the chosen subfolder.
 
-        Returns
-        -------
-        Optional[Path]
-            The plant directory chosen by the user, or ``None`` if none are available.
+        Returns:
+            Optional[Path]: The plant directory chosen by the user, or None if none available.
         """
         plants_df = self.load_all_plants()
         if plants_df.empty:
@@ -132,14 +142,13 @@ class PlantManager(Page):
         )
 
         selected_row = filtered[filtered["plant_name"] == selected_plant].iloc[0]
-        return Path(selected_row["subfolder"])  # type: ignore[return-value]
+        return Path(selected_row["subfolder"])
 
-    # ---------------------------------------------------------------------
-    # Top-level page rendering
-    # ---------------------------------------------------------------------
+    # * =========================================================
+    # *                 TOP-LEVEL PAGE RENDERING
+    # * =========================================================
     def render(self, tab_index: int = 0) -> None:
         """Render the full Plant Manager page."""
-        # st.title("🖥️ " + self.T("title"))
         sac.alert(
             self.T("title"),
             variant="quote",
@@ -150,7 +159,7 @@ class PlantManager(Page):
 
         left_col, right_col = st.columns([7, 5])
 
-        # --- Selection & manager instantiation
+        # ---> Selection & manager instantiation <---
         with left_col:
             with st.container(border=True):
                 st.markdown(f"🔎 {self.T('selection')[0]}")
@@ -175,7 +184,7 @@ class PlantManager(Page):
                 self.module_manager = st.session_state["plant_manager"]["module"]
                 self.site_manager = st.session_state["plant_manager"]["site"]
 
-        # --- Display options header
+        # ---> Display options header <---
         sac.divider(
             "Display",
             align="center",
@@ -211,11 +220,11 @@ class PlantManager(Page):
 
         scheme = labels_display[3] in sumup
         description = labels_display[4] in sumup
-        placeholeder = st.empty()
-        with placeholeder.container():
+        placeholder = st.empty()
+        with placeholder.container():
             self.show_sumup(tab_index, scheme, description)
 
-        # Secondary tabs (except for the Site): Setup / Analysis
+        # Secondary tabs (except for the Site): Setup / Analysis / Data
         tab_display = 0
         if tab_index < 2:
             _, tab_col, _ = st.columns([1, 12, 1])
@@ -238,19 +247,25 @@ class PlantManager(Page):
         try:
             self.show_display(tab_index, tab_display)
         except ValueError as e:
-            self.logger.error("[PlantManagerPage] Errors in show_display(): {e}")
+            self.logger.error(f"[PlantManagerPage] Errors in show_display(): {e}")
 
         # Right side: top action buttons (save / simulate)
         with right_col.empty():
             with st.container(border=True):
                 self.top_buttons()
 
-    # ---------------------------------------------------------------------
-    # Actions (save / simulate)
-    # ---------------------------------------------------------------------
+    # * =========================================================
+    # *                 ACTIONS (SAVE / SIMULATE)
+    # * =========================================================
     @st.fragment
     def top_buttons(self) -> None:
-        """Render the top action buttons (save & simulate) and handle actions."""
+        """
+        Render the top action buttons (save & simulate) and handle actions.
+
+        Notes:
+            - "Save all / module / grid / site" buttons reflect pending changes.
+            - Simulation is enabled if results are missing or a save occurred.
+        """
         buttons_labels = self.T("buttons")
 
         # Mapping for which managers to save per button index
@@ -261,12 +276,12 @@ class PlantManager(Page):
             3: [self.site_manager],  # Save site only
         }
 
-        # --- Header
+        # ---> Header <---
         l, r = st.columns([1, 5])
         with l:
             sac.divider(f"{buttons_labels[1]}", icon=sac.BsIcon("floppy"))
 
-        # --- Save buttons group
+        # ---> Save buttons group <---
         with r:
             icons = [
                 sac.BsIcon("download"),
@@ -298,14 +313,14 @@ class PlantManager(Page):
                 use_container_width=True,
             )
 
-        # --- Simulate header
+        # ---> Simulate header <---
         d, a, b = st.columns([2, 2, 3])
         with d:
             sac.divider(f"{buttons_labels[6]}", icon=sac.BsIcon("fire"))
 
         rerun_needed = False
 
-        # --- Handle save
+        # ------ Handle Save ------
         if to_save is not None:
             if st.session_state["enable_change"][to_save]:
                 with b:
@@ -324,7 +339,7 @@ class PlantManager(Page):
                     st.session_state["enable_sim"] = True
                     rerun_needed = True
 
-        # --- Simulate button
+        # ------ Simulate button ------
         with a:
             subfolder: Optional[Path] = st.session_state.get("subfolder")
             sim_file = (
@@ -373,14 +388,16 @@ class PlantManager(Page):
         if rerun_needed:
             st.rerun()
 
-    # ---------------------------------------------------------------------
-    # Programmatic save/simulate helpers (used by auto-save/auto-sim)
-    # ---------------------------------------------------------------------
+    # * =========================================================
+    # *         PROGRAMMATIC HELPERS (AUTO-SAVE / AUTO-SIM)
+    # * =========================================================
     def save_all(self) -> None:
-        """Save all managers that have pending changes.
+        """
+        Save all managers that have pending changes.
 
-        Resets change flags, optionally triggers simulation if `auto_sim` is ON,
-        and requests a rerun to refresh the UI.
+        Notes:
+            - Resets change flags, optionally triggers simulation if `auto_sim` is ON,
+              and requests a rerun to refresh the UI.
         """
         elements_to_save = [self.module_manager, self.grid_manager, self.site_manager]
 
@@ -412,20 +429,17 @@ class PlantManager(Page):
             Simulator(subfolder).run()
             st.session_state["enable_sim"] = False
 
-    # ---------------------------------------------------------------------
-    # Content rendering helpers
-    # ---------------------------------------------------------------------
+    # * =========================================================
+    # *               CONTENT RENDERING DISPATCHERS
+    # * =========================================================
     def show_sumup(self, tab: int, scheme: bool, description: bool) -> None:
-        """Render optional summaries per active tab.
+        """
+        Render optional summaries per active tab.
 
-        Parameters
-        ----------
-        tab : int
-            Active top-level tab index (0=Module, 1=Grid, 2=Site)
-        scheme : bool
-            Whether to show the scheme (not used here; reserved for future use)
-        description : bool
-            Whether to show descriptions/metadata where available
+        Args:
+            tab (int): Active top-level tab index (0=Module, 1=Grid, 2=Site).
+            scheme (bool): Whether to show the scheme (reserved for future use).
+            description (bool): Whether to show descriptions/metadata if available.
         """
         # Only Grid currently exposes a textual description
         if tab == 1 and self.grid_manager is not None:
@@ -435,14 +449,15 @@ class PlantManager(Page):
                 self.grid_manager.get_description()
 
     def show_display(self, tab: int = 0, display: int = 0) -> None:
-        """Dispatch rendering to the selected manager and view.
+        """
+        Dispatch rendering to the selected manager and view.
 
-        Parameters
-        ----------
-        tab : int
-            Which primary tab is active (0=Module, 1=Grid, 2=Site)
-        display : int
-            Which secondary tab is active (0=Setup, 1=Analysis)
+        Args:
+            tab (int): Primary tab (0=Module, 1=Grid, 2=Site).
+            display (int): Secondary tab (0=Setup, 1=Analysis, 2=Data).
+
+        Raises:
+            ValueError: If `tab` or `display` are invalid.
         """
         if (
             self.module_manager is None
@@ -462,7 +477,6 @@ class PlantManager(Page):
             raise ValueError(f"Invalid tab index: {tab}")
 
         if display == 0:  # Setup view
-            # If the manager reports a change and auto-save is enabled, persist it
             enable_change = manager.render_setup()
             if enable_change:
                 st.session_state["change"][tab] = True
@@ -475,6 +489,24 @@ class PlantManager(Page):
         else:
             raise ValueError(f"Invalid display index: {display}")
 
+
+# // ================================
+# //         LEGACY (DEPRECATED)
+# // ================================
+# // The following block preserves the old implementation for reference only.
+# // It has been superseded by the class above and is kept here as historical code.
+# // (Converted to '#//' per your guideline for unused/old code.)
+#
+# from pages import Page
+# import json
+# from pathlib import Path
+# import streamlit as st
+# import pandas as pd
+# import streamlit_antd_components as sac
+# from .module.module import ModuleManager
+# from .grid.grid import GridManager
+# from .site.site import SiteManager
+# from typing import Union, Optional
 
 # from pages import Page
 # import json

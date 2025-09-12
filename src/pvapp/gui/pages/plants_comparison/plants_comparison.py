@@ -1,24 +1,62 @@
-import streamlit as st
 import json
 from pathlib import Path
+
 import pandas as pd
+import plotly.express as px  # noqa: F401
+import streamlit as st
+
 from analysis.plantanalyser import PlantAnalyser
-import plotly.express as px
 from gui.pages import Page
 from gui.utils.plots import plots
 
 
+# * =============================
+# *     PLANTS COMPARISON PAGE
+# * =============================
 class PlantsComparisonPage(Page):
-    def __init__(self):
+    """
+    Streamlit page for comparing multiple PV plants.
+
+    Attributes:
+        df_plants (pd.DataFrame): Metadata of all plants found in data folders.
+        df_selected (pd.DataFrame): Subset of selected plants.
+        df_total (pd.DataFrame): Aggregated data from selected plants.
+        selected_seasons (list[str]): Seasons selected for comparison.
+        variable_selected (str): Selected variable for visualization.
+        stat_selected (str): Selected statistic ("sum" or "mean").
+
+    Methods:
+        load_all_plants: Scan folder and load all available plants.
+        select_plants: Render UI for selecting plants.
+        render: Render the entire Streamlit page (entrypoint).
+    """
+
+    # * =========================================================
+    # *                      LIFECYCLE
+    # * =========================================================
+    def __init__(self) -> None:
+        """Initialize empty state and default values."""
         super().__init__("plants_comparison")
         self.df_plants = pd.DataFrame()
         self.df_selected = pd.DataFrame()
         self.df_total = pd.DataFrame()
-        self.selected_seasons = []
-        self.variable_selected = ""
-        self.stat_selected = "sum"
+        self.selected_seasons: list[str] = []
+        self.variable_selected: str = ""
+        self.stat_selected: str = "sum"
 
+    # * =========================================================
+    # *                     DATA LOADING
+    # * =========================================================
     def load_all_plants(self, folder: Path = Path("data/")) -> pd.DataFrame:
+        """
+        Scan subfolders for valid plants and collect metadata.
+
+        Args:
+            folder (Path): Root folder containing subfolders with plant data.
+
+        Returns:
+            pd.DataFrame: Table with columns: site_name, plant_name, subfolder, id.
+        """
         data = []
         for subfolder in sorted(folder.iterdir()):
             if subfolder.is_dir():
@@ -45,8 +83,18 @@ class PlantsComparisonPage(Page):
                         st.error(f"Error reading {subfolder.name}: {e}")
         return pd.DataFrame(data)
 
-    def select_plants(self):
-        with st.expander("\U0001f4da " + self.T("subtitle.select_plants")):
+    # * =========================================================
+    # *                     UI: SELECTION
+    # * =========================================================
+    def select_plants(self) -> None:
+        """
+        Render a plant selection panel with checkboxes.
+
+        Notes:
+        - Maintains state in `st.session_state["plant_selection"]`.
+        - Supports select all / deselect all actions.
+        """
+        with st.expander("📚 " + self.T("subtitle.select_plants")):
             df = self.df_plants
             df["label"] = df["site_name"] + " - " + df["plant_name"]
 
@@ -54,6 +102,7 @@ class PlantsComparisonPage(Page):
                 st.session_state.plant_selection = {
                     row["id"]: True for _, row in df.iterrows()
                 }
+
             a, b, _ = st.columns([1, 1, 7])
             with a:
                 if st.button(self.T("buttons.select_all"), key="select_all"):
@@ -103,8 +152,16 @@ class PlantsComparisonPage(Page):
             ]
             self.df_selected = df[df["id"].isin(selected_ids)]
 
-    def render(self):
-        # st.title("\U0001f3ad " + self.T("title"))
+    # * =========================================================
+    # *                        RENDER
+    # * =========================================================
+    def render(self) -> None:
+        """
+        Render the full Streamlit page for plant comparison.
+
+        Notes:
+        - Displays plant selection, seasonal plots, and instant time-series plots.
+        """
         import streamlit_antd_components as sac
 
         sac.alert(
@@ -114,48 +171,51 @@ class PlantsComparisonPage(Page):
             size=35,
             icon=sac.BsIcon("bar-chart-steps", color="lime"),
         )
+
         self.df_plants = self.load_all_plants()
         if self.df_plants.empty:
             messages = self.T("messages.no_plant_found")
             sac.result(messages[0], description=messages[1], status="empty")
-        else:
-            self.select_plants()
+            return
 
-            if self.df_selected.empty:
-                st.info("\u2139\ufe0f Nessun impianto selezionato")
-                return
-            import streamlit_antd_components as sac
+        self.select_plants()
+        if self.df_selected.empty:
+            st.info("ℹ️ No plant selected")
+            return
 
-            sac.divider(
-                label="Analysis",
-                icon=sac.BsIcon("clipboard2-data", 20),
-                align="center",
-                color="gray",
-                variant="dashed",
-            )
-            dfs = []
-            for row in self.df_selected.itertuples(index=True):
-                if (row.subfolder / "simulation.csv").exists():
-                    df = PlantAnalyser(row.subfolder).periodic_report(0)
-                    df["plant"] = row.label
-                    dfs.append(df)
+        sac.divider(
+            label="Analysis",
+            icon=sac.BsIcon("clipboard2-data", 20),
+            align="center",
+            color="gray",
+            variant="dashed",
+        )
 
-            self.df_total = pd.concat(dfs, ignore_index=True)
-            st.subheader("\U0001f4ca " + self.T("subtitle.plots"))
-            plots.seasonal_plot(self.df_total, "plants_comparison")
-            sac.divider(
-                label="Istantant measures",
-                icon=sac.BsIcon("clock", 20),
-                align="center",
-                color="gray",
-                variant="dashed",
-            )
-            dfs = []
-            for row in self.df_selected.itertuples(index=True):
-                if (row.subfolder / "simulation.csv").exists():
-                    df = PlantAnalyser(row.subfolder).numeric_dataframe(array=0)
-                    df["plant"] = row.label
-                    dfs.append(df)
+        dfs = []
+        for row in self.df_selected.itertuples(index=True):
+            if (row.subfolder / "simulation.csv").exists():
+                df = PlantAnalyser(row.subfolder).periodic_report(0)
+                df["plant"] = row.label
+                dfs.append(df)
+        self.df_total = pd.concat(dfs, ignore_index=True)
 
-            dfs = pd.concat(dfs)
-            plots.time_plot(dfs, 1, "plants_comparison")
+        st.subheader("📊 " + self.T("subtitle.plots"))
+        plots.seasonal_plot(self.df_total, "plants_comparison")
+
+        sac.divider(
+            label="Instant measures",
+            icon=sac.BsIcon("clock", 20),
+            align="center",
+            color="gray",
+            variant="dashed",
+        )
+
+        dfs = []
+        for row in self.df_selected.itertuples(index=True):
+            if (row.subfolder / "simulation.csv").exists():
+                df = PlantAnalyser(row.subfolder).numeric_dataframe(array=0)
+                df["plant"] = row.label
+                dfs.append(df)
+
+        dfs = pd.concat(dfs)
+        plots.time_plot(dfs, 1, "plants_comparison")

@@ -1,32 +1,90 @@
-import streamlit as st
+from __future__ import annotations
 from pathlib import Path
+from typing import Any, Dict
+
 import json
 import pandas as pd
+import streamlit as st
+import pydeck as pdk
 from pvlib.pvsystem import retrieve_sam
+
 from backend.simulation.simulator import Simulator
 from analysis.plantanalyser import PlantAnalyser
-import pydeck as pdk
 from ....utils.plots import plots
 from ....utils.translation.traslator import translate
 from ...page import Page
 
 
+# * =============================
+# *        MODULE MANAGER
+# * =============================
 class ModuleManager(Page):
-    def __init__(self, subfolder) -> None:
+    """
+    Manage PV module, inverter, and mount settings for a plant.
+
+    Attributes:
+        plant_file (Path): Path to the plant.json file.
+        plant (dict[str, Any]): Current plant configuration dictionary.
+        change (bool): Flag indicating whether the configuration has changed.
+
+    Methods:
+        render_setup: Render editable UI for module/inverter/mount setup.
+        render_analysis: Render plots from simulation results.
+        render_data: Render raw simulation data.
+        get_scheme: Placeholder for scheme summary.
+        get_description: Placeholder for description summary.
+        save: Persist plant.json with filtered mount parameters.
+        changed: Mark the configuration as changed.
+        return_changed: Reset and return change flag.
+        mount_setting: Render UI for mount configuration.
+
+    ---
+    Notes:
+    - This manager centralizes editing of the PV chain (DC → AC → Mount).
+    - Some methods are placeholders and require proper implementation.
+
+    TODO:
+    - Implement `get_scheme()` to provide a visual summary of the PV setup.
+    - Implement `get_description()` to return a textual overview of the configuration.
+    - Improve 3D previews of mount geometry (currently minimal).
+    - Validate inputs more robustly (e.g., numeric ranges, SAM model availability).
+    - Support multiple arrays per plant (current design assumes a single array).
+    """
+
+    # * =========================================================
+    # *                      LIFECYCLE
+    # * =========================================================
+    def __init__(self, subfolder: Path) -> None:
+        """
+        Initialize a ModuleManager for a given plant subfolder.
+
+        Args:
+            subfolder (Path): Directory containing plant.json.
+        """
         super().__init__("module_manager")
         self.plant_file: Path = subfolder / "plant.json"
-        self.plant: dict = json.load(self.plant_file.open())
-        self.change = False
+        self.plant: Dict[str, Any] = json.load(self.plant_file.open())
+        self.change: bool = False
 
-    # ========= RENDERS =======
+    # * =========================================================
+    # *                        RENDERS
+    # * =========================================================
     def render_setup(self) -> bool:
+        """
+        Render Streamlit UI for editing module, inverter, and mount.
+
+        Returns:
+            bool: True if changes occurred, False otherwise.
+        """
         plant = self.plant.copy()
+
+        # ---- Plant Name ----
         plant["name"] = st.text_input(
             self.T("buttons.plant.name"), plant["name"], on_change=self.changed
         )
 
-        # Module configuration
-        with st.expander(f"***{self.T("buttons.plant.module.title")}***", icon="⚡"):
+        # ---- Module Configuration ----
+        with st.expander(f"***{self.T('buttons.plant.module.title')}***", icon="⚡"):
             col1, col2 = st.columns(2)
             module_origins = ["CECMod", "SandiaMod", "pvwatts", "Custom"]
             origin_index = module_origins.index(plant["module"]["origin"])
@@ -40,19 +98,19 @@ class ModuleManager(Page):
             if plant["module"]["origin"] in ["CECMod", "SandiaMod"]:
                 modules = retrieve_sam(plant["module"]["origin"])
                 module_names = list(modules.columns)
-                module_index = 0
-                if plant["module"]["name"] in module_names:
-                    module_index = module_names.index(plant["module"]["name"])
+                module_index = (
+                    module_names.index(plant["module"]["name"])
+                    if plant["module"]["name"] in module_names
+                    else 0
+                )
                 plant["module"]["name"] = col2.selectbox(
                     self.T("buttons.plant.module.model"),
                     module_names,
                     index=module_index,
                     on_change=self.changed,
                 )
-
                 if st.checkbox(self.T("buttons.plant.module.details")):
                     st.code(modules[plant["module"]["name"]], language="json")
-
             else:
                 plant["module"]["name"] = col2.text_input(
                     self.T("buttons.plant.module.name"),
@@ -77,8 +135,8 @@ class ModuleManager(Page):
                 plant["module"]["origin"], "pvwatts"
             )
 
-        # Inverter configuration
-        with st.expander(f"***{self.T("buttons.plant.inverter.title")}***", icon="🔌"):
+        # ---- Inverter Configuration ----
+        with st.expander(f"***{self.T('buttons.plant.inverter.title')}***", icon="🔌"):
             col1, col2 = st.columns(2)
             inverter_origins = ["cecinverter", "pvwatts", "Custom"]
             inv_index = inverter_origins.index(plant["inverter"]["origin"])
@@ -92,16 +150,17 @@ class ModuleManager(Page):
             if plant["inverter"]["origin"] == "cecinverter":
                 inverters = retrieve_sam("cecinverter")
                 inv_names = list(inverters.columns)
-                inv_name_index = 0
-                if plant["inverter"]["name"] in inv_names:
-                    inv_name_index = inv_names.index(plant["inverter"]["name"])
+                inv_name_index = (
+                    inv_names.index(plant["inverter"]["name"])
+                    if plant["inverter"]["name"] in inv_names
+                    else 0
+                )
                 plant["inverter"]["name"] = col2.selectbox(
                     self.T("buttons.plant.inverter.model"),
                     inv_names,
                     index=inv_name_index,
                     on_change=self.changed,
                 )
-
                 if st.checkbox(self.T("buttons.plant.inverter.details")):
                     st.code(inverters[plant["inverter"]["name"]], language="json")
             else:
@@ -120,13 +179,17 @@ class ModuleManager(Page):
             plant["inverter"]["ac_model"] = (
                 "cec" if plant["inverter"]["origin"] == "cecinverter" else "pvwatts"
             )
+
+        # ---- Mount ----
         self.mount_setting(plant["mount"])
-        if not (self.plant == plant):
+
+        if self.plant != plant:
             self.plant = plant
 
         return self.return_changed()
 
-    def render_analysis(self):
+    def render_analysis(self) -> None:
+        """Render seasonal and time plots from simulation results if available."""
         path: Path = self.plant_file.parent / "simulation.csv"
         if path.exists():
             analyser = PlantAnalyser(self.plant_file.parent)
@@ -141,7 +204,8 @@ class ModuleManager(Page):
         else:
             st.warning("⚠️ Simulation not performed")
 
-    def render_data(self):
+    def render_data(self) -> None:
+        """Render raw simulation data as a DataFrame if available."""
         path: Path = self.plant_file.parent / "simulation.csv"
         if path.exists():
             analyser = PlantAnalyser(self.plant_file.parent)
@@ -155,15 +219,30 @@ class ModuleManager(Page):
         else:
             st.warning("⚠️ Simulation not performed")
 
-    # ========= SUMUPS =======
-    def get_scheme(self): ...
-    def get_description(self): ...
+    # * =========================================================
+    # *                         SUMMARIES
+    # * =========================================================
+    def get_scheme(self) -> None:
+        """Placeholder for scheme summary."""
+        raise NotImplementedError
 
-    # ========= UTILITIES METHODS =======
-    def save(self):
+    def get_description(self) -> None:
+        """Placeholder for description summary."""
+        raise NotImplementedError
+
+    # * =========================================================
+    # *                         UTILITIES
+    # * =========================================================
+    def save(self) -> None:
+        """
+        Persist current plant.json, filtering only relevant mount parameters.
+
+        Notes:
+        - Keeps only keys relevant to the chosen mount type.
+        """
         with open(self.plant_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-        keep_mount_params = {}
+
         if self.plant["mount"]["type"] == "FixedMount":
             keep_mount_params = {"surface_tilt", "surface_azimuth"}
         else:
@@ -175,25 +254,39 @@ class ModuleManager(Page):
                 "gcr",
                 "cross_axis_tilt",
             }
+
         self.plant["mount"]["params"] = {
             k: v
             for k, v in self.plant["mount"]["params"].items()
             if k in keep_mount_params
         }
+
         upload = self.plant.copy()
         json.dump(upload, self.plant_file.open("w"), indent=4)
 
-    # --------> SETUP <------
-    def changed(self):
+    def changed(self) -> None:
+        """Mark the module/inverter/mount as changed."""
         self.change = True
 
     def return_changed(self) -> bool:
+        """
+        Reset and return change flag.
+
+        Returns:
+            bool: True if changes occurred since last call.
+        """
         if self.change:
             self.change = False
             return True
         return False
 
-    def mount_setting(self, plant_mount):
+    def mount_setting(self, plant_mount: Dict[str, Any]) -> None:
+        """
+        Render Streamlit UI for mount configuration.
+
+        Args:
+            plant_mount (dict[str, Any]): Mount configuration dictionary.
+        """
         mount_opts = [
             "SingleAxisTrackerMount",
             "FixedMount",
@@ -202,7 +295,7 @@ class ModuleManager(Page):
         ]
         mount_index = mount_opts.index(plant_mount["type"])
 
-        with st.expander(f"***{self.T("buttons.plant.mount.title")}***", icon="⚠️"):
+        with st.expander(f"***{self.T('buttons.plant.mount.title')}***", icon="⚠️"):
             col1, col2 = st.columns([2, 1])
             with col1:
                 plant_mount["type"] = st.selectbox(
@@ -213,76 +306,71 @@ class ModuleManager(Page):
                 )
                 if plant_mount["type"] == "FixedMount":
                     l, r = st.columns(2)
-                    value = 30
-                    if "surface_tilt" in plant_mount["params"]:
-                        value = plant_mount["params"]["surface_tilt"]
-                    tilt = l.number_input("Tilt", value=value, on_change=self.changed)
+                    tilt = l.number_input(
+                        "Tilt",
+                        value=plant_mount["params"].get("surface_tilt", 30),
+                        on_change=self.changed,
+                    )
                     plant_mount["params"]["surface_tilt"] = tilt
-                    value = 270
-                    if "surface_azimuth" in plant_mount["params"]:
-                        value = plant_mount["params"]["surface_azimuth"]
+
                     azimuth = r.number_input(
-                        "Azimuth", value=value, on_change=self.changed
+                        "Azimuth",
+                        value=plant_mount["params"].get("surface_azimuth", 270),
+                        on_change=self.changed,
                     )
                     plant_mount["params"]["surface_azimuth"] = azimuth
-                else:
-                    # plant_mount["type"] == "SingleAxisTrackerMount":
+                else:  # SingleAxisTrackerMount / other
                     l, c, r, rr = st.columns(4)
-                    value = 0
-                    if "axis_tilt" in plant_mount["params"]:
-                        value = plant_mount["params"]["axis_tilt"]
-                    tilt = l.number_input("Tilt", value=value, on_change=self.changed)
+                    tilt = l.number_input(
+                        "Tilt",
+                        value=plant_mount["params"].get("axis_tilt", 0),
+                        on_change=self.changed,
+                    )
                     plant_mount["params"]["axis_tilt"] = tilt
-                    value = 270
-                    if "axis_azimuth" in plant_mount["params"]:
-                        value = plant_mount["params"]["axis_azimuth"]
+
                     azimuth = c.number_input(
-                        "Azimuth", value=value, on_change=self.changed
+                        "Azimuth",
+                        value=plant_mount["params"].get("axis_azimuth", 270),
+                        on_change=self.changed,
                     )
                     plant_mount["params"]["axis_azimuth"] = azimuth
-                    value = 45
-                    if "max_angle" in plant_mount["params"]:
-                        value = plant_mount["params"]["max_angle"]
+
                     max_angle = r.number_input(
                         "Max Angle inclination",
-                        value=float(value),
+                        value=float(plant_mount["params"].get("max_angle", 45)),
                         min_value=0.0,
                         max_value=90.0,
                         on_change=self.changed,
                     )
                     plant_mount["params"]["max_angle"] = max_angle
-                    value = 0
-                    if "cross_axis_tilt" in plant_mount["params"]:
-                        value = plant_mount["params"]["cross_axis_tilt"]
+
                     cross_axis_tilt = rr.number_input(
                         "Surface angle",
-                        value=float(value),
+                        value=float(plant_mount["params"].get("cross_axis_tilt", 0)),
                         min_value=0.0,
                         max_value=90.0,
                         on_change=self.changed,
                     )
                     plant_mount["params"]["cross_axis_tilt"] = cross_axis_tilt
-                    q, _, _, _, _ = st.columns([5, 2, 5, 2, 1])
 
-                    value = 0.35
-                    if "gcr" in plant_mount["params"]:
-                        value = plant_mount["params"]["gcr"]
+                    q, _, _, _, _ = st.columns([5, 2, 5, 2, 1])
                     gcr = q.number_input(
                         "Ground Coverage Ratio",
-                        value=value,
+                        value=plant_mount["params"].get("gcr", 0.35),
                         min_value=0.0,
                         max_value=1.0,
                         on_change=self.changed,
                     )
                     plant_mount["params"]["gcr"] = gcr
-                    value = True
-                    if "backtrack" in plant_mount["params"]:
-                        value = plant_mount["params"]["backtrack"]
-                    backtrack = st.toggle("Avoid shadings (backtrack)", value=value)
+
+                    backtrack = st.toggle(
+                        "Avoid shadings (backtrack)",
+                        value=plant_mount["params"].get("backtrack", True),
+                    )
                     plant_mount["params"]["backtrack"] = backtrack
 
             with col2:
-                plots.pv3d(tilt, azimuth)
-
-
-# --------> ANALYSIS <------
+                plots.pv3d(
+                    plant_mount["params"].get("axis_tilt", 0),
+                    plant_mount["params"].get("axis_azimuth", 270),
+                )

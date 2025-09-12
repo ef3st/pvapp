@@ -35,7 +35,8 @@ output/
 results/
 garbage/
 .streamlit/secrets.toml
-
+src/pvapp_old
+src/pvapp_new
 
 # Pytest
 /tests

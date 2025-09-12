@@ -1,12 +1,21 @@
-import pandas as pd
-from pvlib.modelchain import ModelChainResult
-from IPython.display import display
-from tools.logger import get_logger
+# * =============================
+# *       SIMULATION RESULTS
+# * =============================
+
 from typing import Dict, Iterable, Tuple, Optional
+
 import pandas as pd
 import numpy as np
+from pathlib import Path
+from pvlib.modelchain import ModelChainResult
+from IPython.display import display
+
+from tools.logger import get_logger
 
 
+# * =========================================================
+# *                     CONSTANTS
+# * =========================================================
 PANDA_POWER_COLS = [
     # Buses
     "res_bus.vm_pu",  # voltage magnitude in p.u.
@@ -24,14 +33,14 @@ PANDA_POWER_COLS = [
     "res_line.i_to_ka",  # current magnitude to bus in kA
     "res_line.loading_percent",  # line loading in %
     # Transformers (2-winding)
-    "res_trafo.p_hv_mw",  # active power at HV side
-    "res_trafo.q_hv_mvar",  # reactive power at HV side
-    "res_trafo.p_lv_mw",  # active power at LV side
-    "res_trafo.q_lv_mvar",  # reactive power at LV side
-    "res_trafo.pl_mw",  # transformer losses (active)
-    "res_trafo.ql_mvar",  # transformer losses (reactive)
-    "res_trafo.loading_percent",  # transformer loading
-    # Transformers (3-winding, se presenti)
+    "res_trafo.p_hv_mw",
+    "res_trafo.q_hv_mvar",
+    "res_trafo.p_lv_mw",
+    "res_trafo.q_lv_mvar",
+    "res_trafo.pl_mw",
+    "res_trafo.ql_mvar",
+    "res_trafo.loading_percent",
+    # Transformers (3-winding)
     "res_trafo3w.p_hv_mw",
     "res_trafo3w.q_hv_mvar",
     "res_trafo3w.p_mv_mw",
@@ -42,22 +51,22 @@ PANDA_POWER_COLS = [
     "res_trafo3w.ql_mvar",
     "res_trafo3w.loading_percent",
     # Loads
-    "res_load.p_mw",  # active power per load
-    "res_load.q_mvar",  # reactive power per load
+    "res_load.p_mw",
+    "res_load.q_mvar",
     # Static Generators
-    "res_sgen.p_mw",  # active power of sgen
-    "res_sgen.q_mvar",  # reactive power of sgen
+    "res_sgen.p_mw",
+    "res_sgen.q_mvar",
     # Generators
-    "res_gen.p_mw",  # active power of generator
-    "res_gen.q_mvar",  # reactive power of generator
-    "res_gen.vm_pu",  # voltage magnitude setpoint
-    "res_gen.va_degree",  # voltage angle at bus
+    "res_gen.p_mw",
+    "res_gen.q_mvar",
+    "res_gen.vm_pu",
+    "res_gen.va_degree",
     # External Grid
-    "res_ext_grid.p_mw",  # active power from/to external grid
-    "res_ext_grid.q_mvar",  # reactive power from/to external grid
-    "res_ext_grid.vm_pu",  # voltage magnitude at slack
-    "res_ext_grid.va_degree",  # voltage angle at slack
-    # Switches (risultati correnti/flussi se richiesti)
+    "res_ext_grid.p_mw",
+    "res_ext_grid.q_mvar",
+    "res_ext_grid.vm_pu",
+    "res_ext_grid.va_degree",
+    # Switches
     "res_switch.current_ka",
     # Impedances
     "res_impedance.p_from_mw",
@@ -70,77 +79,200 @@ PANDA_POWER_COLS = [
 ]
 
 
+# * =========================================================
+# *               SIMULATION RESULTS CLASS
+# * =========================================================
 class SimulationResults:
-    def __init__(self):
-        # self.database: pd.DataFrame = pd.DataFrame()
+    """
+    Collector for simulation results (pvlib arrays + pandapower grid). It encodes results in a CSV format
+    suitable for later analysis with `PlantAnalyser`.
+
+    Attributes:
+        logger: Application logger instance.
+        pvarrays (dict[int, pd.DataFrame]): Per-array results keyed by sgen_id.
+        grid (Optional[pd.DataFrame]): Grid results DataFrame, if available.
+
+    Methods:
+        add_modelchainresult: Add pvlib ModelChain results for an array.
+        gather_modelchain_results: Flatten a ModelChainResult into a DataFrame.
+        save: Persist combined results to disk.
+        show: Display results (IPython).
+        get_acPowers_perTime_perArray: Return AC powers (time vs array).
+        get_df_for_pandapower: Build DFData-compatible DataFrame.
+        add_gridresult: Add pandapower results to the dataset.
+    """
+
+    # * ======================== Lifecycle ========================
+    def __init__(self) -> None:
+        """
+        Initialize an empty SimulationResults container.
+        """
         self.logger = get_logger("pvapp")
         self.pvarrays: Dict[int, pd.DataFrame] = {}
         self.grid: Optional[pd.DataFrame] = None
 
+    # * ======================== PVLIB Results ========================
     def add_modelchainresult(
         self,
-        pvSystemId: int = None,
-        # plant_name: str,
+        pvSystemId: Optional[int] = None,
         results: Optional[ModelChainResult] = None,
         period: Optional[str] = None,
-        # mount: str,
     ) -> None:
-        ...
+        """
+        Add results from a pvlib ModelChain for a given PV system.
+
+        Args:
+            pvSystemId (Optional[int]): Unique ID of the PV system (sgen_id).
+            results (Optional[ModelChainResult]): ModelChain results to add.
+            period (Optional[str]): Optional label for the time period.
+
+        Raises:
+            ValueError: If pvSystemId is not provided.
+        """
         if results is None:
             self.logger.warning("[SimulationResults] No modelchain to add")
             return
         if pvSystemId is None:
             self.logger.error("[SimulationResults] No pvSystemId provided")
             raise ValueError
+
         new_results = self.gather_modelchain_results(results)
         new_results["sgen_id"] = pvSystemId
-        # new_results["Plant_name"] = plant_name
         new_results["period"] = period
-        # new_results["mount"] = mount
         new_results.index.name = "timestamp"
         new_results = new_results.reset_index()
+
         self.pvarrays[pvSystemId] = new_results
 
-    def gather_modelchain_results(self, results: ModelChainResult):
+    def gather_modelchain_results(self, results: ModelChainResult) -> pd.DataFrame:
         """
         Collect key ModelChain results into a single DataFrame.
+
+        Args:
+            results (ModelChainResult): pvlib ModelChainResult.
+
+        Returns:
+            pd.DataFrame: Flattened DataFrame with AC/DC and scalar results.
         """
-        dfs = []
+        dfs: list[pd.DataFrame] = []
         for attr_name, value in vars(results).items():
             if isinstance(value, pd.DataFrame):
-                # self.logger.debug(f"{attr_name} added")
-                # self.logger.debug(f"A Dataframe {type(value)}: {attr_name}")
                 df = value.copy()
                 if attr_name == "ac":
                     df = df.add_prefix("ac_")
                 if attr_name == "dc":
                     df = df.add_prefix("dc_")
-
                 dfs.append(df)
             elif isinstance(value, pd.Series):
-                # self.logger.debug(f"  B  SERIES {type(value)}: {attr_name}")
                 dfs.append(value.to_frame(name=attr_name))
-            # else:
-            #     self.logger.debug(f"      C SINGLE {type(value)}: {attr_name} =  {value}")
         return pd.concat(dfs, axis=1)
 
-    def show(self):
+    # * ======================== Database Handling ========================
+    def show(self) -> None:
+        """
+        Display the combined database (for notebooks/debug).
+        """
         display(self.database)
 
-    def save(self, path):
+    def save(self, path: str | Path) -> None:
+        """
+        Save the combined database to CSV.
+
+        Args:
+            path (str | Path): Directory path where to save `simulation.csv`.
+        """
         self.database.to_csv(f"{path}/simulation.csv")
 
+    # * ======================== Properties ========================
     @property
     def max_ac_power(self) -> pd.Series:
+        """
+        Return the series of maximum AC power (per timestamp).
+
+        Returns:
+            pd.Series: AC active power values.
+        """
         return self.database["ac_p_mp"]
 
     @property
     def is_empty(self) -> bool:
+        """
+        Check whether the results database is empty.
+
+        Returns:
+            bool: True if database is empty.
+        """
         return self.database.empty
 
+    @property
+    def database(self) -> pd.DataFrame:
+        """
+        Combine `self.grid` and all per-array DataFrames in `self.pvarrays`
+        into a single wide DataFrame indexed by time.
+
+        Rules:
+            - Grid columns are kept as-is.
+            - Array columns are prefixed with `<id>_`.
+            - Outer join on the time index.
+
+        Returns:
+            pd.DataFrame: Combined DataFrame.
+        """
+
+        def _to_time_index(df: pd.DataFrame) -> pd.DataFrame:
+            if df is None or df.empty:
+                return pd.DataFrame()
+            if "timestamp" in df.columns:
+                out = df.copy()
+                out = out.set_index(pd.to_datetime(out["timestamp"], utc=False)).drop(
+                    columns=["timestamp"]
+                )
+                out.index.name = "timestamp"
+                return out
+            if isinstance(df.index, pd.DatetimeIndex):
+                out = df.copy()
+                out.index.name = "timestamp"
+                return out
+            try:
+                idx = pd.to_datetime(df.index)
+                out = df.copy()
+                out.index = idx
+                out.index.name = "timestamp"
+                return out
+            except Exception:
+                return pd.DataFrame()
+
+        pieces: list[pd.DataFrame] = []
+
+        # Grid results
+        grid_df = _to_time_index(self.grid)
+        if not grid_df.empty:
+            pieces.append(grid_df)
+
+        # Array results
+        for key, df in self.pvarrays.items():
+            arr = _to_time_index(df)
+            if arr.empty:
+                continue
+            if "sgen_id" in arr.columns:
+                arr = arr.drop(columns=["sgen_id"])
+            arr = arr.add_prefix(f"{key}_")
+            pieces.append(arr)
+
+        if not pieces:
+            return pd.DataFrame()
+
+        out = pd.concat(pieces, axis=1, join="outer").sort_index()
+        out.columns = [str(c) for c in out.columns]
+        return out
+
+    # * ======================== Data Access ========================
     def get_acPowers_perTime_perArray(self) -> pd.DataFrame:
         """
-        Returns a DataFrame with the AC power values.
+        Return AC powers (p_mp) per array over time.
+
+        Returns:
+            pd.DataFrame: Indexed by time, one column per array.
         """
         if self.is_empty:
             self.logger.warning("[SimulationResults] No results to get powers from.")
@@ -149,73 +281,7 @@ class SimulationResults:
             index="timestamp", columns="sgen_id", values="ac_p_mp"
         )
 
-    @property
-    def database(self) -> pd.DataFrame:
-        """
-        Combine `self.grid` and all per-array DataFrames in `self.pvarrays`
-        into a single wide DataFrame indexed by time.
-
-        - Grid columns are prefixed with "grid_".
-        - Each array's columns are prefixed with its key (e.g., "5_").
-        - Outer-join on the time index to keep all timestamps.
-        """
-
-        def _to_time_index(df: pd.DataFrame) -> pd.DataFrame:
-            if df is None or df.empty:
-                return pd.DataFrame()
-            # Prefer explicit 'timestamp' column, else keep existing index if it's datetime-like
-            if "timestamp" in df.columns:
-                out = df.copy()
-                out = out.set_index(pd.to_datetime(out["timestamp"], utc=False)).drop(
-                    columns=["timestamp"]
-                )
-                out.index.name = "timestamp"
-                return out
-            # If index is already a DatetimeIndex, standardize its name
-            if isinstance(df.index, pd.DatetimeIndex):
-                out = df.copy()
-                out.index.name = "timestamp"
-                return out
-            # Last resort: try to coerce the index to datetime (if possible)
-            try:
-                idx = pd.to_datetime(df.index)
-                out = df.copy()
-                out.index = idx
-                out.index.name = "timestamp"
-                return out
-            except Exception:
-                # No usable time information
-                return pd.DataFrame()
-
-        pieces = []
-
-        # 1) Grid (prefix 'grid_')
-        grid_df = _to_time_index(self.grid)
-        if not grid_df.empty:
-            # grid_df = grid_df.add_prefix("grid_")
-            pieces.append(grid_df)
-
-        # 2) PV arrays (prefix with the dict key, e.g., '3_')
-        for key, df in self.pvarrays.items():
-            arr = _to_time_index(df)
-            if arr.empty:
-                continue
-            # Drop any 'sgen_id' column (it's implied by the key) before prefixing
-            if "sgen_id" in arr.columns:
-                arr = arr.drop(columns=["sgen_id"])
-            # Prefix with the key and underscore
-            arr = arr.add_prefix(f"{key}_")
-            pieces.append(arr)
-
-        if not pieces:
-            return pd.DataFrame()
-
-        # Outer-join on timestamp, stable column order
-        out = pd.concat(pieces, axis=1, join="outer").sort_index()
-        # Optional: ensure columns are unique strings
-        out.columns = [str(c) for c in out.columns]
-        return out
-
+    # * ======================== Pandapower Integration ========================
     def get_df_for_pandapower(
         self,
         net,
@@ -302,7 +368,6 @@ class SimulationResults:
         >>> profile = ("sgen", "p_mw", 0)
         >>> data_source.df[profile].head()
         """
-
         if not self.pvarrays:
             return pd.DataFrame()
 
@@ -500,9 +565,15 @@ class SimulationResults:
         out = out.reindex(sorted(out.columns, key=lambda t: (t[0], t[1], t[2])), axis=1)
         return out
 
-    def add_gridresult(self, df: pd.DataFrame):
+    # * ======================== Grid Integration ========================
+    def add_gridresult(self, df: pd.DataFrame) -> None:
+        """
+        Add pandapower grid results to the dataset.
+
+        Args:
+            df (pd.DataFrame): Grid results DataFrame.
+        """
         if df is None or df.empty:
             self.logger.warning("[SimulationResults] No grid results to add")
             return
-        else:
-            self.grid = df
+        self.grid = df

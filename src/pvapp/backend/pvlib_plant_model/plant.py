@@ -1,20 +1,20 @@
-from typing import Optional, List
-from .site import Site
+from typing import Optional, Any
+
 import pvlib
 from pvlib.pvsystem import PVSystem, Array, FixedMount, SingleAxisTrackerMount
+
 from tools.logger import get_logger
+from .site import Site
 from pvapp.backend.mount.developement import custommount as dev
 from pvapp.backend.mount.validated import custommount as valid
 
 
+# * =============================
+# *       PV SYSTEM MANAGER
+# * =============================
 class PVSystemManager:
     """
     Manager class for handling the creation and configuration of PV systems.
-
-    This class allows:
-    - Tracking multiple PV plants with unique IDs.
-    - Setting PV system components such as modules, inverters, and mounts.
-    - Retrieving or deleting the configured plant.
 
     Attributes:
         plants_counter (int): Class-level counter for assigning unique plant IDs.
@@ -25,10 +25,18 @@ class PVSystemManager:
         description (Optional[str]): Description of the PV system.
         system (Optional[PVSystem]): The actual PVSystem object from pvlib.
         logger: Logger instance for logging messages.
+
+    Methods:
+        set_pv_components: Define and create a PVSystem with given components.
+        getplant: Retrieve the configured PVSystem.
+        delete_inplant: Delete the configured PVSystem.
     """
 
-    plants_counter = 0  # Counter used to assign unique IDs to plants
+    plants_counter: int = 0  # Counter used to assign unique IDs to plants
 
+    # * =========================================================
+    # *                      LIFECYCLE
+    # * =========================================================
     def __init__(
         self,
         name: str = "",
@@ -36,7 +44,7 @@ class PVSystemManager:
         owner: Optional[str] = None,
         description: Optional[str] = None,
         id: Optional[int] = None,
-    ):
+    ) -> None:
         """
         Initialize a PVSystemManager instance.
 
@@ -57,38 +65,42 @@ class PVSystemManager:
             self.id = id
 
         # Plant metadata
-        self.name = name
-        self.location = location
-        self.owner = owner
-        self.description = description
+        self.name: str = name
+        self.location: Optional[Site] = location
+        self.owner: Optional[str] = owner
+        self.description: Optional[str] = description
 
         # Placeholder for the pvlib PVSystem object
-        self.system = None
+        self.system: Optional[PVSystem] = None
 
+    # * =========================================================
+    # *                      PUBLIC API
+    # * =========================================================
     def set_pv_components(
         self,
-        module=None,
-        inverter=None,
+        module: Optional[dict[str, Any]] = None,
+        inverter: Optional[dict[str, Any]] = None,
         mount_type: str = "FixedMount",
-        params: dict = {},
+        params: dict[str, Any] = {},
         modules_per_string: int = 1,
         strings: int = 1,
-    ):
+    ) -> None:
         """
         Define and create a PVSystem with the given components.
 
         Args:
-            module (dict): Module parameters (from pvlib database or custom definition).
-            inverter (dict): Inverter parameters (from pvlib database or custom definition).
-            mount_type (str): Type of mounting system ("FixedMount", "SingleAxisTrackerMount",
-                              "ValidatedMount", "DevelopementMount").
-            params (dict): Parameters specific to the mount type.
+            module (Optional[dict[str, Any]]): Module parameters (from pvlib database or custom definition).
+            inverter (Optional[dict[str, Any]]): Inverter parameters (from pvlib database or custom definition).
+            mount_type (str): Type of mounting system
+                ("FixedMount", "SingleAxisTrackerMount", "ValidatedMount", "DevelopementMount").
+            params (dict[str, Any]): Parameters specific to the mount type.
             modules_per_string (int): Number of modules per string.
             strings (int): Number of parallel strings.
 
+        ---
         Notes:
-            - If a system is already set, a warning is logged and the method exits without overwriting.
-            - Custom mounts ("ValidatedMount", "DevelopementMount") are supported via external modules.
+        - If a system is already set, the method logs a warning and exits without overwriting.
+        - Custom mounts ("ValidatedMount", "DevelopementMount") are supported via external modules.
         """
         if self.system:
             self.logger.warning(
@@ -141,11 +153,12 @@ class PVSystemManager:
             self.logger.warning(f"{self.name}: Plant not defined")
             return None
 
-    def delete_inplant(self):
+    def delete_inplant(self) -> None:
         """
         Delete the configured PVSystem.
 
-        This resets the system to None and logs the deletion.
+        Notes:
+        - This resets the system to None and logs the deletion.
         """
         self.system = None
         self.logger.info(

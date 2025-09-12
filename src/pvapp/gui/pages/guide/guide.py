@@ -1,14 +1,44 @@
+# * =============================
+# *             GUIDE
+# * =============================
+
+"""
+Streamlit page helpers for rendering project documentation.
+
+Features
+--------
+- Build a hierarchical navigation menu from a docs/ folder (Markdown files).
+- Map indices ↔ file paths for use with `sac.menu`.
+- Render Markdown pages with Mermaid diagrams and inline images.
+
+Notes
+-----
+- Uses `st.session_state[f"{key}_index2path"]` to persist index ↔ path mapping.
+- Designed to integrate with the sidebar menu of the main app.
+"""
+
 import os
 from pathlib import Path
+
 import streamlit as st
 import streamlit_antd_components as sac
+
 from ...utils.graphics.md_render import MarkdownStreamlitPage
 
 
-# ---------- Utilities ---------------------------------------------------------
+# * =========================================================
+# *                        UTILITIES
+# * =========================================================
 def _read_md_title(md_path: Path) -> str:
-    """Return the first-line title of a Markdown file (fallback to filename).
-    Strips leading '#' and whitespace.
+    """
+    Read the first line of a Markdown file as its title.
+
+    Args:
+        md_path (Path): Path to the Markdown file.
+
+    Returns:
+        str: Title without '#' and leading/trailing whitespace.
+             Fallback: filename stem if title not found.
     """
     try:
         with md_path.open("r", encoding="utf-8") as f:
@@ -20,7 +50,15 @@ def _read_md_title(md_path: Path) -> str:
 
 
 def _build_dir_model(base_dir: Path) -> dict:
-    """Return a nested dict mirroring folders/files under base_dir (only .md)."""
+    """
+    Recursively build a nested dict mirroring the docs folder structure.
+
+    Args:
+        base_dir (Path): Root docs directory.
+
+    Returns:
+        dict: Nested {folder: {...}, filename: Path}
+    """
     tree: dict = {}
     for p in base_dir.rglob("*.md"):
         if not p.is_file():
@@ -36,28 +74,38 @@ def _build_dir_model(base_dir: Path) -> dict:
 def _model_to_menuitems(
     model: dict, base_dir: Path, index2path: dict, path2index: dict, counter: list[int]
 ) -> list:
-    """Depth-first build of sac.MenuItem list while tracking global indices."""
+    """
+    Convert a directory model into a list of sac.MenuItem recursively.
+
+    Args:
+        model (dict): Tree mapping folders → dict, files → Path.
+        base_dir (Path): Base documentation directory.
+        index2path (dict): Global index → relative path.
+        path2index (dict): Relative path → global index.
+        counter (list[int]): Single-element list tracking the next index.
+
+    Returns:
+        list: sac.MenuItem entries, sorted (folders first, then files).
+    """
     items = []
 
-    # Sort folders first, then files (alphabetically)
+    # Sort folders then files
     dir_names = sorted([k for k, v in model.items() if isinstance(v, dict)])
     file_names = sorted([k for k, v in model.items() if not isinstance(v, dict)])
 
-    # Folders -> nested MenuItem with children
+    # ---- Folders ----
     for dname in dir_names:
-        # Reserve an index for the folder tab itself (non-document)
         idx = counter[0]
         counter[0] += 1
-        index2path[idx] = None
-
+        index2path[idx] = None  # Reserve index for folder
         children = _model_to_menuitems(
             model[dname], base_dir, index2path, path2index, counter
         )
         items.append(sac.MenuItem(dname, icon="folder", children=children))
 
-    # Files -> leaf MenuItem (selectable document)
+    # ---- Files ----
     for fname in file_names:
-        path = model[fname]  # Path object
+        path = model[fname]
         rel = str(path.relative_to(base_dir)).replace(os.sep, "/")
         title = _read_md_title(path)
 
@@ -70,7 +118,9 @@ def _model_to_menuitems(
     return items
 
 
-# ---------- Public API --------------------------------------------------------
+# * =========================================================
+# *                        PUBLIC API
+# * =========================================================
 def menu_kwargs(
     base_dir: str = "docs",
     *,
@@ -80,14 +130,23 @@ def menu_kwargs(
     color: str = "teal",
     size: str = "md",
 ) -> dict:
-    """Return kwargs for sac.menu to display a hierarchical docs menu.
-    The first item is a 'Home' entry not linked to any document.
+    """
+    Return kwargs for `sac.menu` to display a hierarchical docs menu.
 
-    It also stores index→path mapping inside st.session_state[f"{key}_index2path"].
+    Args:
+        base_dir (str): Documentation root directory.
+        key (str): Session state key prefix for storing index mappings.
+        home_label (str): Label for the "home" entry.
+        home_icon (str): Icon for the "home" entry.
+        color (str): Menu highlight color.
+        size (str): Menu size ("sm", "md", "lg").
+
+    Returns:
+        dict: Keyword arguments ready for sac.menu.
     """
     root = Path(base_dir)
     if not root.exists():
-        st.error(f"Cartella non trovata: {root.resolve()}")
+        st.error(f"Docs folder not found: {root.resolve()}")
         return dict(
             items=[sac.MenuItem(home_label, icon=home_icon)],
             index=0,
@@ -96,36 +155,32 @@ def menu_kwargs(
         )
 
     model = _build_dir_model(root)
-    # Build index maps and items
     index2path: dict[int, str | None] = {}
     path2index: dict[str, int] = {}
     counter = [0]
 
-    # Insert 'Home' item at index 0 (no document associated)
+    # Insert Home item
     home_item = sac.MenuItem(home_label, icon=home_icon)
     index2path[counter[0]] = None
     counter[0] += 1
 
-    # Build the rest of the menu from the docs tree
     items = [home_item] + _model_to_menuitems(
         model, root, index2path, path2index, counter
     )
 
-    # Restore last selection if still valid, else default to Home (0)
+    # Restore last selection if valid
     last_path = st.session_state.get(f"{key}_path")
     if isinstance(last_path, str) and last_path in path2index:
         default_index = path2index[last_path]
     else:
         default_index = None
 
-    # Persist index map for render()
     st.session_state[f"{key}_index2path"] = index2path
 
-    # Return only kwargs for sac.menu (as requested)
     return dict(
         items=items,
         index=default_index,
-        return_index=True,  # sac.menu will return an int index
+        return_index=True,
         key=key,
         color=color,
         size=size,
@@ -139,39 +194,41 @@ def render(
     key: str = "docs_menu",
     mode: str = "native",
 ) -> None:
-    """Render ONLY the Markdown page for the selected index.
-    If the index points to Home or a folder (no doc), render nothing.
     """
-    # Retrieve mapping created by menu_kwargs()
+    Render the Markdown page corresponding to the selected index.
+
+    Args:
+        selected_index (int): Index returned by sac.menu.
+        base_dir (str): Docs root directory.
+        key (str): Session state key prefix.
+        mode (str): Render mode (reserved for extensions).
+
+    Notes:
+        - If index points to a folder or Home, nothing is rendered.
+    """
     index2path: dict[int, str | None] = st.session_state.get(f"{key}_index2path", {})
+
+    # Fallback: rebuild if mapping missing
     if not index2path:
-        # Fallback: rebuild minimal mapping to avoid crashes
         root = Path(base_dir)
         model = _build_dir_model(root)
         index2path = {}
         path2index = {}
         counter = [0]
-        index2path[counter[0]] = None  # Home
+        index2path[counter[0]] = None
         counter[0] += 1
         _ = _model_to_menuitems(model, root, index2path, path2index, counter)
 
     rel = index2path.get(selected_index)
     if not rel:
-        # Home or folder: nothing to render
-        return
+        return  # Home/folder: nothing to render
 
-    # Persist chosen path and render
     st.session_state[f"{key}_path"] = rel
     abs_path = str(Path(base_dir) / rel)
     MarkdownStreamlitPage(abs_path).render_advanced(
         inline_images=True,
-        default_image_width=None,  # qualità nativa immagini
+        default_image_width=None,
         enable_mermaid=True,
         mermaid_theme="dark",
-        mermaid_height=None,  # stima + auto-resize
+        mermaid_height=None,
     )
-    # MarkdownStreamlitPage(abs_path, mode=mode).render_with_inline_images(
-    #     default_width=800,  # optional
-    #     image_root=".",  # base for path that start with '/...'
-    #     caption_from_title=True,
-    # )

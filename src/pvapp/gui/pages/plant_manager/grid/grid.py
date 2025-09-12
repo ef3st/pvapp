@@ -44,7 +44,9 @@ from ....utils.plots import plots
 #! BUG SEVERE:
 # BUG:
 
-# * ======== GLOBAL CONFIG VARIABLES ========
+# * ==============================
+# *    GLOBAL CONFIG VARIABLES
+# * ==============================
 # ? Map of element types -> bus reference fields in pandapower
 # TODO: take/move this from/to pvnetwork.py (there is the same in summarize_buses method)
 EL_BUS_FIELDS: Dict[str, List[str]] = {
@@ -422,24 +424,10 @@ class GridManager(Page):
     of elements. It also handles state management between UI sessions, validation,
     and file persistence of grid and PV array configurations.
 
-    Parameters
-    ----------
-    subfolder : pathlib.Path
-        Path to the plant data directory. This directory must contain or will be used
-        to create the `grid.json` file representing the PlantPowerGrid configuration.
-
-    Attributes
-    ----------
-    grid_file : pathlib.Path
-        Full path to the `grid.json` file inside the plant's subfolder.
-
-    grid : PlantPowerGrid (property)
-        Instance of the current grid model loaded from `grid_file`, or a new
-        empty PlantPowerGrid if no file exists.
-
-    pv_arrays : dict[int, PVParams] (property)
-        Mapping from SGen element indices (in the Pandapower `sgen` DataFrame)
-        to PV array configuration parameters (`PVParams`) staged for persistence.
+    Attributes:
+        grid_file (pathlib.Path): Full path to the `grid.json` file inside the plant's subfolder.
+        grid (PlantPowerGrid (property)): Instance of the current grid model loaded from `grid_file`, or a new empty PlantPowerGrid if no file exists.
+        pv_arrays (dict[int, PVParams] (property)): Mapping from SGen element indices (in the Pandapower `sgen` DataFrame) to PV array configuration parameters (`PVParams`) staged for persistence.
 
     Notes
     -----
@@ -538,11 +526,15 @@ class GridManager(Page):
     - Change logic in state variable "arrays_to_add"
     """
 
-    # ========== LIFECYCLE ==========
+    # * =========================================================
+    # *                      LIFECYCLE
+    # * =========================================================
     def __init__(self, subfolder: Path) -> None:
         """
         Args:
-            subfolder: path of the Plant data directory
+            subfolder : pathlib.Path
+                Path to the plant data directory. This directory must contain or will be used
+                to create the `grid.json` file representing the PlantPowerGrid configuration.
         """
         super().__init__("grid_manager")
         self.grid_file: Path = subfolder / "grid.json"
@@ -556,7 +548,9 @@ class GridManager(Page):
         # ? STATE VARIABLE "arrays_to_add": PV arrays pending to be save
         st.session_state["arrays_to_add"] = {}
 
-    # ========== PROPERTIES ==========
+    # * =========================================================
+    # *                      PROPERTY
+    # * =========================================================
     @property
     def grid(self) -> PlantPowerGrid:
         """PlantPowerGrid class for the selected plant"""
@@ -571,7 +565,9 @@ class GridManager(Page):
             )
         return st.session_state.get("arrays_to_add", {})
 
-    # =============== RENDERS ============
+    # * =========================================================
+    # *                      RENDERS
+    # * =========================================================
     def render_setup(self) -> bool:
         """Render setup UI. `True` is returned if the grid changed: this is verified when some buttons related to changes are pressed
 
@@ -613,9 +609,7 @@ class GridManager(Page):
         placeholder = st.empty()
         with placeholder.container():
             changed = False
-            # -----
             # NOTE Tabs rendering with errors controls
-            # -----
             # ? Map of the tab index with relative method and a label for errors
             tab_funcs = {
                 0: ("bus/links tab", self.render_tab_bus_links),
@@ -694,7 +688,9 @@ class GridManager(Page):
         else:
             st.warning("⚠️ Simulation not performed")
 
-    # =========== SUMMARIES ==========
+    # * =========================================================
+    # *                      SUMMARIES
+    # * =========================================================
     def get_scheme(self):
         import pandapower.plotting.plotly as pplotly
 
@@ -718,7 +714,9 @@ class GridManager(Page):
             height=153,
         )
 
-    # ============ GENERIC COMMANDS ===========
+    # * =========================================================
+    # *                      GENERIC COMMANDS
+    # * =========================================================
     def save(self) -> None:
         """Save the grid and any staged PV arrays to plant data dir"""
         try:
@@ -747,9 +745,9 @@ class GridManager(Page):
                 )
                 st.toast("❌ PV Arrays saving doesn't went well. Look at the Logs page")
 
-    # =========================================================
-    #                         TABS
-    # =========================================================
+    # * =========================================================
+    # *                      TABS
+    # * =========================================================
 
     # ============= LINKS (BUSES / LINES / TX) TAB ===============
     # -------------> Tab Content <--------
@@ -2140,9 +2138,9 @@ class GridManager(Page):
         )
         return items  # type: ignore[return-value]
 
-    # =========================================================
-    #           PASSIVE / SENSORS TABS PLACEHOLDERS
-    # =========================================================
+    # * =========================================================
+    # *             PASSIVE / SENSORS TABS PLACEHOLDERS
+    # * =========================================================
     def passive_manager(self) -> bool:
         sac.result("Passives elements coming soon", status="warning")
         return False
@@ -2151,7 +2149,9 @@ class GridManager(Page):
         sac.result("Sensors elements coming soon", status="warning")
         return False
 
-    # ========== UTILITIES METHOS ============
+    # * =========================================================
+    # *             UTILITIES METHODS
+    # * =========================================================
 
     # ----------> Builders <----------
     def __build_items(

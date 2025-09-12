@@ -1,37 +1,88 @@
-import streamlit as st
-from pathlib import Path
+from __future__ import annotations
+
+from typing import Dict, Any
+
 import json
+from pathlib import Path
+
 import pandas as pd
-from pvlib.pvsystem import retrieve_sam
-from backend.simulation.simulator import Simulator
-from analysis.plantanalyser import PlantAnalyser
 import pydeck as pdk
-from ....utils.plots import plots
+import streamlit as st
+
 from ...page import Page
 
 
+# * =============================
+# *         SITE MANAGER
+# * =============================
 class SiteManager(Page):
-    def __init__(self, subfolder) -> None:
-        super().__init__("module_manager")
-        self.site_file = subfolder / "site.json"
-        self.site: dict = json.load(self.site_file.open())
-        self.change = False
+    """
+    Manage site metadata (name, address, coordinates, altitude, timezone).
 
-    # ========= RENDERS =======
+    Attributes:
+        site_file (Path): Path to the site's JSON file.
+        site (dict[str, Any]): Dictionary with current site data.
+        change (bool): Internal flag indicating whether the site was modified.
+
+    Methods:
+        render_setup: Render editable UI for site configuration.
+        render_analysis: Placeholder for analysis tab.
+        get_scheme: Placeholder for scheme summary.
+        get_description: Placeholder for description summary.
+        save: Persist site.json to disk.
+        changed: Mark the site as changed.
+        return_changed: Reset and return whether changes occurred.
+    """
+
+    # * =========================================================
+    # *                      LIFECYCLE
+    # * =========================================================
+    def __init__(self, subfolder: Path) -> None:
+        """
+        Initialize SiteManager with a given subfolder.
+
+        Args:
+            subfolder (Path): Plant subfolder containing site.json.
+        """
+        super().__init__("module_manager")
+        self.site_file: Path = subfolder / "site.json"
+        self.site: Dict[str, Any] = json.load(self.site_file.open())
+        self.change: bool = False
+
+    # * =========================================================
+    # *                    RENDER METHODS
+    # * =========================================================
     def render_setup(self) -> bool:
+        """
+        Render the Streamlit setup UI for the site.
+
+        Returns:
+            bool: True if changes occurred, False otherwise.
+        """
         site = self.site.copy()
+
+        # ---- Basic name ----
         site["name"] = st.text_input(
-            self.T("buttons.site.name"), site["name"], on_change=self.changed
+            self.T("buttons.site.name"),
+            site["name"],
+            on_change=self.changed,
         )
-        with st.expander(f" 🏠 {self.T("subtitle.address")}"):
+
+        # ---- Address / City ----
+        with st.expander(f" 🏠 {self.T('subtitle.address')}"):
             site["address"] = st.text_input(
-                self.T("buttons.site.address"), site["address"], on_change=self.changed
+                self.T("buttons.site.address"),
+                site["address"],
+                on_change=self.changed,
             )
             site["city"] = st.text_input(
-                self.T("buttons.site.city"), site["city"], on_change=self.changed
+                self.T("buttons.site.city"),
+                site["city"],
+                on_change=self.changed,
             )
 
-        with st.expander(f" 🗺️ {self.T("subtitle.coordinates")}"):
+        # ---- Coordinates ----
+        with st.expander(f" 🗺️ {self.T('subtitle.coordinates')}"):
             col1, col2 = st.columns(2)
             site["coordinates"]["lat"] = col1.number_input(
                 self.T("buttons.site.lat"),
@@ -47,6 +98,8 @@ class SiteManager(Page):
                 step=0.0001,
                 on_change=self.changed,
             )
+
+            # Map preview
             df = pd.DataFrame(
                 [{"lat": site["coordinates"]["lat"], "lon": site["coordinates"]["lon"]}]
             )
@@ -55,36 +108,34 @@ class SiteManager(Page):
                 longitude=site["coordinates"]["lon"],
                 zoom=12,
             )
-
             layer = pdk.Layer(
                 "ScatterplotLayer",
                 data=df,
                 get_position="[lon, lat]",
                 get_color="[255, 0, 0, 160]",
                 get_radius=50,
-                radius_scale=2,  # Aumenta/diminuisce con lo zoom
-                radius_min_pixels=3,  # Dimensione minima visibile
-                radius_max_pixels=10,  # Dimensione massima visibile
+                radius_scale=2,  # Increases/decreases with zoom
+                radius_min_pixels=3,  # Minimum visible radius
+                radius_max_pixels=10,  # Maximum visible radius
             )
-
             deck = pdk.Deck(
                 layers=[layer],
                 initial_view_state=view,
-                tooltip={"text": "📍 Posizione"},
+                tooltip={"text": "📍 Position"},
             )
-
             st.pydeck_chart(deck, use_container_width=False, height=300)
 
-        with st.expander(f" 🕐 {self.T("subtitle.altitude_tz")}"):
+        # ---- Altitude / Timezone ----
+        with st.expander(f" 🕐 {self.T('subtitle.altitude_tz')}"):
             site["altitude"] = st.number_input(
-                f"{self.T("buttons.site.altitude")} (m)",
+                f"{self.T('buttons.site.altitude')} (m)",
                 value=site["altitude"],
                 min_value=0,
                 icon="🗻",
                 on_change=self.changed,
             )
             site["tz"] = st.text_input(
-                f"{self.T("buttons.site.timezone")}",
+                f"{self.T('buttons.site.timezone')}",
                 site["tz"],
                 icon="🕐",
                 on_change=self.changed,
@@ -95,28 +146,44 @@ class SiteManager(Page):
 
         return self.return_changed()
 
-    def render_analysis(self):
+    def render_analysis(self) -> None:
+        """Placeholder for analysis tab."""
         raise NotImplementedError
 
-    # ========= SUMUPS =======
-    def get_scheme(self):
+    # * =========================================================
+    # *                    SUMMARIES (STUBS)
+    # * =========================================================
+    def get_scheme(self) -> None:
+        """Placeholder for scheme summary."""
         raise NotImplementedError
 
-    def get_description(self):
+    def get_description(self) -> None:
+        """Placeholder for description summary."""
         raise NotImplementedError
 
-    # ========= UTILITIES METHODS =======
-    def save(self):
+    # * =========================================================
+    # *                        UTILITIES
+    # * =========================================================
+    def save(self) -> None:
+        """
+        Persist current site dict to site.json on disk.
+        """
         json.dump(self.site, self.site_file.open("w"), indent=4)
 
-    # --------> SETUP <------
-    def changed(self):
+    def changed(self) -> None:
+        """
+        Mark the site as changed in the current session.
+        """
         self.change = True
 
     def return_changed(self) -> bool:
+        """
+        Reset and return whether changes occurred.
+
+        Returns:
+            bool: True if changes occurred since last call.
+        """
         if self.change:
             self.change = False
             return True
         return False
-
-    # --------> ANALYSIS <------

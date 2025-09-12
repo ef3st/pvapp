@@ -385,7 +385,7 @@ def time_plot(data: pd.DataFrame, default=0, page=""):
         df_filtered = df[mask]
 
         if df_filtered.empty:
-            st.warning("⚠️ Nessun dato disponibile nel periodo selezionato.")
+            st.warning("⚠️No data available for the selected range.")
             return
     if variable in translate("plots.variable_description"):
         right.info(translate("plots.variable_description")[variable])

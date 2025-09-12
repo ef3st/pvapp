@@ -16,170 +16,93 @@ from pvapp.analysis.database import SimulationResults
 from .nature import Nature
 
 
-class Simulation(TypedDict, total=False):
-    """Container for one PV array simulation objects."""
+class PV_Simulation(TypedDict, total=False):
+    """
+    Container for a single PV array simulation.
+
+    Attributes:
+        pvsystem (PVSystemManager): Configured PV system manager for the array.
+        modelchain (Optional[ModelChain]): pvlib ModelChain built for the array.
+    """
 
     pvsystem: PVSystemManager
     modelchain: Optional[ModelChain]
 
 
 # * =============================
-# *       SIMULATOR CLASS
+# *          SIMULATOR
 # * =============================
 class Simulator:
     """
-    Orchestrates a full PV plant simulation:
-    - Load site, plant, grid, and array configuration from JSON files in `subfolder`
-    - Build PV systems and pvlib ModelChains for each array
-    - Generate synthetic weather and run pvlib simulations
-    - Optionally run a pandapower time-series on the configured grid
-    - Aggregate and persist results
+    Orchestrates an end-to-end PV plant simulation.
 
-    Public API
-    ----------
-    - run(times: Optional[pd.DatetimeIndex] = None) -> None
-      Entry point. Executes the full pipeline (load → build → simulate → save → grid).
+    Description
+    -----------
+    This class loads site/plant/grid/array configuration from a folder, builds pvlib
+    models for each array, generates synthetic weather, runs the simulations, optionally
+    runs a pandapower time-series on the configured grid, aggregates the results and
+    persists them to disk.
 
-    Internal methods
-    ----------------
-    - load_site() -> None
-    - load_pvsetup() -> None
-    - load_grid() -> None
-    - load_arrays() -> None
-    - configure_pvsystem(modules_per_string: int = 1, strings: int = 1) -> PVSystemManager
-    - load_component(component: Literal["module", "inverter"])
-    - build_simulation() -> None
-    - simulate(modelchain: ModelChain) -> None
-    - merge_grid() -> None
-    - save_results() -> None
-    - _init_times(times: Optional[pd.DatetimeIndex]) -> None
-    - _safe_plant_name() -> str
+    Attributes:
+        logger: Application logger instance (`get_logger("pvapp")`).
+        subfolder (Path): Root folder containing JSON configuration files.
+        site (Optional[Site]): Site object from `site.json`; `None` until `load_site()`.
+        module (Optional[dict]): PV module descriptor (SAM or custom), set by `load_pvsetup()`.
+        inverter (Optional[dict]): Inverter descriptor (SAM or pvwatts/custom), set by `load_pvsetup()`.
+        mount (Optional[dict]): Mount configuration with keys `type` and `params`.
+        grid (Optional[PlantPowerGrid]): Grid model built from `grid.json`, if present.
+        pv_setup_data (Optional[dict]): Raw payload from `plant.json` (with Plant name, inverter, moudle, mount params).
+        arrays (Dict[int, Dict[str, int]] | dict): Per-array wiring configuration.
+        sims (Dict[int, Simulation] | Simulation): Handles per array (`pvsystem`, `modelchain`).
+        simresults (SimulationResults): Collector for pvlib outputs (and grid results).
+        times (Optional[pd.DatetimeIndex]): Time index used for simulations.
 
-    Parameters
-    ----------
-    subfolder (Path):
-      Root folder containing the plant configuration JSON files:
-      - site.json     : site metadata (name, coordinates, altitude, tz)
-      - plant.json    : PV setup (module, inverter, mount)
-      - arrays.json   : per-array wiring (modules_per_string, strings_per_inverter)
-      - grid.json     : optional pandapower network description
+    Methods:
+        run: Execute the full pipeline (load → build → simulate → save).
+        load_site: Parse `site.json` and build a `Site`.
+        load_pvsetup: Parse `plant.json` and resolve module/inverter/mount params.
+        load_grid: if `grid.json` is present build `PlantPowerGrid` and set it in self.grid.
+        load_arrays: Load `arrays.json` in self.arrays or use a default placeholder.
+        configure_pvsystem: Create and configure a `PVSystemManager`.
+        load_component: Resolve a component from SAM DB, pvwatts, or custom payload.
+        build_simulation: Build and run pvlib for each array; optionally run grid.
+        simulate: Run a `ModelChain` with synthetic weather from `Nature` class.
+        merge_grid: Map AC powers to sgens and run a pandapower time series.
+        save_results: Persist `SimulationResults` to disk.
+        plant_name (property): Pretty name requiring loaded site and plant data.
 
-    Attributes
-    ----------
-    logger:
-      Application logger instance (via `get_logger("pvapp")`).
+    ---
+    Example:
+        >>> from pathlib import Path
+        >>> sim = Simulator(subfolder=Path("data/0"))
+        >>> ok = sim.run()
 
-    subfolder (Path):
-      Root folder with configuration JSON files.
+    ---
+    Notes:
+    - SAM database access is performed via `pvlib.pvsystem.retrieve_sam`.
+    - If `arrays.json` is missing, a minimal 1x1 configuration is used.
+    - `CecInverters` are explicitly not supported in this simulator.
 
-    site (Optional[Site]):
-      Site object loaded from site.json (None until `load_site()`).
-
-    module:
-      PV module descriptor (from SAM DB or custom payload), loaded by `load_pvsetup()`.
-
-    inverter:
-      Inverter descriptor (from SAM DB or custom/pvwatts), loaded by `load_pvsetup()`.
-
-    mount (Optional[dict]):
-      Mount configuration dict with keys:
-      - type: str
-      - params: dict
-
-    grid (Optional[PlantPowerGrid]):
-      Grid model wrapper loaded from grid.json (if present).
-
-    pv_setup_data (Optional[dict]):
-      Raw plant.json payload (module/inverter/mount/metadata).
-
-    arrays (dict):
-      Per-array configuration loaded from arrays.json.
-      Schema: {array_idx: {"modules_per_string": int, "strings_per_inverter": int, ...}}.
-      Defaults to {"": {"": None}} as a non-crashing placeholder.
-
-    sims (dict[int, Simulation] | Simulation):
-      Handles for each array:
-      - pvsystem: PVSystemManager
-      - modelchain: ModelChain
-
-    simresults (SimulationResults):
-      Results collector/manager for pvlib outputs (and future grid results).
-
-    times (Optional[pd.DatetimeIndex]):
-      Time index for the simulation. Set in `run()` via `_init_times()` if not provided.
-
-    Properties
-    ----------
-    plant_name -> str:
-      Pretty log-friendly name in format "[{site.name} : {plant_name}]".
-      Requires `site` and `pv_setup_data` to be loaded.
-
-    Methods (detailed)
-    ------------------
-    run(times: Optional[pd.DatetimeIndex] = None) -> None:
-      Orchestrates the full pipeline: loading configs, building simulation objects,
-      running pvlib on synthetic weather, saving results, and running the grid if configured.
-
-    load_site() -> None:
-      Parse site.json → build `Site`. Raises on missing keys or invalid JSON.
-
-    load_pvsetup() -> None:
-      Parse plant.json → resolve module, inverter, mount. Supports SAM databases,
-      custom payloads, and pvwatts inverter. Raises on unsupported origins or missing entries.
-
-    load_grid() -> None:
-      If grid.json exists, build `PlantPowerGrid`. Otherwise, no-op.
-
-    load_arrays() -> None:
-      Load arrays.json into `self.arrays`. If missing, logs a warning and keeps placeholder.
-
-    configure_pvsystem(modules_per_string: int = 1, strings: int = 1) -> PVSystemManager:
-      Create and configure `PVSystemManager` with module/inverter/mount/wiring.
-
-    load_component(component: Literal["module", "inverter"]):
-      Retrieve component from SAM (by origin/name) or accept custom/pvwatts payloads.
-
-    build_simulation() -> None:
-      For each array:
-      - create pvsystem + modelchain
-      - `simulate()` with synthetic weather
-      - push results into `simresults`
-      Finally, call `merge_grid()`.
-
-    simulate(modelchain: ModelChain) -> None:
-      Build synthetic weather via `Nature` and run the pvlib ModelChain.
-
-    merge_grid() -> None:
-      If grid present, map AC power time series to sgens, create controllers,
-      and run a pandapower time-series.
-
-    save_results() -> None:
-      Persist `simresults` under `subfolder` (e.g., simulation.csv).
-
-    Raises
-    ------
-    FileNotFoundError:
-      If required JSON files are missing where mandatory (e.g., site.json, plant.json).
-    KeyError:
-      On missing JSON keys (e.g., plant/mount/module definitions).
-    ValueError:
-      On invalid component origins, unsupported inverters, or misconfiguration.
-    Exception:
-      Propagated from grid loading/execution or SAM retrieval errors.
-
-    Usage example
-    -------------
-    >>> from pathlib import Path
-    >>> sim = Simulator(subfolder=Path("data/0"))
-    >>> sim.run()  # or sim.run(times=my_datetime_index)
+    ---
+    TODO:
+    - Create other constructor opts
     """
 
-    # ========== LIFECYCLE ==========
+    # * =========================================================
+    # *                      LIFECYCLE
+    # * =========================================================
     def __init__(self, subfolder: Path):
+        """
+        Initialize the simulator with a configuration folder.
+
+        Args:
+            subfolder (Path): Root folder containing configuration JSON files
+                (`site.json`, `plant.json`, optional `arrays.json`, optional `grid.json`).
+        """
         self.logger = get_logger("pvapp")
         self.subfolder: Path = subfolder
 
-        # Core configuration containers (populated by loaders)
+        # Core configuration containers (populated by loaders in `run()`)
         self.site: Optional[Site] = None
         self.module = None
         self.inverter = None
@@ -187,34 +110,39 @@ class Simulator:
         self.grid: Optional[PlantPowerGrid] = None
         self.pv_setup_data: Optional[dict] = None
 
-        # Arrays configuration: {array_idx -> {"modules_per_string": int, "strings_per_inverter": int, ...}}
-        # Default non-crashing placeholder to avoid KeyError
+        # NOTE Arrays configuration: {array_idx -> {"modules_per_string": int, "strings_per_inverter": int, ...}}
+        # ? Default non-crashing placeholder to avoid KeyError
         self.arrays: Dict[int, Dict[str, int]] | dict = {"": {"": None}}
 
         # Simulation holders
-        self.sims: Union[Dict[int, Simulation], Simulation] = {}
+        self.sims: Union[Dict[int, PV_Simulation], PV_Simulation] = {}
         self.simresults: SimulationResults = SimulationResults()
 
-        # Time index gets set in `run`
+        # Time index gets set in `run()`
         self.times: Optional[pd.DatetimeIndex] = None
 
-    # ========== PUBLIC API ==========
+    # * =========================================================
+    # *                      PUBLIC API
+    # * =========================================================
     @log_performance("Run_simulation")
     def run(
         self,
         times: Optional[pd.DatetimeIndex] = None,
     ) -> bool:
         """
-        Entry point: loads configuration, builds and executes simulations, saves results,
-        and (if available) runs grid — all under configurable time limits.
+        Run the full simulation pipeline.
 
         Args:
-            times: Optional custom DatetimeIndex for the simulation.
+            times (Optional[pd.DatetimeIndex]): Custom time index to use. If `None`,
+                a default (hourly, one-year window) is generated based on site tz.
+
+        Returns:
+            bool: `True` if the pipeline completed without fatal errors, `False` otherwise.
+
+        ---
+        Notes:
+        - Exceptions are caught and logged; the method reports success via the return value.
         """
-        # Merge/validate timeouts
-
-        run_start = time.perf_counter()
-
         # 1) Load configuration files
         try:
             self.load_site()
@@ -228,12 +156,11 @@ class Simulator:
             f"[Simulator] Configuration loaded successfully for {self._safe_plant_name()}"
         )
 
-        # Early timeout check
         try:
             # 2) Define time range
             self._init_times(times)
 
-            # 3) Build and run all simulations (guarded by build timeout internally)
+            # 3) Build and run all simulations
             built = self.build_simulation()
             if not built:
                 self.logger.error(
@@ -256,9 +183,18 @@ class Simulator:
             return False
         return True
 
-    # ========== LOADERS ==========
-    def load_site(self):
-        """Load site.json and construct a `Site`."""
+    # * =========================================================
+    # *                        LOADERS
+    # * =========================================================
+    def load_site(self) -> None:
+        """
+        Load `site.json` and construct a `Site`.
+
+        Raises:
+            FileNotFoundError: If `site.json` is missing.
+            KeyError: If required keys are missing in `site.json`.
+            ValueError: If `site.json` is not valid JSON.
+        """
         site_path = self.subfolder / "site.json"
         self.logger.debug(f"[Simulator] Loading site from: {site_path}")
 
@@ -284,8 +220,15 @@ class Simulator:
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON in site.json: {e}")
 
-    def load_pvsetup(self):
-        """Load plant.json and extract PV components and mount info."""
+    def load_pvsetup(self) -> None:
+        """
+        Load `plant.json` and extract PV components and mount info.
+
+        Raises:
+            FileNotFoundError: If `plant.json` is missing.
+            ValueError: If `plant.json` is invalid JSON.
+            KeyError: If required plant or mount keys are missing.
+        """
         plant_path = self.subfolder / "plant.json"
         self.logger.debug(f"[Simulator] Loading plant setup from: {plant_path}")
 
@@ -298,7 +241,7 @@ class Simulator:
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON in plant.json: {e}")
 
-        # Load components
+        # Configure components
         self.module = self.load_component("module")
         self.mount = {
             "type": self.pv_setup_data["mount"]["type"],
@@ -310,8 +253,13 @@ class Simulator:
             f"[Simulator] Plant setup loaded for '{self.pv_setup_data.get('name','<unnamed>')}'"
         )
 
-    def load_grid(self):
-        """Load grid.json and build a PlantPowerGrid if present."""
+    def load_grid(self) -> None:
+        """
+        Load `grid.json` and build a `PlantPowerGrid` if presentm, if missing, no grid is used.
+
+        Notes:
+            - If the file is not present, the method logs and no-ops.
+        """
         grid_path: Path = self.subfolder / "grid.json"
         self.logger.debug(f"[Simulator] Loading grid from: {grid_path}")
 
@@ -324,9 +272,13 @@ class Simulator:
         else:
             self.logger.debug("[Simulator] No grid.json found; skipping grid")
 
-    def load_arrays(self):
+    def load_arrays(self) -> None:
         """
-        Load arrays.json (optional). Keeps default placeholder `self.arrays` if missing.
+        Load `arrays.json` (optional). If missing, a default 1x1 placeholder is used.
+
+        Raises:
+            ValueError: If `arrays.json` contains invalid JSON.
+            Exception: On other unexpected errors while loading arrays.
         """
         arrays_path: Path = self.subfolder / "arrays.json"
         self.logger.debug(f"[Simulator] Loading arrays from: {arrays_path}")
@@ -348,12 +300,25 @@ class Simulator:
                 f"[Simulator] arrays.json not found: using default placeholder configuration for {self.plant_name}"
             )
 
-    # ========== BUILDERS ==========
+    # * =========================================================
+    # *                        BUILDERS
+    # * =========================================================
     def configure_pvsystem(
         self, modules_per_string: int = 1, strings: int = 1
     ) -> PVSystemManager:
         """
-        Build a PVSystemManager for the current plant and mount settings.
+        Create and configure a `PVSystemManager` for the current plant and mount settings.
+
+        Args:
+            modules_per_string (int): Number of modules per string for the array.
+            strings (int): Number of parallel strings per inverter for the array.
+
+        Returns:
+            PVSystemManager: Configured PV system manager instance.
+
+        Raises:
+            ValueError: If PV setup or module is not properly loaded.
+            KeyError: If required keys for `PVSystemManager` initialization are missing.
         """
         if self.pv_setup_data is None:
             raise ValueError("PV setup data is not loaded.")
@@ -361,7 +326,7 @@ class Simulator:
         try:
             pvsystem: PVSystemManager = PVSystemManager(
                 name=self.pv_setup_data["name"],
-                location=self.site,  # Site is an object (pvlib_plant_model.Site)
+                location=self.site,  # Site object from pvlib_plant_model.Site
                 # Optional: owner/description/id can be set here if needed
             )
         except KeyError as e:
@@ -383,10 +348,23 @@ class Simulator:
 
     def load_component(self, component: Literal["module", "inverter"]):
         """
-        Load a component (module or inverter) from plant.json either as:
-          - Custom object passed directly (origin == 'Custom'), or
-          - pvwatts inverter model (for inverter + origin == 'pvwatts'), or
-          - A SAM database lookup via `retrieve_sam(origin.lower())[name]`
+        Resolve a component (module or inverter) from configuration.
+
+        Description:
+            Supports three sources:
+            1) Custom payload (`origin == "Custom"`)
+            2) pvwatts inverter model (for inverter with `origin == "pvwatts"`)
+            3) SAM database lookup via `retrieve_sam(origin.lower())[name]`
+
+        Args:
+            component (Literal["module","inverter"]): Component type to resolve.
+
+        Returns:
+            Any: The component data/object to be passed into pvlib / PVSystemManager.
+
+        Raises:
+            ValueError: On missing payload, unsupported origins, or SAM retrieval errors.
+            KeyError: If required keys like `origin` or `name` are missing.
         """
         if self.pv_setup_data is None:
             raise ValueError("PV setup data is not loaded.")
@@ -429,7 +407,13 @@ class Simulator:
 
     def build_simulation(self) -> bool:
         """
-        Build and execute the pvlib ModelChain for each configured array.
+        Build and execute the pvlib `ModelChain` for each configured array.
+
+        Returns:
+            bool: `True` if the build loop completes (even with per-array warnings).
+
+        Raises:
+            ValueError: If mandatory elements (module, site, mount) are missing.
         """
         # Validate prerequisites
         if self.module is None or self.site is None or self.mount is None:
@@ -462,7 +446,7 @@ class Simulator:
                 self.logger.warning(
                     f"[Simulator] Build failed for array {array_idx} in plant {self._safe_plant_name()}: {e}"
                 )
-                # Skip to next array but keep tracking placeholders
+                # ? Skip to next array but keep tracking placeholders
                 continue
 
             # Store handles for this array
@@ -511,11 +495,19 @@ class Simulator:
         )
         return True
 
-    # ========== EXECUTORS ==========
+    # * =========================================================
+    # *                       EXECUTORS
+    # * =========================================================
     @log_performance("pvlib_simulation")
-    def simulate(self, modelchain: ModelChain):
+    def simulate(self, modelchain: ModelChain) -> None:
         """
-        Run pvlib's ModelChain using synthetic weather generated by `Nature`.
+        Run pvlib's `ModelChain` using synthetic weather generated by `Nature`.
+
+        Args:
+            modelchain (ModelChain): The pvlib model chain to execute.
+
+        Raises:
+            ValueError: If the model chain, site, or times are not set.
         """
         if modelchain is None:
             raise ValueError(
@@ -530,13 +522,20 @@ class Simulator:
             "[Simulator] Generating synthetic weather and running ModelChain"
         )
         nature = Nature(self.site.location, self.times)
+
+        # -------------> Weather Synthesis <--------
         weather = nature.weather_simulation(temp_air=25, wind_speed=1)
+
+        # -------------> pvlib Execution <--------
         modelchain.run_model(weather)
 
     @log_performance("pandapower_simulation")
-    def merge_grid(self):
+    def merge_grid(self) -> None:
         """
         If a pandapower grid is configured, push array AC powers as sgen profiles and run a time-series power flow.
+
+        Raises:
+            Exception: Propagates unexpected failures during pandapower execution.
         """
         try:
             df_timeseries = self.simresults.get_df_for_pandapower(self.grid.net)
@@ -554,9 +553,12 @@ class Simulator:
             # Results integration into `simresults` can be added here in future
             return
 
-    def save_results(self):
+    def save_results(self) -> None:
         """
-        Persist SimulationResults to disk inside `subfolder`.
+        Export `SimulationResults` inside `subfolder`.
+
+        Notes:
+            - If there are no results, the method logs a warning and returns early.
         """
         try:
             if self.simresults.is_empty:
@@ -569,10 +571,20 @@ class Simulator:
         except Exception as e:
             self.logger.error(f"[Simulator] Failed to save results: {e}")
 
-    # ========== Helpers & Properties ==========
+    # * =========================================================
+    # *                HELPERS & PROPERTIES
+    # * =========================================================
     def _init_times(self, times: Optional[pd.DatetimeIndex]) -> None:
         """
-        Initialize `self.times` with a default 1-hour resolution year window if not provided.
+        Initialize `self.times` using the provided index or a default one-year hourly range.
+
+        Args:
+            times (Optional[pd.DatetimeIndex]): Custom time index to use. If `None`,
+                a default index is created from 2024-03-01 to 2025-02-28 with 1h freq,
+                using the site timezone when available, otherwise UTC.
+
+        Raises:
+            ValueError: If called before `load_site()` and the site timezone cannot be determined.
         """
         if times is not None:
             self.times = times
@@ -604,7 +616,13 @@ class Simulator:
     @property
     def plant_name(self) -> str:
         """
-        Pretty plant name for logs. Requires site and plant data to be loaded.
+        Pretty plant name for logs.
+
+        Returns:
+            str: A string in the format `"[{site.name} : {plant_name}]"`.
+
+        Raises:
+            AssertionError: If site or plant data are not yet loaded.
         """
         assert self.site is not None, "Site must be defined to get plant name."
         assert (
@@ -614,7 +632,10 @@ class Simulator:
 
     def _safe_plant_name(self) -> str:
         """
-        Safe version for logging before the site/plant are fully loaded.
+        Safe display name for logs before site/plant are fully loaded.
+
+        Returns:
+            str: A string in the format `"[{site_or_<??>} : {plant_or_<??>}]"`.
         """
         site_name = getattr(self.site, "name", "<site?>")
         plant_name = (

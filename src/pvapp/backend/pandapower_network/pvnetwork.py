@@ -1,12 +1,15 @@
-import json
-from typing import Union, Optional, Tuple, Literal, TypedDict, List, Dict
+# =========================================================
+#                        Constants
+# =========================================================
 
+from typing import Union, Optional, Tuple, Literal, List, Dict
+
+import json
 import pandas as pd
 import numpy as np
 import pandapower as pp
 from pandapower import toolbox as tb  # noqa: F401  # kept if you used it elsewhere
-from pandapower.timeseries import run_timeseries, DFData
-from pandapower.control import ConstControl
+
 from tools.logger import get_logger, log_performance
 from .TypedDict_elements_params import *
 
@@ -27,22 +30,56 @@ LINK_ERR_DUPLICATE = 3
 # * =========================================================
 class PlantPowerGrid:
     """
-    Thin domain wrapper around a pandapowerNet with convenience methods for
+    Thin domain wrapper around a `pandapowerNet` with convenience methods for
     CRUD operations, validation, summaries, and simple simulation helpers.
 
-    Design goals:
-      - Keep UI-independent, side-effect-light helpers here.
-      - Provide predictable return types and small, composable utilities.
-      - Avoid raising on normal "not found" lookups; return None where sensible.
+    Attributes:
+        logger: Application logger instance.
+        net (pp.pandapowerNet): Pandapower network container.
+
+    Methods:
+        load_grid: Load grid from JSON.
+        save: Save grid to JSON.
+        create_bus: Add a bus to the network.
+        update_bus: Update bus parameters.
+        link_buses: Create a line between buses.
+        available_link: Check if two buses can be linked.
+        get_bus_links: List existing connectors between two buses.
+        add_active_element: Add active elements (sgen, gen, ext_grid).
+        add_transformer: Placeholder for transformer creation.
+        add_switch: Placeholder for switch creation.
+        add_passive_element: Placeholder for passive elements creation.
+        add_sensors: Placeholder for control/sensor creation.
+        get_element: Retrieve bus info by index or name.
+        get_line_infos: Return standard type record for a line.
+        get_available_lines: List available standard line types.
+        get_aviable_lines: Backward-compat alias for `get_available_lines`.
+        get_n_nodes_links: Return number of buses.
+        get_n_active_elements: Return count of active elements.
+        runnet: Run power flow or time-series simulation.
+        show_grid: Build a plotly figure (placeholder).
+        is_plot_ready: Check if the network is ready to plot.
+        update_sgen_power: Modify sgen power setpoints.
+        create_controllers: Add constant controllers for elements.
+        check_prerequisites: Validate readiness of the network.
+        summarize_buses: Summarize bus info and connections.
+        bus_connections: Return normalized bus-to-bus connections.
+
+    ---
+    Notes:
+    - Methods prefer returning `None`/empty structures on normal "not found" cases;
+      validation errors raise or are accumulated in returned error lists.
     """
 
-    # ======================== Lifecycle ========================
+    # * =========================================================
+    # *                      LIFECYCLE
+    # * =========================================================
     def __init__(self, path: Optional[str] = None) -> None:
         """
         Initialize an empty pandapower network. Optionally load from JSON.
 
         Args:
-            path: Optional path to a .json file previously exported by pandapower.
+            path (Optional[str]): Path to a `.json` file exported by pandapower.
         """
         self.logger = get_logger("pvapp")
         self.net: pp.pandapowerNet = pp.create_empty_network()
@@ -54,10 +91,10 @@ class PlantPowerGrid:
         Load grid from a pandapower JSON file.
 
         Args:
-            path: File path to pandapower JSON.
+            path (str): File path to pandapower JSON.
 
         Returns:
-            Self for chaining.
+            PlantPowerGrid: Self for chaining.
         """
         self.net = pp.from_json(path)
         return self
@@ -67,22 +104,26 @@ class PlantPowerGrid:
         Persist current grid to disk in pandapower JSON format.
 
         Args:
-            path: Destination file path.
+            path (str): Destination file path.
 
         Returns:
-            Self for chaining.
+            PlantPowerGrid: Self for chaining.
         """
         pp.to_json(self.net, path)
         return self
 
-    # ======================== CRUD: Buses & Links ========================
-
+    # * =========================================================
+    # *                   CRUD: Buses & Links
+    # * =========================================================
     def create_bus(self, bus: BusParams) -> int:
         """
         Create a bus and return its index.
 
-        Note:
-            Pandapower assigns the DataFrame index; we return it for later reference.
+        Args:
+            bus (BusParams): Bus parameters.
+
+        Returns:
+            int: Index of the created bus.
         """
         return int(pp.create_bus(self.net, **bus))
 
@@ -91,11 +132,11 @@ class PlantPowerGrid:
         Update a bus row in-place.
 
         Args:
-            bus_index: Existing bus index (must exist in net.bus.index).
-            bus: Fields to update.
+            bus_index (int): Existing bus index (must exist in `net.bus.index`).
+            bus (BusParams): Fields to update.
 
         Raises:
-            ValueError: If the given bus_index does not exist.
+            ValueError: If the given `bus_index` does not exist.
         """
         if bus_index not in self.net.bus.index:
             raise ValueError(f"Bus index {bus_index} does not exist in the network.")
@@ -107,18 +148,10 @@ class PlantPowerGrid:
         Create a line between two buses.
 
         Args:
-            line: LineParams including
-                - from_bus,
-                - to_bus,
-                - std_type,
-                - length_km,
-                - name
+            line (LineParams): Line parameters.
 
         Returns:
-            The created line index (pandapower line table index).
-        TODO
-        ----
-        Add pp.create_line_from_parameter()
+            int: Index of the created line.
         """
         return int(pp.create_line(self.net, **line))
 
@@ -132,8 +165,8 @@ class PlantPowerGrid:
           3) Already connected by any known connector → not allowed (return LINK_ERR_DUPLICATE)
 
         Args:
-            start_bus: A bus record (at least 'name' and 'vn_kv' should be provided).
-            end_bus: A bus record.
+            start_bus (BusParams): First bus record.
+            end_bus (BusParams): Second bus record.
 
         Returns:
             int: LINK_OK (0) if available, otherwise an error code (1..3).
@@ -155,12 +188,140 @@ class PlantPowerGrid:
 
         return LINK_OK
 
+    # * =========================================================
+    # *                   CRUD: Generators & Others
+    # * =========================================================
+    def add_active_element(
+        self,
+        type: Literal["sgen", "gen", "ext_grid"],
+        params: Union[SGenParams, GenParams, ExtGridParams],
+    ) -> int:
+        """
+        Add an active element (sgen, gen, ext_grid) to the network.
+
+        Args:
+            type (Literal["sgen","gen","ext_grid"]): Element family to create.
+            params (SGenParams | GenParams | ExtGridParams): Parameters dictionary for the selected element.
+
+        Returns:
+            int: The created element index within its pandapower table.
+
+        Raises:
+            ValueError: If element type is unsupported.
+        """
+        if type == "sgen":
+            return int(pp.create_sgen(self.net, **params))
+        if type == "gen":
+            return int(pp.create_gen(self.net, **params))
+        if type == "ext_grid":
+            return int(pp.create_ext_grid(self.net, **params))
+        raise ValueError(f"Unsupported element type: {type}")
+
+    def add_transformer(self) -> None:  # placeholder
+        """
+        Placeholder for transformer creation.
+        """
+        raise NotImplementedError
+
+    def add_switch(self) -> None:  # placeholder
+        """
+        Placeholder for switch creation.
+        """
+        raise NotImplementedError
+
+    def add_passive_element(self) -> None:  # load, shunt, impedance, dcline
+        """
+        Placeholder for passive elements (load, shunt, impedance, dcline).
+        """
+        raise NotImplementedError
+
+    def add_sensors(self) -> None:  # control
+        """
+        Placeholder for control/sensor creation.
+        """
+        raise NotImplementedError
+
+    # * =========================================================
+    # *                   LOOKUPS & ACCSSORS
+    # * =========================================================
+    def get_element(
+        self,
+        element: Literal["bus"] = None,
+        index: Optional[int] = None,
+        name: Optional[str] = None,
+        column: Literal[
+            "index", "name", "vn_kv", "type", "zone", "in_service", "geo", ""
+        ] = "",
+    ) -> Union[None, str, pd.Series, int, float]:
+        """
+        Retrieve a bus (or a field) by name or index.
+
+        Args:
+            element (Literal["bus"]): Currently only 'bus' is supported.
+            index (Optional[int]): Bus index to select.
+            name (Optional[str]): Bus name to select.
+            column (Literal["index","name","vn_kv","type","zone","in_service","geo",""]):
+                If empty, returns the full row (as a one-row DataFrame slice).
+                If 'index', returns the index as `int`.
+                If a column name (e.g. 'vn_kv'), returns that scalar value.
+
+        Returns:
+            Union[None, str, pd.Series, int, float]: The requested value, or None if not found/unsupported.
+        """
+        if element != "bus":
+            return None
+
+        df = self.net.bus
+
+        if name is not None:
+            mask = (
+                (df["name"] == name)
+                if "name" in df.columns
+                else pd.Series(False, index=df.index)
+            )
+            if not mask.any():
+                return None
+            result = df[mask]
+        elif index is not None:
+            if index not in df.index:
+                return None
+            result = df.loc[[index]]
+        else:
+            return None
+
+        if column == "":
+            return result
+        if column == "index":
+            return int(result.index[0])
+        if column in df.columns:
+            return result[column].values[0]
+        return None
+
+    def get_line_infos(self, std_type: str) -> pd.Series:
+        """
+        Return the standard type record for a given line `std_type`.
+
+        Args:
+            std_type (str): Name of the standard line type.
+
+        Returns:
+            pd.Series: Parameters for the requested standard line type.
+        """
+        return pp.available_std_types(self.net).loc[std_type]
+
     def get_bus_links(self, bus1: int, bus2: int) -> List[str]:
         """
         Return a list of connector types that already join two buses.
 
         Connector types checked:
           - 'line', 'trafo', 'trafo3w', 'impedance', 'dcline', 'bus_switch'
+
+        Args:
+            bus1 (int): First bus index.
+            bus2 (int): Second bus index.
+
+        Returns:
+            list[str]: List of connector types between the two buses.
         """
         links: List[str] = []
         net = self.net
@@ -221,125 +382,37 @@ class PlantPowerGrid:
 
         return links
 
-    # =======================- CRUD: Generators & Others ========================
-
-    def add_active_element(
-        self,
-        type: Literal["sgen", "gen", "ext_grid"],
-        params: Union[SGenParams, GenParams, ExtGridParams],
-    ) -> int:
-        """
-        Add an active element (sgen, gen, ext_grid) to the network.
-
-        Args:
-            type: Element family to create.
-            params: Parameters dictionary for the selected element.
-
-        Returns:
-            The created element index within its pandapower table.
-
-        Raises:
-            ValueError: If element type is unsupported.
-        """
-        if type == "sgen":
-            return int(pp.create_sgen(self.net, **params))
-        if type == "gen":
-            return int(pp.create_gen(self.net, **params))
-        if type == "ext_grid":
-            return int(pp.create_ext_grid(self.net, **params))
-        raise ValueError(f"Unsupported element type: {type}")
-
-    def add_transformer(self):  # placeholder
-        raise NotImplementedError
-
-    def add_switch(self):  # placeholder
-        raise NotImplementedError
-
-    def add_passive_element(self):  # load, shunt, impedance, dcline
-        raise NotImplementedError
-
-    def add_sensors(self):  # control
-        raise NotImplementedError
-
-    # =========================Lookups & Accessors ========================
-
-    def get_element(
-        self,
-        element: Literal["bus"] = None,
-        index: Optional[int] = None,
-        name: Optional[str] = None,
-        column: Literal[
-            "index", "name", "vn_kv", "type", "zone", "in_service", "geo", ""
-        ] = "",
-    ) -> Union[None, str, pd.Series, int, float]:
-        """
-        Retrieve a bus (or a field) by name or index.
-
-        Args:
-            element: Currently only 'bus' is supported.
-            index (int | None): Bus index to select.
-            name (str | None): Bus name to select.
-            column (str): If empty, returns the full row (as DataFrame slice).
-                    If 'index', returns the index int.
-                    If a column name (e.g. 'vn_kv'), returns that value.
-
-        Returns:
-            The requested value, or None if not found / unsupported.
-        """
-        if element != "bus":
-            return None
-
-        df = self.net.bus
-
-        if name is not None:
-            mask = (
-                (df["name"] == name)
-                if "name" in df.columns
-                else pd.Series(False, index=df.index)
-            )
-            if not mask.any():
-                return None
-            result = df[mask]
-        elif index is not None:
-            if index not in df.index:
-                return None
-            result = df.loc[[index]]
-        else:
-            return None
-
-        if column == "":
-            return result
-        if column == "index":
-            return int(result.index[0])
-        if column in df.columns:
-            return result[column].values[0]
-        return None
-
-    def get_line_infos(self, std_type: str) -> pd.Series:
-        """
-        Return the standard type record for a given line std_type.
-        """
-        return pp.available_std_types(self.net).loc[std_type]
-
     def get_available_lines(self) -> List[str]:
         """
         List all available line standard types in the current net.
+
+        Returns:
+            list[str]: Available line standard type names.
         """
         return list(pp.available_std_types(self.net).index)
 
-    # Backward-compat alias (typo)
-    def get_aviable_lines(self) -> List[str]:  # noqa: D401
-        """Alias of get_available_lines (kept for backward compatibility)."""
-        return self.get_available_lines()
+    # // # Backward-compat alias (typo)
+    # // def get_available_lines(self) -> List[str]:  # noqa: D401
+    # //     """Alias of get_available_lines (kept for backward compatibility)."""
+    # //     return self.get_available_lines()
 
-    # ======================== Counts / Small summaries ========================
-
+    # * ==============  COUNTS / SMALL SUMMARIES ================
     def get_n_nodes_links(self) -> int:
-        """Return the number of buses."""
+        """
+        Return the number of buses.
+
+        Returns:
+            int: Number of buses in the network.
+        """
         return int(len(self.net.bus))
 
     def get_n_active_elements(self) -> int:
-        """Return a count of sgen + storage + gen + ext_grid."""
+        """
+        Return a count of active elements (sgen + storage + gen + ext_grid).
+
+        Returns:
+            int: Count of active elements.
+        """
         return int(
             len(self.net.sgen)
             + len(self.net.storage)
@@ -347,15 +420,27 @@ class PlantPowerGrid:
             + len(self.net.ext_grid)
         )
 
-    def get_n_passive_elements(self):
-        """Placeholder for passive elements count."""
+    def get_n_passive_elements(self) -> Optional[int]:
+        """
+        Placeholder for passive elements count.
+
+        Returns:
+            Optional[int]: None (not implemented).
+        """
         return None
 
-    def get_sensors_controllers(self):
-        """Placeholder for sensors/controllers count."""
+    def get_sensors_controllers(self) -> Optional[int]:
+        """
+        Placeholder for sensors/controllers count.
+
+        Returns:
+            Optional[int]: None (not implemented).
+        """
         return None
 
-    # ======================== Simulation / Plot ========================
+    # * =========================================================
+    # *                 SIMULATION
+    # * =========================================================
     def runnet(
         self,
         timeseries: Union[pd.DataFrame, None] = None,
@@ -363,56 +448,49 @@ class PlantPowerGrid:
         return_df: bool = False,
     ) -> Union[List[str], Tuple[List[str], Optional[pd.DataFrame]]]:
         """
-        Run a steady-state (pp.runpp) or time-series (pp.run_timeseries) power flow and
+        Run a steady-state (`pp.runpp`) or time-series (`pp.run_timeseries`) power flow and
         optionally return results as a pandas DataFrame.
 
         Execution modes
-        --------------
-        1) Steady-state:
-           If `timeseries` is None, a single power flow is executed (pp.runpp).
-        2) Time-series:
+        ---------------
+        1) **Steady-state**:
+           If `timeseries` is `None`, a single power flow is executed (`pp.runpp`).
+
+        2) **Time-series**:
            If `timeseries` is a DataFrame with tupled columns of the form
-           ("sgen", "p_mw" | "q_mvar", <element_index>), ConstControls are created
-           on-the-fly and a time-series simulation is executed (pp.run_timeseries).
+           `("sgen", "p_mw" | "q_mvar", <element_index>)`, `ConstControl`s are created
+           on the fly and a time-series simulation is executed (`pp.run_timeseries`).
 
         When `return_df=True`
         ---------------------
         • Steady-state: returns a single-row DataFrame with tupled columns
-          (res_table, column, element_index).
-        • Time-series: results are captured via an OutputWriter configured from
+          `(res_table, column, element_index)`.
+        • Time-series: results are captured via an `OutputWriter` configured from
           `selectors`, and consolidated into one wide DataFrame with tupled columns
-          (res_table, column, element_index) indexed by the original `timeseries.index`.
+          `(res_table, column, element_index)` indexed by the original `timeseries.index`.
 
-        Parameters
-        ----------
-        timeseries : pandas.DataFrame or None, default None
-            Input profiles for time-series simulation. Expected to be the output of a
-            function like `build_pp_dfdata_from_pvlib`, i.e. a wide DataFrame with
-            tupled columns ("sgen", "p_mw" | "q_mvar", idx). If None, run a single
-            steady-state power flow instead.
-        selectors : list[str] or None, default None
-            Result variables to collect, each in the form "res_table.column".
-            Examples: ["res_bus.vm_pu", "res_line.loading_percent", "res_sgen.p_mw"].
-            If None, a reasonable default set is used.
-        return_df : bool, default False
-            If True, also return a DataFrame of results as described above.
+        Args:
+            timeseries (Optional[pd.DataFrame]): Wide DataFrame with tupled columns
+                `("sgen","p_mw"|"q_mvar", idx)` for time-series mode; if `None`,
+                a single steady-state power flow is executed.
+            selectors (Optional[list[str]]): Result variables to collect, each in the
+                form `"res_table.column"`. Examples:
+                `["res_bus.vm_pu", "res_line.loading_percent", "res_sgen.p_mw"]`.
+                If `None`, a reasonable default set is used.
+            return_df (bool): If `True`, also return a results DataFrame.
 
-        Returns
-        -------
-        errors : list[str]
-            A list of error messages emitted during checks or execution. Empty if no errors.
-        results_df : pandas.DataFrame or None
-            Only returned if `return_df=True`. In time-series mode, indexed by
-            `timeseries.index`; in steady-state mode, a single row indexed by [0].
+        Returns:
+            Union[List[str], Tuple[List[str], Optional[pd.DataFrame]]]:
+                - If `return_df=False`: `errors` only.
+                - If `return_df=True`: `(errors, results_df)`, where `results_df`
+                  is indexed by `timeseries.index` in time-series mode and `[0]`
+                  in steady-state mode.
 
-        Notes
-        -----
-        • `pandapower.timeseries.run_timeseries` does not return DataFrames directly.
-          Results are logged during the simulation via `OutputWriter`. This method
-          uses a dedicated utility to configure the OutputWriter from `selectors` and
-          consolidate logs into a single wide DataFrame.
-        • The method assumes that `self.net` is a valid pandapower network and
-          `self.check_prerequisites()` verifies the minimal conditions to run a power flow.
+        ---
+        Notes:
+        - `pandapower.timeseries.run_timeseries` does not return DataFrames directly.
+          Results are logged via `OutputWriter`; this method consolidates them into
+          a single wide DataFrame when `return_df=True`.
         """
         import time
         from pandapower import runpp
@@ -449,25 +527,20 @@ class PlantPowerGrid:
             selects: List[str], index: pd.Index
         ) -> pd.DataFrame:
             """
-            Configure an OutputWriter from the provided selectors, run the time-series
-            using label-based time_steps (the given `index`), and consolidate all logs
+            Configure an `OutputWriter` from the provided selectors, run the time-series
+            using label-based `time_steps` (the given `index`), and consolidate all logs
             into a single wide DataFrame.
 
             This function is robust to non-data keys in `ow.output` (e.g., "Parameters").
             Only variables explicitly requested via `selectors` are processed.
 
-            Parameters
-            ----------
-            selects : list[str]
-                Variables to log, each "res_table.column".
-            index : pandas.Index
-                Exact time_steps to simulate; must match DFData index labels (e.g., DateTimeIndex).
+            Args:
+                selects (list[str]): Variables to log, each `"res_table.column"`.
+                index (pd.Index): Exact `time_steps` to simulate; must match DFData index labels.
 
-            Returns
-            -------
-            pandas.DataFrame
-                Wide DataFrame with tupled columns (res_table, column, element_index)
-                and `index` as the row index.
+            Returns:
+                pd.DataFrame: Wide DataFrame with tupled columns `(res_table, column, element_index)`
+                    and `index` as the row index.
             """
             from pandapower.timeseries.output_writer import OutputWriter
             from pandapower.timeseries import run_timeseries
@@ -677,22 +750,29 @@ class PlantPowerGrid:
 
         return (errors, results_df) if return_df else errors
 
-    def show_grid(self):
-        """
-        (Placeholder) Build a plotly figure and return (fig, errors).
+    # * =========================================================
+    # *                 SIMULATION
+    # * =========================================================
 
-        Note:
-            Current implementation returns (None, errors) unless you enable the plotting code.
+    def show_grid(self) -> Tuple[Optional[object], List[str]]:
+        """
+        (Placeholder) Build a plotly figure and return `(fig, errors)`.
+
+        Notes:
+            Current implementation returns `(None, errors)` unless you enable the plotting code.
+
+        Returns:
+            tuple[Optional[object], list[str]]: Figure (or None) and list of errors.
         """
         from pandapower.plotting.plotly import simple_plotly
         from pandapower.plotting.generic_geodata import create_generic_coordinates
 
-        errors = self.runnet()
-        fig = None
+        errors = self.runnet()  # type: ignore[assignment]
+        fig: Optional[object] = None
         if not errors:
             create_generic_coordinates(self.net, overwrite=True)
             fig = simple_plotly(self.net, respect_switches=True, auto_open=False)
-        return fig, errors
+        return fig, errors  # type: ignore[return-value]
 
     def is_plot_ready(self) -> bool:
         """
@@ -702,6 +782,9 @@ class PlantPowerGrid:
           1) At least one bus AND one link (line or transformer).
           2) 'geo' column exists in bus and has at least one non-null value.
           3) Non-null 'geo' values are valid JSON or a dict-like.
+
+        Returns:
+            bool: True if plot prerequisites are met, False otherwise.
         """
         bus_geo = self.net.bus.get("geo", None)
 
@@ -722,20 +805,22 @@ class PlantPowerGrid:
 
         return True
 
-    # ======================== Controllers / Profiles =========================
-
+    # * =========================================================
+    # *                 CONTROLLERS / UPDATERS
+    # * =========================================================
     def update_sgen_power(
         self, type: Optional[str] = None, power: Optional[float] = None
-    ):
+    ) -> None:
         """
-        Set p_mw for all sgens whose 'name' contains a given substring (or for all if type is None).
+        Set `p_mw` for all sgens whose 'name' contains a given substring (or for all if `type` is None).
 
         Args:
-            type: Substring to match in sgen name. If None, update all sgens.
-            power: New active power in MW. Must be numeric.
+            type (Optional[str]): Substring to match in sgen name. If None, update all sgens.
+            power (Optional[float]): New active power in MW. Must be numeric.
 
         Raises:
-            ValueError, TypeError: On invalid 'power'.
+            ValueError: If `power` is None.
+            TypeError: If `power` is not numeric.
         """
         if power is None:
             raise ValueError(
@@ -756,8 +841,8 @@ class PlantPowerGrid:
         Create constant controllers for a given element family using a profile DataFrame.
 
         Args:
-            element: Currently 'sgen' supported.
-            data_source: A DataFrame whose columns map element indices and profile names.
+            element (Literal["sgen"]): Currently only 'sgen' is supported.
+            data_source (pd.DataFrame): A DataFrame whose columns map element indices and profile names.
         """
         from pandapower.control import ConstControl
 
@@ -770,21 +855,22 @@ class PlantPowerGrid:
             drop_same_existing_ctrl=True,
         )
 
-    # ======================== Validation / Readiness ========================
-
+    # * =========================================================
+    # *                 VALIDATION / CHECKERS
+    # * =========================================================
     def check_prerequisites(self) -> List[str]:
         """
         Validate minimum conditions to run a power flow.
 
         Returns:
-            List of error messages. Empty list means the network is ready to attempt runpp.
+            list[str]: Error messages. Empty list means the network is ready to attempt `runpp`.
         """
         net = self.net
         errors: List[str] = []
 
         # 1) There must be buses
         if net.bus.empty:
-            errors.append("La rete non contiene bus.")
+            errors.append("The network has no buses.")
 
         # 2) At least one power source
         has_power_source = (
@@ -794,13 +880,11 @@ class PlantPowerGrid:
             or not net.storage.empty
         )
         if not has_power_source:
-            errors.append(
-                "Nessuna fonte di potenza presente (ext_grid/gen/sgen/storage)."
-            )
+            errors.append("No power source present (ext_grid/gen/sgen/storage).")
 
         # 3) All buses must have a valid vn_kv
         if "vn_kv" in net.bus.columns and (net.bus.vn_kv <= 0).any():
-            errors.append("Alcuni bus hanno vn_kv <= 0 (tensione nominale non valida).")
+            errors.append("Some buses have vn_kv <= 0 (invalid nominal voltage).")
 
         # 4) Each element must reference existing buses
         for comp in ["load", "sgen", "gen", "ext_grid", "storage"]:
@@ -809,33 +893,34 @@ class PlantPowerGrid:
                 if "bus" in df.columns:
                     invalid = ~df["bus"].isin(net.bus.index)
                     if invalid.any():
-                        errors.append(f"{comp}: riferimenti a bus inesistenti.")
+                        errors.append(f"{comp}: references non-existent bus indices.")
 
         # Lines must reference existing buses
         if not net.line.empty:
             invalid_from = ~net.line["from_bus"].isin(net.bus.index)
             invalid_to = ~net.line["to_bus"].isin(net.bus.index)
             if invalid_from.any() or invalid_to.any():
-                errors.append("Linee collegate a bus inesistenti.")
+                errors.append("Lines connected to non-existent buses.")
 
         # 5) At least one voltage-controlled element (ext_grid/gen) helps initialization
         if net.ext_grid.empty and net.gen.empty:
             errors.append(
-                "⚠️ Nessun generatore controllato in tensione (ext_grid/gen): il calcolo potrebbe fallire."
+                "⚠️ No voltage-controlled generator (ext_grid/gen): power flow may fail."
             )
 
-        # 6) Optional: add an isolated-bus check if needed
+        # 6) Optional: isolated-bus checks could be added here
 
         return errors
 
-    # ======================== Summaries / Projections ========================
-
+    # * =========================================================
+    # *                 SUMMARIES & DESCRIPTIONS
+    # * =========================================================
     def summarize_buses(self) -> pd.DataFrame:
         """
         Build a DataFrame with one row per bus and useful metadata + connected elements.
 
         Returns:
-            DataFrame with columns:
+            pd.DataFrame: Columns:
               - name, type, voltage_kv, in_service, min_vm_pu, max_vm_pu
               - elements: list[dict] per bus with {"name","type","index"} for connected elements.
         """
@@ -852,11 +937,13 @@ class PlantPowerGrid:
         out["max_vm_pu"] = buses["max_vm_pu"] if "max_vm_pu" in buses.columns else None
 
         # Prepare connections collector (ordered, no duplicates per (type, index))
-        connections = {int(b): [] for b in buses.index}
-        seen_keys = {int(b): set() for b in buses.index}
+        connections: Dict[int, List[Dict[str, Union[str, int]]]] = {
+            int(b): [] for b in buses.index
+        }
+        seen_keys: Dict[int, set] = {int(b): set() for b in buses.index}
 
-        def add_conn(bus_idx, etype: str, eindex: int, ename: Optional[str]):
-            """Attach a connection to a bus, deduplicated by (etype,eindex)."""
+        def add_conn(bus_idx, etype: str, eindex: int, ename: Optional[str]) -> None:
+            """Attach a connection to a bus, deduplicated by (etype, eindex)."""
             if pd.isna(bus_idx):
                 return
             b = int(bus_idx)
@@ -875,7 +962,7 @@ class PlantPowerGrid:
             seen_keys[b].add(key)
 
         # What to scan: {element_table: [bus_columns]}
-        mapping = {
+        mapping: Dict[str, List[str]] = {
             "line": ["from_bus", "to_bus"],
             "trafo": ["hv_bus", "lv_bus"],
             "trafo3w": ["hv_bus", "mv_bus", "lv_bus"],
@@ -933,6 +1020,15 @@ class PlantPowerGrid:
           - name  : element display name
           - start : (bus_name, bus_index)
           - end   : (bus_name, bus_index)
+
+        Args:
+            include_out_of_service (bool): Include elements out of service if True.
+            trafo3w_pairs (tuple[str, ...]): Pairs to expand for trafo3w ("hv-mv","hv-lv","mv-lv").
+            include_bus_bus_switches (bool): Include bus-bus switches if True.
+            role_suffix_for_trafo3w (bool): Append pair role to trafo3w name if True.
+
+        Returns:
+            pd.DataFrame: Normalized connections table.
         """
 
         def bus_tuple(bi: int) -> Tuple[str, int]:
