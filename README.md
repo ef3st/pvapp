@@ -67,19 +67,6 @@ Developer is working to create a better pre-configuration setup with TOML.
 
 
 
-
-
-
-# Installation & Usage
-
-## 1. Requirements
-PVApp uses **Poetry** for dependency management and **Streamlit** as the GUI framework.
-
-- **Python** ≥ 3.10  
-- **Poetry** ≥ 1.6  
-- **Git** (only required if cloning the repository)  
-- **Docker** installed and running (Docker Desktop recommended on Windows)
-
 ### Project structure overview
 ```bash
 .
@@ -134,96 +121,174 @@ PVApp uses **Poetry** for dependency management and **Streamlit** as the GUI fra
 ├── .dockerignore
 └── README.md
 ```
----
-## 2. Build the Docker image
-Clone the repo:
-```bash
-git clone https://github.com/ef3st/solartracker.git
-```
-From the **project root**:
-```bash
-docker build -t pvapp .
-```
 
-If you are behind a VPN/proxy or encounter network issues:
-```bash
-docker build --network=host -t pvapp .
-```
+
+
+
+# Installation & Usage
 
 ---
 
-## 3. Run the application with Docker
-Start the container:
-```bash
-docker run --rm -p 8501:8501 pvapp
-```
+## 📋 Prerequisites
 
-Open the app in your browser: [http://localhost:8501](http://localhost:8501)
+- **Git** ≥ 2.30  
+- **Python** ≥ 3.12 
+- **Poetry** ≥ 1.7  
+- (Optional) **Make** (installed by default on Linux/macOS, use WSL or MinGW on Windows)  
+- (Optional) **Docker** ≥ 24 + **Docker Compose**  
 
-With environment variables:
+Check your environment:
 ```bash
-docker run --rm -p 8501:8501 --env-file .env pvapp
+git --version
+python --version
+poetry --version
+make --version          # optional
+docker --version        # optional
+docker compose version  # optional
 ```
 
 ---
 
-## 4. Run the CLI (optional)
-If you want to use the CLI defined in `pyproject.toml`:
+## 📂 Clone the Repository
+
 ```bash
-docker run --rm pvapp pvapp gui --debug
-docker run --rm pvapp pvapp dev --info
+git clone https://github.com/ef3st/pvapp.git
+cd pvapp
 ```
 
-Or change CMD in your Dockerfile:
-```dockerfile
-CMD ["pvapp", "gui", "--debug"]
-```
 
----
+## 🚀 Run with Poetry (recommended for development)
 
-## 5. Handy commands
-- Verbose build:
-  ```bash
-  docker build -t pvapp . --progress=plain
-  ```
-- Run GUI:
-  ```bash
-  docker run --rm -p 8501:8501 pvapp
-  ```
-- Run CLI:
-  ```bash
-  docker run --rm pvapp pvapp gui --debug
-  ```
-
----
-
-## 6. Local installation with Poetry (alternative to Docker)
-Clone the repository and install dependencies with Poetry:
+### 1. Install dependencies
 ```bash
-git clone https://github.com/ef3st/solartracker.git
-cd solartracker
-poetry install
+poetry install --no-root
 ```
 
-Poetry will create and manage a virtual environment automatically.  
-To activate it manually:
+### 2. Activate the environment
 ```bash
 poetry shell
 ```
+Or prefix commands with `poetry run`.
 
-Run the app locally:
+### 3. Launch Streamlit
 ```bash
-streamlit run src/pvapp/main.py
+poetry run streamlit run src.py src/pvapp/main.py --logger.level=debug gui--server.port=${PORT:-8501}
+```
+Replace `app.py` with the actual Streamlit entry point (e.g. `src/pvapp/ui/app.py`).
+
+### 4. Useful commands
+```bash
+# Run tests
+poetry run pytest -q
+
+# Lint & format
+poetry run ruff check .
+poetry run black .
+
+# Update dependencies
+poetry update
 ```
 
-> Unfortunately, as of `streamlit` version 1.10.0 and higher, Streamlit apps cannot be run from the root directory of Linux distributions. If you try to run a Streamlit app from the root directory, Streamlit will throw a FileNotFoundError: `[Errno 2] No such file or directory` error (see error [here](https://github.com/streamlit/streamlit/issues/5239)).
+---
 
+## 🛠 Run with Make (shortcuts)
+
+A `Makefile` is included. Examples:
+
+```bash
+make install        # poetry install
+make run PORT=8501 # run Streamlit on port 8501
+make test           # run tests
+make lint           # run linter
+make fmt            # format code
+```
 
 ---
-# Testing
+
+## 📦 Run with Docker
+
+### 1. Build image
+```bash
+docker build -t pvapp:latest .
+```
+
+### 2. Run container
+```bash
+docker run --env-file .env -p 8501:8501 --name pvapp pvapp:latest
+```
+
+Open: http://localhost:8501
+
+> On Apple Silicon (M1/M2):  
+> ```bash
+> docker buildx build --platform linux/amd64 -t pvapp:latest .
+> ```
 
 ---
-# Documentation
+
+## Development Workflow
+
+- **Run tests**:  
+  ```bash
+  poetry run pytest -q
+  ```
+
+- **Check linting**:  
+  ```bash
+  make lint
+  ```
+
+- **Format code**:  
+  ```bash
+  make fmt
+  ```
+
+- **Rebuild Docker image after dependency changes**:  
+  ```bash
+  docker compose build --no-cache
+  ```
+---
+
+## ⚠️ Troubleshooting
+
+- **Port already in use** → change with `PORT=8600 make run`  
+- **Poetry using wrong Python version** → `poetry env use python3.12`  
+- **Permission issues in Docker volumes** → add `--user $(id -u):$(id -g)` in `docker run`  
+
+---
+
+### Fallback if Poetry or Make are not installed
+
+### Poetry not installed
+If you run `make` or `poetry` commands and see:
+```bash
+make: poetry: Command not found
+```
+it means Poetry is missing.  
+PVApp depends on Poetry to manage dependencies and environments.
+
+➡️ **Install Poetry** (recommended):
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+or with pipx
+```bash
+pipx install poetry
+```
+
+---
+
+## 🔑 Quick start
+
+- **Poetry (local dev)**:
+```bash
+poetry install --no-root && poetry run streamlit run src/pvapp/main.py
+```
+
+- **Docker Compose (isolated env)**:
+```bash
+docker compose up --build
+```
 
 ---
 # Author

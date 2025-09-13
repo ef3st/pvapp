@@ -1,57 +1,109 @@
-# Code formatting with black
-format:
-	poetry run black .
+.PHONY: help install shell run dev run-cli build compose-build up down logs restart fmt lint test check docs clean tidy
 
-# Run tests with pytest
-test:
-	poetry run pytest
+# ===========================
+#            Config
+# ===========================
+# Override these at call time, e.g.:
+#   make run PORT=8601 ENTRY=src/pvapp/ui/app.py
+PY           ?= poetry run
+ENTRY        ?= src/pvapp/main.py                  
+PORT         ?= 8501
+ENV          ?= development
+TZ           ?= Europe/Rome
 
-# Run the main script
+# Docker/Compose executables (override if needed)
+DOCKER       ?= docker
+COMPOSE      ?= docker compose
+
+# ===========================
+#         Basic setup
+# ===========================
+help:
+	@echo "Usage: make <target>"
+	@echo ""
+	@echo "Common targets:"
+	@echo "  install         Install project dependencies with Poetry"
+	@echo "  shell           Activate Poetry shell"
+	@echo "  run             Run Streamlit app (ENTRY=$(ENTRY), PORT=$(PORT))"
+	@echo "  dev             Alias of run (explicit local dev)"
+	@echo "  run-cli         Run pvapp CLI entrypoint (poetry script)"
+	@echo "  fmt             Format code (black)"
+	@echo "  lint            Lint code (ruff)"
+	@echo "  test            Run tests (pytest)"
+	@echo "  check           Lint + Test"
+	@echo "  docs            Build docs with pdoc"
+	@echo "  build           Build Docker image pvapp:latest"
+	@echo "  compose-build   Build services via Docker Compose (no cache)"
+	@echo "  up              Start services via Docker Compose (detached)"
+	@echo "  down            Stop services via Docker Compose"
+	@echo "  logs            Tail Compose logs"
+	@echo "  restart         Restart Compose services"
+	@echo "  clean           Remove caches and temporary files"
+	@echo "  tidy            fmt + lint + test"
+	@echo ""
+
+install:
+	poetry install --no-root
+
+shell:
+	poetry shell
+
+# ===========================
+#           Run
+# ===========================
 run:
-	poetry run python src/pvapp/main.py
+	$(PY) streamlit run $(ENTRY) --server.port=$(PORT) --server.address=0.0.0.0
 
-# Run ruff -> check for errors
-ruff:
-	poetry run ruff check src/
+dev: run
 
-# Fix ruff errors -> fix the errors
-ruff-fix:
-	poetry run ruff check src/ --fix
+# Run the Poetry console script defined in pyproject:
+# [tool.poetry.scripts] pvapp = "pvapp.main:main"
+run-cli:
+	$(PY) pvapp
 
-# Run mypy -> check for type errors
-mypy:
-	poetry run mypy src/
+# ===========================
+#         Docker / Compose
+# ===========================
+build:
+	$(DOCKER) build -t pvapp:latest .
 
-# Run pdoc -> generate documentation
+compose-build:
+	$(COMPOSE) build --no-cache
+
+up:
+	ENV=$(ENV) TZ=$(TZ) PORT=$(PORT) $(COMPOSE) up --build -d
+
+down:
+	$(COMPOSE) down
+
+logs:
+	$(COMPOSE) logs -f --tail=200
+
+restart:
+	$(COMPOSE) down && ENV=$(ENV) TZ=$(TZ) PORT=$(PORT) $(COMPOSE) up --build -d
+
+# ===========================
+#        Quality & Docs
+# ===========================
+fmt:
+	$(PY) black .
+
+lint:
+	$(PY) ruff check .
+
+test:
+	$(PY) pytest -q
+
+check: lint test
+
 docs:
-	poetry run pdoc src/ --html --output-dir docs/
+	$(PY) pdoc -o docs src/pvapp
 
-# Command to format + test
-check: format test ruff mypy
+# ===========================
+#           Clean
+# ===========================
+clean:
+	find . -name "__pycache__" -type d -exec rm -rf {} +
+	rm -rf .pytest_cache .ruff_cache .mypy_cache
 
-
-# Run Jupyter Notebook with Poetry
-notebook:
-	poetry run jupyter notebook
-
-# Register the environment as a Jupyter kernel (one-time)
-register-kernel:
-	poetry run python -m ipykernel install --user --name=pvapp --display-name "Python (pvapp)"
-
-# Run Jupyter Lab (optional, if you use it)
-lab:
-	poetry run jupyter lab
-
-streamlit:
-	poetry run streamlit run src/pvapp/main.py --logger.level=debug gui
-
-downloader-doc: 
-	poetry run streamlit run src\pvapp\tools\documentation\docbuilder.py
-
-developer:
-	poetry run python src/pvapp/main.py dev
-
-count_lines:
-	cloc . --include-ext=py
-
-
+tidy: fmt lint test
