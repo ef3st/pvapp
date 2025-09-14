@@ -1,0 +1,29 @@
+{
+    "module": {
+        "origin": "CECMod",
+        "name": "A10Green_Technology_A10J_M60_225",
+        "model": {},
+        "dc_model": "cec",
+        "dc_module": "cec"
+    },
+    "inverter": {
+        "origin": "Custom",
+        "name": "Inv_450",
+        "model": {
+            "pdc0": 450.0
+        },
+        "ac_model": "pvwatts"
+    },
+    "mount": {
+        "type": "SingleAxisTrackerMount",
+        "params": {
+            "axis_tilt": 0,
+            "axis_azimuth": 270,
+            "max_angle": 45.0,
+            "cross_axis_tilt": 0.0,
+            "gcr": 0.35,
+            "backtrack": true
+        }
+    },
+    "name": "Demo_2"
+}

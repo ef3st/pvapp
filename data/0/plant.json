@@ -1,0 +1,25 @@
+{
+    "module": {
+        "origin": "SandiaMod",
+        "name": "BP_Solar_BP365TS__2007__E__",
+        "model": {},
+        "dc_model": "cec",
+        "dc_module": "sapm"
+    },
+    "inverter": {
+        "origin": "Custom",
+        "name": "Inv_450",
+        "model": {
+            "pdc0": 450.0
+        },
+        "ac_model": "pvwatts"
+    },
+    "mount": {
+        "type": "FixedMount",
+        "params": {
+            "surface_tilt": 30,
+            "surface_azimuth": 270
+        }
+    },
+    "name": "Demo"
+}

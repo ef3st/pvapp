@@ -1,0 +1,42 @@
+{
+    "0": {
+        "module_per_string": 2,
+        "strings_per_inverter": 4
+    },
+    "1": {
+        "module_per_string": 2,
+        "strings_per_inverter": 4
+    },
+    "2": {
+        "module_per_string": 5,
+        "strings_per_inverter": 5
+    },
+    "3": {
+        "module_per_string": 5,
+        "strings_per_inverter": 5
+    },
+    "4": {
+        "module_per_string": 5,
+        "strings_per_inverter": 5
+    },
+    "5": {
+        "module_per_string": 5,
+        "strings_per_inverter": 5
+    },
+    "6": {
+        "module_per_string": 5,
+        "strings_per_inverter": 5
+    },
+    "7": {
+        "module_per_string": 4,
+        "strings_per_inverter": 8
+    },
+    "8": {
+        "module_per_string": 4,
+        "strings_per_inverter": 8
+    },
+    "9": {
+        "module_per_string": 4,
+        "strings_per_inverter": 8
+    }
+}

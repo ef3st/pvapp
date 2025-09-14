@@ -1,0 +1,11 @@
+{
+    "name": "Aereoporto Ravenna",
+    "address": "Via Dismano, 160",
+    "city": "Ravenna (RA)",
+    "coordinates": {
+        "lat": 44.3603615,
+        "lon": 12.2144328
+    },
+    "altitude": 0,
+    "tz": "Europe/Rome"
+}

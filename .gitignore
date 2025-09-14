@@ -6,6 +6,7 @@ __pycache__/
 *.db
 *.sqlite3
 *.log
+*.html
 
 # virtualenv
 .venv/
@@ -30,7 +31,9 @@ Thumbs.db
 .idea/
 
 #folders
-data/
+data/*
+!data/0/
+!data/1/
 output/
 results/
 garbage/
