@@ -43,7 +43,7 @@ help:
 	@echo ""
 
 install:
-	poetry install --no-root
+	poetry install
 
 shell:
 	poetry shell

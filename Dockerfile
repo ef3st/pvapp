@@ -16,6 +16,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     ENTRY="src/pvapp/main.py" \
     PORT="8501" \
     TZ="Europe/Rome"
+    
 
 # --- System deps (HTTPS-ready APT) ---
 RUN set -eux; \
@@ -55,6 +56,9 @@ RUN set -eux; \
 
 # Now copy the rest of the project
 COPY . .
+# install your package so `import pvapp` works
+RUN python -m pip install --no-deps -e .
+
 
 # Streamlit port (default)
 EXPOSE 8501
