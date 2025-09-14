@@ -40,6 +40,7 @@ garbage/
 .streamlit/secrets.toml
 src/pvapp_old
 src/pvapp_new
+PV_System_Analyser/
 
 # Pytest
 /tests

@@ -275,7 +275,9 @@ def write_to_developer(
         st.session_state.show_feedback = False
 
     if st.button("✍️ Write to developer", type="secondary"):
-        st.session_state.show_feedback = True
+        # st.session_state.show_feedback = True
+        st.error("The feedback form is not included in this distribution. Please, contact pepa.lorenzo.01@gmail.com")
+        
 
     if hasattr(st, "dialog"):
 

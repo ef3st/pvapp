@@ -488,8 +488,7 @@ def streamlit() -> None:
                     "Created bundle_preview.html — open it manually or via Streamlit."
                 )
 
-        # write_to_developer()
-        st.error("The feedback form is not included in this distribution. Please, contact pepa.lorenzo.01@gmail.com")
+        write_to_developer()
 
     sidebar_mode = st.session_state.get("sidebar", "main")
     if sidebar_mode == "main":
