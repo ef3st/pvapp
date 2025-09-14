@@ -52,7 +52,8 @@ shell:
 #           Run
 # ===========================
 run:
-	$(PY) streamlit run $(ENTRY) --server.port=$(PORT) --server.address=0.0.0.0
+	$(PY) streamlit run $(ENTRY)  --logger.level=debug gui --server.port=$(PORT) --server.address=0.0.0.0
+	
 
 dev: run
 
@@ -92,7 +93,7 @@ lint:
 	$(PY) ruff check .
 
 test:
-	$(PY) pytest -q
+	$(PY) pytest
 
 check: lint test
 
