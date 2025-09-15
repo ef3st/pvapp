@@ -214,14 +214,14 @@ docker build -t pvapp:latest .
 
 ### 2. Run container
 ```bash
-docker run --env-file .env -p 8501:8501 --name pvapp pvapp:latest
+docker run --rm -p 8501:8501 --name pvapp pvapp:latest
 ```
 
 Open: http://localhost:8501
 
 > On Apple Silicon (M1/M2):  
 > ```bash
-> docker buildx build --platform linux/amd64 -t pvapp:latest .
+> docker run --rm --platform linux/amd64 -p 8501:8501 --name pvapp pvapp:latest
 > ```
 
 ---
