@@ -6,18 +6,31 @@
 > 
 An accademic photovoltaic systems and grids simulator based on `pvlib` and `pandapower` packages. A *user friendly* **GUI** (written thanks to `streamlit` package) is aviable to create and manage projects and simulations. 
 
+# 📚 Table of Contents
 
-# Table of Contents
-- [Introduction](#introduction)
+- [PVApp](#pvapp)
+  - [Table of Contents](#-table-of-contents)
+  - [Introduction](#introduction)
 - [Architecture](#architecture)
   - [Plant Data](#plant-data)
   - [More Information](#more-information)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Run & Deployment](#run--deployment)
-- [Testing](#testing)
-- [Documentation](#documentation)
+  - [Project Structure Overview](#project-structure-overview)
+- [Installation & Usage](#installation--usage)
+  - [📋 Prerequisites](#-prerequisites)
+  - [📂 Clone the Repository](#-clone-the-repository)
+  - [🚀 Run with Poetry (recommended for development)](#-run-with-poetry-recommended-for-development)
+    - [1. Install dependencies](#1-install-dependencies)
+    - [2. Activate the environment](#2-activate-the-environment)
+    - [3. Launch Streamlit](#3-launch-streamlit)
+    - [4. Useful commands](#4-useful-commands)
+  - [🛠 Run with Make (shortcuts)](#-run-with-make-shortcuts)
+  - [📦 Run with Docker](#-run-with-docker)
+    - [1. Build image](#1-build-image)
+    - [2. Run container](#2-run-container)
+  - [Development Workflow](#development-workflow)
+  - [⚠️ Troubleshooting](#️-troubleshooting)
+    - [Poetry not installed](#poetry-not-installed)
+  - [🔑 Quick start](#-quick-start)
 - [Author](#author)
 
 
